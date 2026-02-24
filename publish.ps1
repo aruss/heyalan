@@ -11,7 +11,7 @@ if (Test-Path .env) {
 }
 
 # Bump the version 
-& ".\bump-version.ps1"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+# & ".\bump-version.ps1"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # Read version from file
 $VersionFilePath = "VERSION.txt"

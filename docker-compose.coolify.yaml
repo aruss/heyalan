@@ -2,7 +2,6 @@ services:
   webapp:
     image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapp:${IMAGE_TAG:-latest}'
     environment:
-      - 'WEBAPI_ENDPOINT=http://webapi:5000'
       - NODE_OPTIONS=--dns-result-order=ipv4first
       - KEEP_ALIVE_TIMEOUT=70000
     healthcheck:
@@ -11,23 +10,18 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
-    depends_on:
-      webapi:
-        condition: service_started
     networks:
       - coolify
       - default
     labels:
       - traefik.enable=true
-      - traefik.http.services.webapp-wk488kksgg8wk0cc0wcc8gs4.loadbalancer.server.port=5010
-      - traefik.http.services.webapp-wk488kksgg8wk0cc0wcc8gs4.loadbalancer.server.scheme=http
-      - traefik.http.services.webapp-wk488kksgg8wk0cc0wcc8gs4.loadbalancer.passhostheader=true
-      - traefik.http.services.webapp-wk488kksgg8wk0cc0wcc8gs4.loadbalancer.responseforwarding.flushinterval=100ms
-      - 'traefik.http.middlewares.auth-wk488kksgg8wk0cc0wcc8gs4.basicauth.users=admin@squarebuddy.ai:$apr1$LucjZRhL$Gp.TBZXvWDA5Ii1D3DDSc0'
-      - traefik.http.routers.webapp-wk488kksgg8wk0cc0wcc8gs4.rule=Host(`squarebuddy.dev.econduct.de`)
-      - traefik.http.routers.webapp-wk488kksgg8wk0cc0wcc8gs4.middlewares=auth-wk488kksgg8wk0cc0wcc8gs4
-      - traefik.http.routers.webapp-wk488kksgg8wk0cc0wcc8gs4.entrypoints=https
-      - traefik.http.routers.webapp-wk488kksgg8wk0cc0wcc8gs4.tls.certresolver=letsencrypt
+      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.port=5010
+      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.scheme=http
+      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.passhostheader=true
+      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.responseforwarding.flushinterval=100ms
+      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.rule=Host(`squarebuddy.dev.econduct.de`)
+      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.entrypoints=https
+      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.tls.certresolver=letsencrypt
       - traefik.docker.network=coolify
 networks:
   coolify:

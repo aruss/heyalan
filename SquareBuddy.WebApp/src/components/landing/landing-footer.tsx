@@ -81,7 +81,7 @@ export const LandingFooter = (): ReactElement => {
                 </div>
             </div>
             <div className="mx-auto mt-16 flex max-w-7xl flex-col items-center justify-between border-t border-zinc-900 px-6 pt-8 md:flex-row">
-                <p className="text-xs text-zinc-600">(c) 2026 AgentCommerce. All rights reserved.</p>
+                <p className="text-xs text-zinc-600">(c) 2026 SquareBuddy. All rights reserved.</p>
                 <p className="mt-2 text-xs text-zinc-600 md:mt-0">Not affiliated with Squarespace, Inc.</p>
             </div>
         </footer>
