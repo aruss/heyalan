@@ -1,0 +1,69 @@
+services:
+  initializer:
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-initializer:${IMAGE_TAG:-latest}'
+    restart: 'no'
+    environment:
+      - 'ConnectionStrings__squarebuddydb=${DATABASE_URL}'
+      - 'MINIO_ENDPOINT=${MINIO_ENDPOINT}'
+      - 'MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}'
+      - 'MINIO_SECRET_KEY=${MINIO_SECRET_KEY}'
+      - 'ADMIN_EMAIL=${ADMIN_EMAIL}'
+      - 'ADMIN_PASSWORD=${ADMIN_PASSWORD}'
+    networks:
+      - coolify
+      - default
+  webapi:
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapi:${IMAGE_TAG:-latest}'
+    environment:
+      - 'ConnectionStrings__squarebuddydb=${DATABASE_URL}'
+      - 'LITELLM_ENDPOINT=${LITELLM_ENDPOINT}'
+      - 'LITELLM_API_KEY=${LITELLM_API_KEY}'
+      - 'MINIO_ENDPOINT=${MINIO_ENDPOINT}'
+      - 'MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}'
+      - 'MINIO_SECRET_KEY=${MINIO_SECRET_KEY}'
+      - 'SWAGGER_ENABLED=${SWAGGER_ENABLED}'
+    healthcheck:
+      test: 'wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1'
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      initializer:
+        condition: service_completed_successfully
+    networks:
+      - coolify
+      - default
+  webapp:
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapp:${IMAGE_TAG:-latest}'
+    environment:
+      - 'WEBAPI_ENDPOINT=http://webapi:5000'
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+      - KEEP_ALIVE_TIMEOUT=70000
+    healthcheck:
+      test: 'wget --no-verbose --tries=1 --spider http://127.0.0.1:5010/health || exit 1'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      webapi:
+        condition: service_started
+    networks:
+      - coolify
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.webapp-pg8k84ss84w0ss0og4c8kk08.loadbalancer.server.port=5010
+      - traefik.http.services.webapp-pg8k84ss84w0ss0og4c8kk08.loadbalancer.server.scheme=http
+      - traefik.http.services.webapp-pg8k84ss84w0ss0og4c8kk08.loadbalancer.passhostheader=true
+      - traefik.http.services.webapp-pg8k84ss84w0ss0og4c8kk08.loadbalancer.responseforwarding.flushinterval=100ms
+      - 'traefik.http.middlewares.auth-pg8k84ss84w0ss0og4c8kk08.basicauth.users=admin@squarebuddy.ai:$apr1$LucjZRhL$Gp.TBZXvWDA5Ii1D3DDSc0'
+      - traefik.http.routers.webapp-pg8k84ss84w0ss0og4c8kk08.rule=Host(`squarebuddy.dev.econduct.de`)
+      - traefik.http.routers.webapp-pg8k84ss84w0ss0og4c8kk08.middlewares=auth-pg8k84ss84w0ss0og4c8kk08
+      - traefik.http.routers.webapp-pg8k84ss84w0ss0og4c8kk08.entrypoints=https
+      - traefik.http.routers.webapp-pg8k84ss84w0ss0og4c8kk08.tls.certresolver=letsencrypt
+      - traefik.docker.network=coolify
+networks:
+  coolify:
+    external: true

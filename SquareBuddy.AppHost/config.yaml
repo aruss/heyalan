@@ -1,0 +1,11 @@
+# Framework config
+Logging:
+  LogLevel:
+    Default: Debug
+    Microsoft.AspNetCore: Debug
+    Microsoft.AspNetCore.Authentication: Debug
+    Microsoft.AspNetCore.Identity: Debug
+
+
+ADMIN_EMAIL: admin@squarebuddy.ai
+ADMIN_PASSWORD: admin@squarebuddy.ai

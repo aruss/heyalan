@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.3864779">
+  <PropertyGroup>
+    <RestoreCommand>yarn install</RestoreCommand>
+    <StartupCommand>yarn dev</StartupCommand>
+    <JavaScriptTestRoot>src\</JavaScriptTestRoot>
+    <JavaScriptTestFramework>Jest</JavaScriptTestFramework>
+
+    <BuildCommand Condition="'$(Configuration)' == 'Debug'">echo "Skipping build for Aspire"</BuildCommand>
+    <BuildCommand Condition="'$(Configuration)' != 'Debug'">yarn build</BuildCommand>
+    
+    <ProductionBuildCommand>yarn build</ProductionBuildCommand>
+  </PropertyGroup>
+</Project>

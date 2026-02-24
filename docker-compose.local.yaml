@@ -1,0 +1,182 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Infrastructure: Postgres
+  # ---------------------------------------------------------------------------
+  squarebuddy-postgres:
+    image: postgres:16-alpine
+    container_name: squarebuddy-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Default DB is 'postgres'; Initializer will create specific DBs
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: Creates postgres databases
+  # ---------------------------------------------------------------------------
+  squarebuddy-db-init:
+    image: postgres:16-alpine
+    container_name: squarebuddy-db-init
+    depends_on:
+      squarebuddy-postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: squarebuddy-postgres
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    command: >
+      sh -c "
+        echo 'Checking for databases...';
+        psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'squarebuddydb'\" | grep -q 1 || createdb squarebuddydb;
+        psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'litellmdb'\" | grep -q 1 || createdb litellmdb;
+        echo 'Initialization complete.'
+      "
+
+  squarebuddy-pgadmin:
+    image: dpage/pgadmin4
+    container_name: squarebuddy-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@squarebuddy.ai}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-Passwort123!}
+    depends_on:
+      - squarebuddy-postgres
+
+  squarebuddy-minio:
+    image: quay.io/minio/minio
+    container_name: squarebuddy-minio
+    command: server /data --console-address :9001
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_USER:-minioadmin}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      squarebuddy-postgres:
+        condition: service_healthy
+      squarebuddy-db-init:
+        condition: service_completed_successfully
+
+  # ---------------------------------------------------------------------------
+  # Application: Initializer (Migrations & Bucket Setup)
+  # ---------------------------------------------------------------------------
+  squarebuddy-initializer:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-initializer:latest
+    container_name: squarebuddy-initializer
+    environment:
+      # Connects to default 'postgres' DB or creates 'squarebuddydb' on fly depending on logic
+      ConnectionStrings__squarebuddydb: Host=squarebuddy-postgres;Port=5432;Database=squarebuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      MINIO_ENDPOINT: http://squarebuddy-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-parent@squarebuddy.ai}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Passwort123!}
+    depends_on:
+      squarebuddy-postgres:
+        condition: service_healthy
+      squarebuddy-minio:
+        condition: service_healthy
+      squarebuddy-db-init:
+        condition: service_completed_successfully
+   
+
+  # ---------------------------------------------------------------------------
+  # AI Gateway: LiteLLM
+  # ---------------------------------------------------------------------------
+  squarebuddy-litellm:
+    image: ghcr.io/berriai/litellm:litellm_stable_release_branch-v1.77.5-stable
+    container_name: squarebuddy-litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./SquareBuddy.AppHost/LiteLLM/config.yaml:/app/config.yaml
+    environment:
+      # Connects to 'litellmdb' which must be created by Initializer first
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@squarebuddy-postgres:5432/litellmdb?schema=litellm
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+    command: --config /app/config.yaml
+    depends_on:
+      # Wait for initializer to create the DB structure
+      squarebuddy-initializer:
+        condition: service_completed_successfully
+
+  # ---------------------------------------------------------------------------
+  # Application: Web API
+  # ---------------------------------------------------------------------------
+  squarebuddy-webapi:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapi:latest
+    container_name: squarebuddy-webapi
+    environment:
+      ConnectionStrings__squarebuddydb: Host=squarebuddy-postgres;Port=5432;Database=squarebuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      Logging__LogLevel__Default: Debug
+      LITELLM_ENDPOINT: http://squarebuddy-litellm:4000
+      LITELLM_API_KEY: ${LITELLM_MASTER_KEY}
+      MINIO_ENDPOINT: http://squarebuddy-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: 'wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1'
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      squarebuddy-initializer:
+        condition: service_completed_successfully
+      squarebuddy-postgres:
+        condition: service_healthy
+      squarebuddy-litellm:
+        condition: service_started
+      squarebuddy-minio:
+        condition: service_healthy
+
+
+  # ---------------------------------------------------------------------------
+  # Application: Web API
+  # ---------------------------------------------------------------------------
+  squarebuddy-webapp:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapp:latest
+    container_name: squarebuddy-webapp
+    ports:
+      - "5010:5010"
+    environment:
+      NODE_ENV: production
+      WEBAPI_ENDPOINT: http://squarebuddy-webapi:5000
+      NODE_OPTIONS: --dns-result-order=ipv4first
+    healthcheck:
+      test: 'wget --no-verbose --tries=1 --spider http://localhost:5010/health || exit 1'
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      squarebuddy-webapi:
+        condition: service_started
+
+volumes:
+  pgdata:
+  miniodata:

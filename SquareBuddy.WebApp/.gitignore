@@ -1,0 +1,85 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.env
+
+Properties/
+
+# playwright
+node_modules/
+/test-results/
+/tests/coverage-report
+.local-browsers/
+/.dev_profile*
+.DS_Store
+*.swp
+*.pyc
+/.vscode
+.mono
+.idea
+/packages/playwright-core/src/generated
+/packages/playwright-ct-core/src/generated
+packages/*/lib/
+drivers/
+.android-sdk/
+.gradle/
+nohup.out
+.trace
+.tmp
+.playwright-cli
+allure*
+blob-report
+playwright-report
+test-results
+/demo/
+/packages/*/LICENSE
+/packages/*/NOTICE
+/packages/playwright/README.md
+/packages/playwright-test/README.md
+/packages/playwright-core/api.json
+.env
+/tests/installation/output/
+/tests/installation/.registry.json
+.cache/
+.eslintcache
+playwright.env
+/firefox/

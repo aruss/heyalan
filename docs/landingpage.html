@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sales Agent for Squarespace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .smooth-scroll { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-white text-zinc-900 antialiased smooth-scroll selection:bg-zinc-900 selection:text-white">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full top-0 z-50 bg-white/80 backdrop-blur-md border-b border-zinc-100">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="font-bold text-xl tracking-tight">Square<span class="text-zinc-500">Buddy</span></div>
+            <div class="hidden md:flex space-x-8 text-sm font-medium">
+                <a href="#features" class="hover:text-zinc-500 transition-colors">Features</a>
+                <a href="#dashboard" class="hover:text-zinc-500 transition-colors">Merchant Dashboard</a>
+                <a href="#pricing" class="hover:text-zinc-500 transition-colors">Pricing</a>
+                <a href="#compliance" class="hover:text-zinc-500 transition-colors">Trust</a>
+            </div>
+            <div class="flex space-x-4 items-center">
+                <a href="#" class="hidden md:block text-sm font-medium hover:text-zinc-500 transition-colors">Log In</a>
+                <a href="#" class="bg-zinc-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors">Start Free Trial</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen flex items-center pt-20 pb-12 px-6">
+        <div class="max-w-5xl mx-auto text-center">
+            <h1 class="text-5xl md:text-7xl font-bold tracking-tighter leading-tight mb-8">
+                Conversational Sales for <br class="hidden md:block" />
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500">Squarespace.</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-zinc-600 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
+                An autonomous AI agent that knows your inventory. Engage customers via Text, WhatsApp, and Telegram. Drive upsells, process payments, and schedule shipping—all through natural language.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <a href="#" class="w-full sm:w-auto bg-zinc-900 text-white px-8 py-4 rounded-full text-lg font-medium hover:bg-zinc-800 transition-all transform hover:scale-105">Connect Squarespace</a>
+                <a href="#demo" class="w-full sm:w-auto text-zinc-900 border border-zinc-200 px-8 py-4 rounded-full text-lg font-medium hover:bg-zinc-50 transition-colors">View Live Demo</a>
+            </div>
+            
+            <div class="mt-24 pt-10 border-t border-zinc-100 flex flex-col items-center">
+                <p class="text-sm text-zinc-400 font-medium uppercase tracking-widest mb-6">Supported Channels</p>
+                <div class="flex space-x-8 opacity-70 grayscale">
+                    <!-- WhatsApp Icon -->
+                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    <!-- Telegram Icon -->
+                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.94z"/></svg>
+                    <!-- SMS Icon -->
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Customer Experience Features -->
+    <section id="features" class="py-24 bg-zinc-50 border-y border-zinc-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-16 md:w-2/3">
+                <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-6">Seamless shopping,<br/>powered by natural language.</h2>
+                <p class="text-xl text-zinc-600 font-light">The agent integrates directly with your Squarespace product catalog to deliver a complete conversational commerce experience.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-zinc-100 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mb-6 text-zinc-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-3">Product Expertise</h3>
+                    <p class="text-zinc-600 text-sm leading-relaxed">Answers complex queries regarding materials, sizing, and availability based on your live inventory.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-zinc-100 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mb-6 text-zinc-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-3">Dynamic Upselling</h3>
+                    <p class="text-zinc-600 text-sm leading-relaxed">Intelligently recommends complementary products and alternatives, increasing average order value organically.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-zinc-100 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mb-6 text-zinc-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-3">In-Chat Checkout</h3>
+                    <p class="text-zinc-600 text-sm leading-relaxed">Handles payment processing securely within the chat thread. Automated status updates for billing.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-zinc-100 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mb-6 text-zinc-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-3">Logistics & Shipping</h3>
+                    <p class="text-zinc-600 text-sm leading-relaxed">Arranges shipping appointments, modifies delivery details, and pushes real-time tracking notifications.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Merchant Dashboard Section -->
+    <section id="dashboard" class="py-24 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col lg:flex-row items-center gap-16">
+                
+                <!-- Text Content -->
+                <div class="w-full lg:w-1/2">
+                    <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-6">Total merchant control.</h2>
+                    <p class="text-xl text-zinc-600 font-light mb-10">A centralized command center designed for oversight, intervention, and analytics.</p>
+                    
+                    <ul class="space-y-8">
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 mt-1">
+                                <svg class="w-5 h-5 text-zinc-900" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-semibold">Human Takeover Protocol</h4>
+                                <p class="text-zinc-600 text-sm mt-1">Monitor live conversations. Instantly pause the AI agent to engage the customer manually, and hand back control when finished.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 mt-1">
+                                <svg class="w-5 h-5 text-zinc-900" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-semibold">Conversation-to-Order Attribution</h4>
+                                <p class="text-zinc-600 text-sm mt-1">View list of all chats directly linked to resulting orders. See live order state and historical chat logs side-by-side.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 mt-1">
+                                <svg class="w-5 h-5 text-zinc-900" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-semibold">Behavioral Tuning</h4>
+                                <p class="text-zinc-600 text-sm mt-1">Adjust agent parameters. Modify tone, set aggressive or conservative upsell triggers, and define fallback rules.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Abstract UI Mockup -->
+                <div class="w-full lg:w-1/2">
+                    <div class="bg-zinc-50 border border-zinc-200 rounded-2xl shadow-2xl p-4 md:p-6 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                        <!-- Mock Header -->
+                        <div class="flex items-center justify-between border-b border-zinc-200 pb-4 mb-4">
+                            <div class="flex space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                            </div>
+                            <div class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Active Sessions</div>
+                        </div>
+                        <!-- Mock Content -->
+                        <div class="flex h-96 gap-4">
+                            <!-- Sidebar -->
+                            <div class="w-1/3 flex flex-col gap-2 border-r border-zinc-200 pr-4">
+                                <div class="p-3 bg-white rounded border border-zinc-200 shadow-sm border-l-4 border-l-green-500">
+                                    <div class="text-xs font-bold">User #8492</div>
+                                    <div class="text-[10px] text-zinc-500 truncate">WhatsApp • Browsing</div>
+                                </div>
+                                <div class="p-3 bg-zinc-100 rounded border border-transparent opacity-60">
+                                    <div class="text-xs font-bold">User #1023</div>
+                                    <div class="text-[10px] text-zinc-500 truncate">SMS • Checkout Pending</div>
+                                </div>
+                                <div class="p-3 bg-zinc-100 rounded border border-transparent opacity-60">
+                                    <div class="text-xs font-bold">User #5521</div>
+                                    <div class="text-[10px] text-zinc-500 truncate">Telegram • Support</div>
+                                </div>
+                            </div>
+                            <!-- Chat Area -->
+                            <div class="w-2/3 flex flex-col relative">
+                                <div class="absolute top-0 right-0 bg-red-50 text-red-600 text-xs px-2 py-1 rounded border border-red-100 font-medium cursor-pointer">Takeover Chat</div>
+                                <div class="flex-1 mt-8 space-y-3">
+                                    <div class="w-3/4 bg-zinc-100 h-8 rounded-lg rounded-tl-none"></div>
+                                    <div class="w-1/2 bg-zinc-900 h-8 rounded-lg rounded-tr-none ml-auto"></div>
+                                    <div class="w-5/6 bg-zinc-100 h-12 rounded-lg rounded-tl-none"></div>
+                                    
+                                    <!-- Order Card Mock -->
+                                    <div class="mt-4 p-3 border border-zinc-200 rounded text-xs bg-white">
+                                        <div class="font-bold border-b border-zinc-100 pb-1 mb-2">Order #SQ-902</div>
+                                        <div class="flex justify-between text-zinc-500"><span>Ceramic Vase (x1)</span><span>$45.00</span></div>
+                                        <div class="flex justify-between text-zinc-500"><span>Express Ship</span><span>$10.00</span></div>
+                                        <div class="flex justify-between font-bold mt-2 pt-2 border-t border-zinc-100"><span>Total</span><span>$55.00</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-24 bg-white border-t border-zinc-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-4">Scalable parameters.</h2>
+                <p class="text-xl text-zinc-600 font-light">Bandwidth aligned with revenue growth.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Tier 1 -->
+                <div class="p-8 rounded-3xl border border-zinc-200 bg-white flex flex-col">
+                    <h3 class="text-xl font-bold mb-2">Starter</h3>
+                    <div class="text-4xl font-bold mb-6">$49<span class="text-lg text-zinc-500 font-normal">/mo</span></div>
+                    <ul class="space-y-4 mb-8 text-sm text-zinc-600 flex-1">
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-zinc-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> 500 Active Sessions</li>
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-zinc-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Web Chat & SMS Vectors</li>
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-zinc-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Standard Reporting</li>
+                    </ul>
+                    <a href="#" class="block w-full text-center py-3 px-4 bg-zinc-100 text-zinc-900 font-semibold rounded-xl hover:bg-zinc-200 transition-colors mt-auto">Deploy Free</a>
+                </div>
+
+                <!-- Tier 2 -->
+                <div class="p-8 rounded-3xl border-2 border-zinc-900 bg-zinc-900 text-white transform md:-translate-y-4 shadow-xl flex flex-col">
+                    <div class="text-xs font-bold tracking-widest uppercase text-zinc-400 mb-2">Optimal</div>
+                    <h3 class="text-xl font-bold mb-2">Growth</h3>
+                    <div class="text-4xl font-bold mb-6">$149<span class="text-lg text-zinc-400 font-normal">/mo</span></div>
+                    <ul class="space-y-4 mb-8 text-sm text-zinc-300 flex-1">
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> 2,000 Active Sessions</li>
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> All Protocol Channels (WA, TG)</li>
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Human Takeover Enabled</li>
+                    </ul>
+                    <a href="#" class="block w-full text-center py-3 px-4 bg-white text-zinc-900 font-semibold rounded-xl hover:bg-zinc-100 transition-colors mt-auto">Initialize Trial</a>
+                </div>
+
+                <!-- Tier 3 -->
+                <div class="p-8 rounded-3xl border border-zinc-200 bg-white flex flex-col">
+                    <h3 class="text-xl font-bold mb-2">Scale</h3>
+                    <div class="text-4xl font-bold mb-6">Custom</div>
+                    <ul class="space-y-4 mb-8 text-sm text-zinc-600 flex-1">
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-zinc-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Uncapped Sessions</li>
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-zinc-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Custom LLM Parameter Tuning</li>
+                        <li class="flex items-center"><svg class="w-4 h-4 mr-3 text-zinc-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Priority Architecture Review</li>
+                    </ul>
+                    <a href="#" class="block w-full text-center py-3 px-4 bg-zinc-100 text-zinc-900 font-semibold rounded-xl hover:bg-zinc-200 transition-colors mt-auto">Contact Integrations</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Compliance / Anti-Spam Section -->
+    <section id="compliance" class="py-24 bg-zinc-900 text-white text-center">
+        <div class="max-w-3xl mx-auto px-6">
+            <svg class="w-12 h-12 mx-auto mb-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">Zero Spam Policy.</h2>
+            <p class="text-zinc-400 text-lg mb-8 leading-relaxed">
+                Customer trust is paramount. Strict opt-in requirements ensure interactions only occur when requested. One-tap opt-out logic is hardcoded into every communication channel.
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white py-16 border-t border-zinc-800">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+            
+            <div class="md:col-span-2">
+                <div class="font-bold text-xl tracking-tight mb-4">Square<span class="text-zinc-500">Buddy</span></div>
+                <p class="text-zinc-500 text-sm mb-6 max-w-sm">
+                    Empowering Squarespace merchants with autonomous conversational sales.
+                </p>
+                <form class="flex flex-col sm:flex-row gap-2 max-w-md">
+                    <input type="email" placeholder="Subscribe to newsletter" required class="bg-zinc-900 border border-zinc-800 text-white px-4 py-2.5 rounded text-sm focus:outline-none focus:border-zinc-500 flex-1">
+                    <button type="submit" class="bg-white text-black px-6 py-2.5 rounded text-sm font-semibold hover:bg-zinc-200 transition-colors">Subscribe</button>
+                </form>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-sm uppercase tracking-wider mb-4 text-zinc-400">Platform</h4>
+                <ul class="space-y-3 text-sm text-zinc-500">
+                    <li><a href="#" class="hover:text-white transition-colors">Features</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">Integrations</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">Pricing</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">API Documentation</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-sm uppercase tracking-wider mb-4 text-zinc-400">Legal</h4>
+                <ul class="space-y-3 text-sm text-zinc-500">
+                    <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">Cookie Policy</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">Imprint</a></li>
+                </ul>
+            </div>
+            
+        </div>
+        <div class="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center">
+            <p class="text-zinc-600 text-xs">© 2026 AgentCommerce. All rights reserved.</p>
+            <p class="text-zinc-600 text-xs mt-2 md:mt-0">Not affiliated with Squarespace, Inc.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

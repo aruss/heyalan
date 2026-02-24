@@ -1,0 +1,44 @@
+# General
+.DS_Store
+*.local
+
+# env files (can opt-in for committing if needed)
+.env*
+.env
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.docker/
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Node.js
+node_modules/
+dist/
+build/
+.npm
+.pnp/
+.pnp.js
+
+# Next.js
+.next/
+out/
+.swc/
+
+# .NET / Visual Studio
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.sln.docstates
+TestResults/
+*.DotSettings.user
+junk
+.dotnet
+.dotnet-cli
+hosttrace.txt
+.dotnet

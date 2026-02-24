@@ -1,0 +1,19 @@
+model_list:
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: tts-1
+    litellm_params:
+      model: openai/tts-1
+      api_key: os.environ/OPENAI_API_KEY
+
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  store_model_in_db: true
+  store_prompts_in_spend_logs: true
+  success_callback: ["otel"]
+  failure_callback: ["otel"]

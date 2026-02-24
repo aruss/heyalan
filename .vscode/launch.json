@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+     {
+      "name": "Chrome: Client Side",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5010", // MUST match the port Aspire assigns to the WebApp
+      "webRoot": "${workspaceFolder}/StoryBoard.WebApp",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack://_N_E/*": "${webRoot}/*",
+        "webpack://*": "${webRoot}/*"
+      },
+      "runtimeArgs": [
+        "--remote-debugging-port=9222"
+      ]
+    },
+    {
+      "name": "Attach to Next.js Server (Aspire)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/StoryBoard.WebApp",
+      "remoteRoot": "${workspaceFolder}/StoryBoard.WebApp",
+      "skipFiles": ["<node_internals>/**"]
+    },   
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug (Aspire)",
+      "configurations": ["Attach to Next.js Server (Aspire)", "Chrome: Client Side"]
+    }
+  ]
+}
