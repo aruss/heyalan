@@ -6,9 +6,8 @@ export const LandingHero = (): ReactElement => {
         <section className="flex min-h-screen items-center px-6 pb-12 pt-20">
             <div className="mx-auto max-w-5xl text-center">
                 <h1 className="mb-8 text-5xl leading-tight font-bold tracking-tighter md:text-7xl">
-                    Conversational Sales for <br className="hidden md:block" />
-                    <span className="bg-gradient-to-r from-zinc-900 to-zinc-500 bg-clip-text text-transparent">
-                        Squarespace.
+                    Conversational Sales <br className="hidden md:block" /> for your <span className="bg-gradient-to-r from-zinc-900 to-zinc-500 bg-clip-text text-transparent">
+                        Square.
                     </span>
                 </h1>
                 <p className="mx-auto mb-12 max-w-3xl text-xl leading-relaxed font-light text-zinc-600 md:text-2xl">
@@ -20,7 +19,7 @@ export const LandingHero = (): ReactElement => {
                         href="#"
                         className="w-full rounded-full bg-zinc-900 px-8 py-4 text-lg font-medium text-white transition-all hover:scale-105 hover:bg-zinc-800 sm:w-auto"
                     >
-                        Connect Squarespace
+                        Connect Square
                     </Link>
                     <Link
                         href="#demo"

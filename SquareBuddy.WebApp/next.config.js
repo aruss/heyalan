@@ -25,6 +25,15 @@ const nextConfig = (phase) => {
             }
             return config;
         },
+        redirects: async () => {
+            return [
+                {
+                    source: "/admin",
+                    destination: "/admin/overview",
+                    permanent: true,
+                },
+            ]
+        },
     };
 };
 

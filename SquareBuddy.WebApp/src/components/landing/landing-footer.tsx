@@ -10,7 +10,7 @@ export const LandingFooter = (): ReactElement => {
                         Square<span className="text-zinc-500">Buddy</span>
                     </div>
                     <p className="mb-6 max-w-sm text-sm text-zinc-500">
-                        Empowering Squarespace merchants with autonomous conversational sales.
+                        Empowering Square merchants with autonomous conversational sales.
                     </p>
                     <form className="flex max-w-md flex-col gap-2 sm:flex-row">
                         <input
@@ -82,7 +82,7 @@ export const LandingFooter = (): ReactElement => {
             </div>
             <div className="mx-auto mt-16 flex max-w-7xl flex-col items-center justify-between border-t border-zinc-900 px-6 pt-8 md:flex-row">
                 <p className="text-xs text-zinc-600">(c) 2026 SquareBuddy. All rights reserved.</p>
-                <p className="mt-2 text-xs text-zinc-600 md:mt-0">Not affiliated with Squarespace, Inc.</p>
+                <p className="mt-2 text-xs text-zinc-600 md:mt-0">Not affiliated with Block, Inc.</p>
             </div>
         </footer>
     );

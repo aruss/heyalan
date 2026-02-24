@@ -1,10 +1,10 @@
 # SquareBuddy
 
-Autonomous conversational commerce middleware integrated with Squarespace.
+Autonomous conversational commerce middleware integrated with Square.
 
 **Core Architecture & I/O**
 - Supported Protocols: SMS, WhatsApp, Telegram.
-- Data Synchronization: Real-time ingestion of Squarespace inventory and product catalog metadata.
+- Data Synchronization: Real-time ingestion of Square inventory and product catalog metadata.
 - Compliance: Hardcoded opt-in/opt-out state handling (Zero-Spam Policy).
 
 **Customer-Facing Execution**

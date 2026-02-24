@@ -11,7 +11,7 @@ export const LandingFeatures = (): ReactElement => {
                         powered by natural language.
                     </h2>
                     <p className="text-xl font-light text-zinc-600">
-                        The agent integrates directly with your Squarespace product catalog to deliver a complete
+                        The agent integrates directly with your Square product catalog to deliver a complete
                         conversational commerce experience.
                     </p>
                 </div>

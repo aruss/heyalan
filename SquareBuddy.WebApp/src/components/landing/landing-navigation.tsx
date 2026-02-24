@@ -23,11 +23,11 @@ export const LandingNavigation = (): ReactElement => {
                     </Link>
                 </div>
                 <div className="flex items-center space-x-4">
-                    <Link href="#" className="hidden text-sm font-medium transition-colors hover:text-zinc-500 md:block">
+                    <Link href="/admin" className="hidden text-sm font-medium transition-colors hover:text-zinc-500 md:block">
                         Log In
                     </Link>
                     <Link
-                        href="#"
+                        href="/admin"
                         className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
                     >
                         Start Free Trial

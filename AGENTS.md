@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## SquareBuddy Overview
-SquareBuddy is a service for a smart toy. It enables kids around the age of 3 to create their own stories by placing figurines on the board and creating a unique story.
+An autonomous AI agent that knows your inventory. Engage customers via Text, WhatsApp, and Telegram. Drive upsells, process payments, and schedule shipping - all through natural language.
 
 ## RFC 2119 Language
 All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, SHOULD NOT, MAY) and must be interpreted accordingly.

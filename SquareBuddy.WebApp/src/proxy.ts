@@ -26,6 +26,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         return NextResponse.rewrite(new URL(targetUrl));
     }
 
+    /*
     if (pathname.startsWith('/admin')) {
         const authCookie = request.cookies.get(AUTH_COOKIE_NAME);
 
@@ -54,7 +55,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
             return createLoginRedirect(request);
         }
     }
-
+    */
+   
     return NextResponse.next();
 }
 
