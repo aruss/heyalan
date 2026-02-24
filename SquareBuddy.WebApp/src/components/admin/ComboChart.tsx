@@ -949,15 +949,21 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
                       payload: item.payload,
                     }))
                   : []
+                const normalizedLabel =
+                  label === undefined ? "" : String(label)
 
                 if (
                   tooltipCallback &&
                   (active !== prevActiveRef.current ||
-                    label !== prevLabelRef.current)
+                    normalizedLabel !== prevLabelRef.current)
                 ) {
-                  tooltipCallback({ active, payload: cleanPayload, label })
+                  tooltipCallback({
+                    active,
+                    payload: cleanPayload,
+                    label: normalizedLabel,
+                  })
                   prevActiveRef.current = active
-                  prevLabelRef.current = label
+                  prevLabelRef.current = normalizedLabel
                 }
 
                 return showTooltip && active ? (
@@ -965,13 +971,13 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
                     <CustomTooltip
                       active={active}
                       payload={cleanPayload}
-                      label={label}
+                      label={normalizedLabel}
                     />
                   ) : (
                     <ChartTooltip
                       active={active}
                       payload={cleanPayload}
-                      label={label}
+                      label={normalizedLabel}
                       barValueFormatter={mergedBarSeries.valueFormatter}
                       lineValueFormatter={mergedLineSeries.valueFormatter}
                     />
@@ -1175,3 +1181,4 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
 ComboChart.displayName = "ComboChart"
 
 export { ComboChart, type ComboChartEventProps, type TooltipProps }
+

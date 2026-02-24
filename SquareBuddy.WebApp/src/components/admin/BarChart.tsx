@@ -800,15 +800,21 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
                       payload: item.payload,
                     }))
                   : []
+                const normalizedLabel =
+                  label === undefined ? "" : String(label)
 
                 if (
                   tooltipCallback &&
                   (active !== prevActiveRef.current ||
-                    label !== prevLabelRef.current)
+                    normalizedLabel !== prevLabelRef.current)
                 ) {
-                  tooltipCallback({ active, payload: cleanPayload, label })
+                  tooltipCallback({
+                    active,
+                    payload: cleanPayload,
+                    label: normalizedLabel,
+                  })
                   prevActiveRef.current = active
-                  prevLabelRef.current = label
+                  prevLabelRef.current = normalizedLabel
                 }
 
                 return showTooltip && active ? (
@@ -816,13 +822,13 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
                     <CustomTooltip
                       active={active}
                       payload={cleanPayload}
-                      label={label}
+                      label={normalizedLabel}
                     />
                   ) : (
                     <ChartTooltip
                       active={active}
                       payload={cleanPayload}
-                      label={label}
+                      label={normalizedLabel}
                       valueFormatter={valueFormatter}
                     />
                   )
