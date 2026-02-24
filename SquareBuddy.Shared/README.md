@@ -1,6 +1,6 @@
-# StoryBoard.Shared
+# SquareBuddy.Shared
 
-Shared library for StoryBoard services. Provides common models, configuration helpers, constants, and service defaults.
+Shared library for SquareBuddy services. Provides common models, configuration helpers, constants, and service defaults.
 
 **Tech Stack**
 - .NET 10 class library

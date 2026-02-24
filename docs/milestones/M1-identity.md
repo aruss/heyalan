@@ -1,11 +1,11 @@
 # Milestone M1: Identity Integration & Secure Auth
 
 ## Goal
-Integrate ASP.NET Core Identity into the existing `StoryBoard` solution so parents/admins can sign in via `StoryBoard.WebApp` (Next.js App Router) while `StoryBoard.WebApi` owns user state. Use cookie-based sessions through the existing `/api` proxy and support local email/password plus Google OAuth.
+Integrate ASP.NET Core Identity into the existing `SquareBuddy` solution so parents/admins can sign in via `SquareBuddy.WebApp` (Next.js App Router) while `SquareBuddy.WebApi` owns user state. Use cookie-based sessions through the existing `/api` proxy and support local email/password plus Google OAuth.
 
 ## Scope
-- **Backend (`StoryBoard.WebApi`):** Integrate Identity with `MainDataContext` (PostgreSQL via Npgsql) and expose minimal API auth endpoints at `/auth`.
-- **Frontend (`StoryBoard.WebApp`):** Implement login/registration UI and route protection using the existing `/api` rewrite to the WebApi.
+- **Backend (`SquareBuddy.WebApi`):** Integrate Identity with `MainDataContext` (PostgreSQL via Npgsql) and expose minimal API auth endpoints at `/auth`.
+- **Frontend (`SquareBuddy.WebApp`):** Implement login/registration UI and route protection using the existing `/api` rewrite to the WebApi.
 - **Protocol:** HttpOnly cookie session management shared through the proxy with `SameSite=Lax`.
 - **Features:** Local login, registration, logout.
 
@@ -17,25 +17,25 @@ Integrate ASP.NET Core Identity into the existing `StoryBoard` solution so paren
 - Google OAuth (later milestone).
 
 ## Gate A: Identity Foundation (Backend)
-- [x] Create `ApplicationUser` (inherits from `IdentityUser`) in `StoryBoard.Data`.
+- [x] Create `ApplicationUser` (inherits from `IdentityUser`) in `SquareBuddy.Data`.
 - [x] Update `MainDataContext` to inherit from `IdentityDbContext<ApplicationUser>` and preserve existing entity mappings.
-- [x] Add EF Core migration from `StoryBoard.Initializer` for the Identity schema (PostgreSQL).
-- [x] Configure Identity services in `StoryBoard.WebApi/Program.cs` and map Identity API endpoints via `app.MapGroup("/auth").MapIdentityApi<ApplicationUser>()`.
-- [x] Seed an admin user via `StoryBoard.Initializer` after migrations; only create when the user does not exist (use `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
-- [x] Pass `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `StoryBoard.AppHost` to the initializer; fail fast if missing.
+- [x] Add EF Core migration from `SquareBuddy.Initializer` for the Identity schema (PostgreSQL).
+- [x] Configure Identity services in `SquareBuddy.WebApi/Program.cs` and map Identity API endpoints via `app.MapGroup("/auth").MapIdentityApi<ApplicationUser>()`.
+- [x] Seed an admin user via `SquareBuddy.Initializer` after migrations; only create when the user does not exist (use `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
+- [x] Pass `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `SquareBuddy.AppHost` to the initializer; fail fast if missing.
 - [x] Configure Cookie Policy for interoperability:
     - `SameSite=Lax` (Essential for OAuth redirects to work)
     - `SecurePolicy=Always`
 
 ## Gate B: Local Login (Email/Password)
 - [x] **Frontend:** Create Login Page (`/login`) with Email/Password form.
-- [x] **Frontend:** Use `/api/auth/*` calls (rewritten by `StoryBoard.WebApp/src/proxy.ts`) for login/register/logout.
+- [x] **Frontend:** Use `/api/auth/*` calls (rewritten by `SquareBuddy.WebApp/src/proxy.ts`) for login/register/logout.
 - [x] **Backend:** Use the built-in Identity API endpoints (ex: `/auth/manage/info`) for session hydration; no custom `/auth/me`.
 - [x] **Frontend:** Add `proxy.ts` guard to protect `/admin` routes (redirect to `/login` if auth cookie is missing).
 - [x] **Frontend:** Verify logout clears cookie via `/api/auth/logout`.
 
 ## Gate C: Implement IEmailSender 
-- [x] Add IEmailSender to the StoryBoard.WebApi project, for development cases just send the email to log info stream. 
+- [x] Add IEmailSender to the SquareBuddy.WebApi project, for development cases just send the email to log info stream. 
 
 ## Risks & Notes
 - **Cookie Domains:** The `/api` proxy keeps cookies same-origin in dev. In production with separate domains, set the cookie `Domain` accordingly.

@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-const LANDING_TITLE = /StoryBoard Builder/i;
+const LANDING_TITLE = /SquareBuddy Builder/i;
 const HERO_HEADING = /Build Worlds\./i;
 const HARDWARE_HEADING = "Choose Your Kit";
-const HERO_IMAGE_ALT_TEXT = "StoryBoard board preview";
+const HERO_IMAGE_ALT_TEXT = "SquareBuddy board preview";
 const SHOP_HARDWARE_LINK_NAME = "Shop Hardware";
 const SHOP_HARDWARE_LINK_HREF = "#hardware";
 const MOBILE_VIEWPORT = { width: 390, height: 844 };

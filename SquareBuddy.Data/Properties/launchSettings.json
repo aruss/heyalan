@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "StoryBoard.Data": {
+    "SquareBuddy.Data": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

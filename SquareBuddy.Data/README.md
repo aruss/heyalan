@@ -1,6 +1,6 @@
-# StoryBoard.Data
+# SquareBuddy.Data
 
-Data access library for StoryBoard. Defines the EF Core `MainDataContext`, entity mappings, and shared persistence conventions.
+Data access library for SquareBuddy. Defines the EF Core `MainDataContext`, entity mappings, and shared persistence conventions.
 
 **Tech Stack**
 - .NET 10 class library

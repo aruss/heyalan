@@ -1,4 +1,4 @@
-# StoryBoard.WebApp
+# SquareBuddy.WebApp
 
 Web frontend that contains a landing page and a dashboard.
 
