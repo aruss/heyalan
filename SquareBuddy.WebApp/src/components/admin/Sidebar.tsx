@@ -63,7 +63,6 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
-
     const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
@@ -200,17 +199,17 @@ const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cx(
-          "min-w-0 flex-1 transition-[margin] duration-150 ease-in-out",
-          className,
-        )}
-        {...props}
-      />
-    )
-  })
+  return (
+    <div
+      ref={ref}
+      className={cx(
+        "min-w-0 flex-1 transition-[margin] duration-150 ease-in-out",
+        className,
+      )}
+      {...props}
+    />
+  )
+})
 SidebarInset.displayName = "SidebarInset"
 
 const SidebarTrigger = React.forwardRef<
@@ -309,6 +308,8 @@ const SidebarLink = React.forwardRef<
       className={cx(
         "flex items-center justify-between rounded-md p-2 text-base transition hover:bg-gray-200/50 sm:text-sm hover:dark:bg-gray-900",
         "text-gray-900 dark:text-gray-400 hover:dark:text-gray-50",
+        "data-[active=true]:bg-gray-200/50 data-[active=true]:dark:bg-gray-900",
+        "data-[active=true]:text-gray-900 data-[active=true]:dark:text-gray-50",
         "data-[active=true]:text-gray-600 data-[active=true]:dark:text-gray-500",
         focusRing,
       )}

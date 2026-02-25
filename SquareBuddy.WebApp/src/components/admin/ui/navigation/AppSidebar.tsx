@@ -18,6 +18,7 @@ import {
 import { cx, focusRing } from "@/lib/utils"
 import { RiArrowDownSFill } from "@remixicon/react"
 import { BookText, House, PackageSearch, Settings } from "lucide-react"
+import { usePathname } from "next/navigation"
 import * as React from "react"
 import { Logo } from "../../../../../public/Logo"
 import { UserProfile } from "./UserProfile"
@@ -29,20 +30,17 @@ const navigation = [
     href: "/admin/home",
     icon: House,
     notifications: false,
-    active: false,
   },
   {
     name: "Inbox",
     href: "/admin/inbox",
     icon: PackageSearch,
     notifications: 2,
-    active: false,
   },
   {
     name: "Settings",
     href: "/admin/settings",
     icon: Settings,
-    active: false,
   },
 ] as const
 
@@ -94,10 +92,26 @@ const navigation2 = [
 ] as const
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname()
   const [openMenus, setOpenMenus] = React.useState<string[]>([
     navigation2[0].name,
     navigation2[1].name,
   ])
+
+  const isActivePath = React.useCallback(
+    (href: string) => {
+      if (!pathname) {
+        return false
+      }
+
+      if (pathname === href) {
+        return true
+      }
+
+      return pathname.startsWith(`${href}/`)
+    },
+    [pathname],
+  )
 
   const toggleMenu = (name: string) => {
     setOpenMenus((prev: string[]) =>
@@ -139,7 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuItem key={item.name}>
                   <SidebarLink
                     href={item.href}
-                    isActive={item.active}
+                    isActive={isActivePath(item.href)}
                     icon={item.icon}
                     notifications={item.notifications}
                   >

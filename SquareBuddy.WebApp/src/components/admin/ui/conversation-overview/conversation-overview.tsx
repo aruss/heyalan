@@ -9,11 +9,11 @@ import {
 } from "@/components/admin/Drawer"
 import { useIsMobile } from "@/lib/useMobile"
 import { cx } from "@/lib/utils"
-import * as React from "react"
 import { ChatInfoPanel } from "./chat-info-panel"
 import { ChatPanel } from "./chat-panel"
 import { ConversationListPanel } from "./conversation-list-panel"
 import type { ChatInfo, ConversationOverviewData } from "./types"
+import { useEffect, useMemo, useState } from "react"
 
 export interface ConversationOverviewProps {
   data: ConversationOverviewData
@@ -32,13 +32,13 @@ export function ConversationOverview({ data }: ConversationOverviewProps) {
   }
 
   const isMobile = useIsMobile()
-  const [activeConversationId, setActiveConversationId] = React.useState(fallbackConversation.id)
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [agentActive, setAgentActive] = React.useState(true)
-  const [mobileView, setMobileView] = React.useState<"list" | "chat">("list")
-  const [isInfoDrawerOpen, setIsInfoDrawerOpen] = React.useState(false)
+  const [activeConversationId, setActiveConversationId] = useState(fallbackConversation.id)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [agentActive, setAgentActive] = useState(true)
+  const [mobileView, setMobileView] = useState<"list" | "chat">("list")
+  const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false)
 
-  const filteredConversations = React.useMemo(() => {
+  const filteredConversations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
     if (normalizedQuery.length === 0) {
       return data.conversations
@@ -55,7 +55,7 @@ export function ConversationOverview({ data }: ConversationOverviewProps) {
     })
   }, [data.conversations, searchQuery])
 
-  React.useEffect(() => {
+  useEffect(() => {
     const hasActiveConversation = filteredConversations.some((conversation) => {
       return conversation.id === activeConversationId
     })
@@ -64,7 +64,7 @@ export function ConversationOverview({ data }: ConversationOverviewProps) {
     }
   }, [activeConversationId, filteredConversations])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isMobile) {
       setMobileView("list")
       setIsInfoDrawerOpen(false)

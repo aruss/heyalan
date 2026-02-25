@@ -1,5 +1,5 @@
 "use client"
 
 export default function Overview() {
-  return <div>Dashboard here</div>
+  return <div>Dashboard here</div>;
 }
