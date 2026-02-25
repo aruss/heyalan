@@ -6,7 +6,12 @@ import { RiCloseLine } from "@remixicon/react"
 import { cx, focusRing } from "@/lib/utils"
 
 import { Button } from "./Button"
-import { ComponentPropsWithoutRef, ComponentRef, forwardRef } from "react"
+import {
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type ComponentRef,
+  type HTMLAttributes,
+} from "react"
 
 const Drawer = (
   props: ComponentPropsWithoutRef<typeof DrawerPrimitives.Root>,
@@ -168,7 +173,7 @@ DrawerDescription.displayName = "DrawerDescription"
 const DrawerFooter = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => {
+}: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={cx(

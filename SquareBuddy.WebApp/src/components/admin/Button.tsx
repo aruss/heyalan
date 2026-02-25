@@ -1,6 +1,6 @@
 // Tremor Button [v0.2.0]
 
-import React from "react"
+import { forwardRef, type ComponentPropsWithoutRef } from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { RiLoader2Fill } from "@remixicon/react"
 import { tv, type VariantProps } from "tailwind-variants"
@@ -93,14 +93,14 @@ const buttonVariants = tv({
 })
 
 interface ButtonProps
-  extends React.ComponentPropsWithoutRef<"button">,
+  extends ComponentPropsWithoutRef<"button">,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
   isLoading?: boolean
   loadingText?: string
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       asChild,

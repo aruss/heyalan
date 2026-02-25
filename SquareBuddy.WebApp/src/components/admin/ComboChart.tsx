@@ -2,7 +2,21 @@
 "use client"
 
 import { RiArrowLeftSLine, RiArrowRightSLine } from "@remixicon/react"
-import React from "react"
+import {
+  Fragment,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type Dispatch,
+  type ElementType,
+  type HTMLAttributes,
+  type MouseEvent,
+  type OlHTMLAttributes,
+  type SetStateAction,
+} from "react"
 import {
   Bar,
   CartesianGrid,
@@ -148,17 +162,17 @@ const LegendItem = ({
 }
 
 interface ScrollButtonProps {
-  icon: React.ElementType
+  icon: ElementType
   onClick?: () => void
   disabled?: boolean
 }
 
 const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
   const Icon = icon
-  const [isPressed, setIsPressed] = React.useState(false)
-  const intervalRef = React.useRef<NodeJS.Timeout | null>(null)
+  const [isPressed, setIsPressed] = useState(false)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isPressed) {
       intervalRef.current = setInterval(() => {
         onClick?.()
@@ -169,7 +183,7 @@ const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
     return () => clearInterval(intervalRef.current as NodeJS.Timeout)
   }, [isPressed, onClick])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (disabled) {
       clearInterval(intervalRef.current as NodeJS.Timeout)
       setIsPressed(false)
@@ -205,7 +219,7 @@ const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
   )
 }
 
-interface LegendProps extends React.OlHTMLAttributes<HTMLOListElement> {
+interface LegendProps extends OlHTMLAttributes<HTMLOListElement> {
   categories: { name: string; chartType: "bar" | "line" }[]
   barCategoryColors: Map<string, AvailableChartColorsKeys>
   lineCategoryColors: Map<string, AvailableChartColorsKeys>
@@ -222,7 +236,7 @@ type HasScrollProps = {
   right: boolean
 }
 
-const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
+const Legend = forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
   const {
     categories,
     barCategoryColors,
@@ -233,12 +247,12 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
     className,
     ...other
   } = props
-  const scrollableRef = React.useRef<HTMLInputElement>(null)
-  const [hasScroll, setHasScroll] = React.useState<HasScrollProps | null>(null)
-  const [isKeyDowned, setIsKeyDowned] = React.useState<string | null>(null)
-  const intervalRef = React.useRef<NodeJS.Timeout | null>(null)
+  const scrollableRef = useRef<HTMLInputElement>(null)
+  const [hasScroll, setHasScroll] = useState<HasScrollProps | null>(null)
+  const [isKeyDowned, setIsKeyDowned] = useState<string | null>(null)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  const checkScroll = React.useCallback(() => {
+  const checkScroll = useCallback(() => {
     const scrollable = scrollableRef?.current
     if (!scrollable) return
 
@@ -249,7 +263,7 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
     setHasScroll({ left: hasLeftScroll, right: hasRightScroll })
   }, [setHasScroll])
 
-  const scrollToTest = React.useCallback(
+  const scrollToTest = useCallback(
     (direction: "left" | "right") => {
       const element = scrollableRef?.current
       const width = element?.clientWidth ?? 0
@@ -270,7 +284,7 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
     [enableLegendSlider, checkScroll],
   )
 
-  React.useEffect(() => {
+  useEffect(() => {
     const keyDownHandler = (key: string) => {
       if (key === "ArrowLeft") {
         scrollToTest("left")
@@ -301,7 +315,7 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
     setIsKeyDowned(null)
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     const scrollable = scrollableRef?.current
     if (enableLegendSlider) {
       checkScroll()
@@ -386,7 +400,7 @@ const ChartLegend = (
   { payload }: any,
   barCategoryColors: Map<string, AvailableChartColorsKeys>,
   lineCategoryColors: Map<string, AvailableChartColorsKeys>,
-  setLegendHeight: React.Dispatch<React.SetStateAction<number>>,
+  setLegendHeight: Dispatch<SetStateAction<number>>,
   activeLegend: string | undefined,
   onClick?: (category: string, color: AvailableChartColorsKeys) => void,
   enableLegendSlider?: boolean,
@@ -394,7 +408,7 @@ const ChartLegend = (
   barYAxisWidth?: number,
   lineYAxisWidth?: number,
 ) => {
-  const legendRef = React.useRef<HTMLDivElement>(null)
+  const legendRef = useRef<HTMLDivElement>(null)
 
   useOnWindowResize(() => {
     const calculateHeight = (height: number | undefined) =>
@@ -579,7 +593,7 @@ type ChartSeries = {
   maxValue?: number
 }
 
-interface ComboChartProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ComboChartProps extends HTMLAttributes<HTMLDivElement> {
   data: Record<string, any>[]
   index: string
   startEndOnly?: boolean
@@ -595,7 +609,7 @@ interface ComboChartProps extends React.HTMLAttributes<HTMLDivElement> {
   tickGap?: number
   enableBiaxial?: boolean
   tooltipCallback?: (tooltipCallbackContent: TooltipProps) => void
-  customTooltip?: React.ComponentType<TooltipProps>
+  customTooltip?: ComponentType<TooltipProps>
   barSeries: ChartSeries & {
     type?: "default" | "stacked"
   }
@@ -604,7 +618,7 @@ interface ComboChartProps extends React.HTMLAttributes<HTMLDivElement> {
   }
 }
 
-const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
+const ComboChart = forwardRef<HTMLDivElement, ComboChartProps>(
   (props, forwardedRef) => {
     const defaultSeries = {
       categories: [],
@@ -666,16 +680,16 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
         !mergedLineSeries.showYAxis)
         ? 0
         : 20
-    const [legendHeight, setLegendHeight] = React.useState(60)
-    const [activeDot, setActiveDot] = React.useState<ActiveDot | undefined>(
+    const [legendHeight, setLegendHeight] = useState(60)
+    const [activeDot, setActiveDot] = useState<ActiveDot | undefined>(
       undefined,
     )
-    const [activeLegend, setActiveLegend] = React.useState<string | undefined>(
+    const [activeLegend, setActiveLegend] = useState<string | undefined>(
       undefined,
     )
 
-    const prevActiveRef = React.useRef<boolean | undefined>(undefined)
-    const prevLabelRef = React.useRef<string | undefined>(undefined)
+    const prevActiveRef = useRef<boolean | undefined>(undefined)
+    const prevLabelRef = useRef<string | undefined>(undefined)
 
     const barCategoryColors = constructCategoryColors(
       mergedBarSeries.categories,
@@ -685,7 +699,7 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
       mergedLineSeries.categories,
       mergedLineSeries.colors ?? AvailableChartColors,
     )
-    const [activeBar, setActiveBar] = React.useState<any | undefined>(undefined)
+    const [activeBar, setActiveBar] = useState<any | undefined>(undefined)
     const barYAxisDomain = getYAxisDomain(
       mergedBarSeries.autoMinValue ?? false,
       mergedBarSeries.minValue,
@@ -699,7 +713,7 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
     const hasOnValueChange = !!onValueChange
     const stacked = barSeries.type === "stacked"
 
-    function onBarClick(data: any, _: any, event: React.MouseEvent) {
+    function onBarClick(data: any, _: any, event: MouseEvent) {
       event.stopPropagation()
       if (!onValueChange) return
       if (deepEqual(activeBar, { ...data.payload, value: data.value })) {
@@ -720,7 +734,7 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
       }
     }
 
-    function onDotClick(itemData: any, event: React.MouseEvent) {
+    function onDotClick(itemData: any, event: MouseEvent) {
       event.stopPropagation()
 
       if (!hasOnValueChange) return
@@ -1152,7 +1166,7 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
                       />
                     )
                   }
-                  return <React.Fragment key={index}></React.Fragment>
+                  return <Fragment key={index}></Fragment>
                 }}
                 key={`${category}-line-id`}
                 name={category}

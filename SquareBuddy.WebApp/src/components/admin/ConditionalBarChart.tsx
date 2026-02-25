@@ -2,7 +2,17 @@
 
 "use client"
 
-import React from "react"
+import {
+  forwardRef,
+  useRef,
+  useState,
+  type ComponentType,
+  type Dispatch,
+  type HTMLAttributes,
+  type MouseEvent,
+  type OlHTMLAttributes,
+  type SetStateAction,
+} from "react"
 import {
   Bar,
   CartesianGrid,
@@ -128,14 +138,14 @@ const LegendItem = ({ name, color, onClick }: LegendItemProps) => {
   )
 }
 
-interface LegendProps extends React.OlHTMLAttributes<HTMLOListElement> {
+interface LegendProps extends OlHTMLAttributes<HTMLOListElement> {
   categories: string[]
   colors?: AvailableChartColorsKeys[]
   onClickLegendItem?: (category: string, color: string) => void
   activeLegend?: string
 }
 
-const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
+const Legend = forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
   const {
     categories,
     colors = AvailableChartColors,
@@ -169,13 +179,13 @@ Legend.displayName = "Legend"
 const ChartLegend = (
   { payload }: any,
   categoryColors: Map<string, AvailableChartColorsKeys>,
-  setLegendHeight: React.Dispatch<React.SetStateAction<number>>,
+  setLegendHeight: Dispatch<SetStateAction<number>>,
   activeLegend: string | undefined,
   onClick?: (category: string, color: string) => void,
   legendPosition?: "left" | "center" | "right",
   yAxisWidth?: number,
 ) => {
-  const legendRef = React.useRef<HTMLDivElement>(null)
+  const legendRef = useRef<HTMLDivElement>(null)
 
   useOnWindowResize(() => {
     const calculateHeight = (height: number | undefined) =>
@@ -317,7 +327,7 @@ type BaseEventProps = {
 
 type BarChartEventProps = BaseEventProps | null | undefined
 
-interface BarChartProps extends React.HTMLAttributes<HTMLDivElement> {
+interface BarChartProps extends HTMLAttributes<HTMLDivElement> {
   data: Record<string, any>[]
   index: string
   categories: string[]
@@ -345,10 +355,10 @@ interface BarChartProps extends React.HTMLAttributes<HTMLDivElement> {
   type?: "default" | "stacked" | "percent"
   legendPosition?: "left" | "center" | "right"
   tooltipCallback?: (tooltipCallbackContent: TooltipProps) => void
-  customTooltip?: React.ComponentType<TooltipProps>
+  customTooltip?: ComponentType<TooltipProps>
 }
 
-const ConditionalBarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
+const ConditionalBarChart = forwardRef<HTMLDivElement, BarChartProps>(
   (props, forwardedRef) => {
     const {
       data = [],
@@ -385,24 +395,24 @@ const ConditionalBarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
     const CustomTooltip = customTooltip
     const paddingValue =
       (!showXAxis && !showYAxis) || (startEndOnly && !showYAxis) ? 0 : 20
-    const [legendHeight, setLegendHeight] = React.useState(60)
-    const [activeLegend, setActiveLegend] = React.useState<string | undefined>(
+    const [legendHeight, setLegendHeight] = useState(60)
+    const [activeLegend, setActiveLegend] = useState<string | undefined>(
       undefined,
     )
     const categoryColors = constructCategoryColors(categories, colors)
-    const [activeBar, setActiveBar] = React.useState<any | undefined>(undefined)
+    const [activeBar, setActiveBar] = useState<any | undefined>(undefined)
     const yAxisDomain = getYAxisDomain(autoMinValue, minValue, maxValue)
     const hasOnValueChange = !!onValueChange
     const stacked = type === "stacked" || type === "percent"
 
-    const prevActiveRef = React.useRef<boolean | undefined>(undefined)
-    const prevLabelRef = React.useRef<string | undefined>(undefined)
+    const prevActiveRef = useRef<boolean | undefined>(undefined)
+    const prevLabelRef = useRef<string | undefined>(undefined)
 
     function valueToPercent(value: number) {
       return `${(value * 100).toFixed(0)}%`
     }
 
-    function onBarClick(data: any, _: any, event: React.MouseEvent) {
+    function onBarClick(data: any, _: any, event: MouseEvent) {
       event.stopPropagation()
       if (!onValueChange) return
       if (deepEqual(activeBar, { ...data.payload, value: data.value })) {

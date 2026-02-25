@@ -1,6 +1,8 @@
 // Tremor Input [v1.0.5]
 
-import React from "react"
+"use client"
+
+import { forwardRef, useState, type InputHTMLAttributes } from "react"
 import { RiEyeFill, RiEyeOffFill, RiSearchLine } from "@remixicon/react"
 import { tv, type VariantProps } from "tailwind-variants"
 
@@ -48,12 +50,12 @@ const inputStyles = tv({
 })
 
 interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
+  extends InputHTMLAttributes<HTMLInputElement>,
     VariantProps<typeof inputStyles> {
   inputClassName?: string
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
+const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
       className,
@@ -65,7 +67,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     }: InputProps,
     forwardedRef,
   ) => {
-    const [typeState, setTypeState] = React.useState(type)
+    const [typeState, setTypeState] = useState(type)
 
     const isPassword = type === "password"
     const isSearch = type === "search"

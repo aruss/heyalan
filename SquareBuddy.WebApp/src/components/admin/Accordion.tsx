@@ -1,6 +1,6 @@
 // Tremor Accordion [v0.0.1]
 
-import React from "react"
+import { forwardRef, type ComponentPropsWithoutRef, type ElementRef } from "react"
 import * as AccordionPrimitives from "@radix-ui/react-accordion"
 import { RiArrowDownSLine } from "@remixicon/react"
 
@@ -10,9 +10,9 @@ const Accordion = AccordionPrimitives.Root
 
 Accordion.displayName = "AccordionItem"
 
-const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitives.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitives.Trigger>
+const AccordionTrigger = forwardRef<
+  ElementRef<typeof AccordionPrimitives.Trigger>,
+  ComponentPropsWithoutRef<typeof AccordionPrimitives.Trigger>
 >(({ className, children, ...props }, forwardedRef) => (
   <AccordionPrimitives.Header className="flex">
     <AccordionPrimitives.Trigger
@@ -49,9 +49,9 @@ const AccordionTrigger = React.forwardRef<
 
 AccordionTrigger.displayName = "AccordionTrigger"
 
-const AccordionContent = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitives.Content>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitives.Content>
+const AccordionContent = forwardRef<
+  ElementRef<typeof AccordionPrimitives.Content>,
+  ComponentPropsWithoutRef<typeof AccordionPrimitives.Content>
 >(({ className, children, ...props }, forwardedRef) => (
   <AccordionPrimitives.Content
     ref={forwardedRef}
@@ -76,9 +76,9 @@ const AccordionContent = React.forwardRef<
 
 AccordionContent.displayName = "AccordionContent"
 
-const AccordionItem = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitives.Item>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitives.Item>
+const AccordionItem = forwardRef<
+  ElementRef<typeof AccordionPrimitives.Item>,
+  ComponentPropsWithoutRef<typeof AccordionPrimitives.Item>
 >(({ className, ...props }, forwardedRef) => (
   <AccordionPrimitives.Item
     ref={forwardedRef}

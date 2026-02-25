@@ -1,12 +1,12 @@
 // Tremor Divider [v0.0.2]
 
-import React from "react"
+import { forwardRef, type ComponentPropsWithoutRef } from "react"
 
 import { cx } from "@/lib/utils"
 
-type DividerProps = React.ComponentPropsWithoutRef<"div">
+type DividerProps = ComponentPropsWithoutRef<"div">
 
-const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
+const Divider = forwardRef<HTMLDivElement, DividerProps>(
   ({ className, children, ...props }, forwardedRef) => (
     <div
       ref={forwardedRef}

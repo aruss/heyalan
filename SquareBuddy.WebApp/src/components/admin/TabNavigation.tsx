@@ -1,16 +1,24 @@
 // Tremor TabNavigation [v0.1.0]
 
 import * as NavigationMenuPrimitives from "@radix-ui/react-navigation-menu"
-import React from "react"
+import {
+  Children,
+  cloneElement,
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type ElementRef,
+  type ReactElement,
+  type ReactNode,
+} from "react"
 
 import { cx, focusRing } from "@/lib/utils"
 
 export function getSubtree(
   options: {
     asChild?: boolean
-    children: React.ReactNode
+    children: ReactNode
   },
-  content: React.ReactNode | ((children: React.ReactNode) => React.ReactNode),
+  content: ReactNode | ((children: ReactNode) => ReactNode),
 ) {
   const { asChild, children } = options
 
@@ -18,11 +26,11 @@ export function getSubtree(
     return typeof content === "function" ? content(children) : content
   }
 
-  const firstChild = React.Children.only(children) as React.ReactElement<{
-    children?: React.ReactNode
+  const firstChild = Children.only(children) as ReactElement<{
+    children?: ReactNode
     className?: string
   }>
-  return React.cloneElement(
+  return cloneElement(
     firstChild,
     undefined,
     typeof content === "function"
@@ -30,10 +38,10 @@ export function getSubtree(
       : content,
   )
 }
-const TabNavigation = React.forwardRef<
-  React.ElementRef<typeof NavigationMenuPrimitives.Root>,
+const TabNavigation = forwardRef<
+  ElementRef<typeof NavigationMenuPrimitives.Root>,
   Omit<
-    React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitives.Root>,
+    ComponentPropsWithoutRef<typeof NavigationMenuPrimitives.Root>,
     "orientation" | "defaultValue" | "dir"
   >
 >(({ className, children, ...props }, forwardedRef) => (
@@ -59,10 +67,10 @@ const TabNavigation = React.forwardRef<
 
 TabNavigation.displayName = "TabNavigation"
 
-const TabNavigationLink = React.forwardRef<
-  React.ElementRef<typeof NavigationMenuPrimitives.Link>,
+const TabNavigationLink = forwardRef<
+  ElementRef<typeof NavigationMenuPrimitives.Link>,
   Omit<
-    React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitives.Link>,
+    ComponentPropsWithoutRef<typeof NavigationMenuPrimitives.Link>,
     "onSelect"
   > & { disabled?: boolean }
 >(({ asChild, disabled, className, children, ...props }, forwardedRef) => (

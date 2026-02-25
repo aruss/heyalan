@@ -19,18 +19,12 @@ import { cx, focusRing } from "@/lib/utils"
 import { RiArrowDownSFill } from "@remixicon/react"
 import { BookText, House, PackageSearch, Settings } from "lucide-react"
 import { usePathname } from "next/navigation"
-import * as React from "react"
+import { useCallback, useState, type ComponentProps } from "react"
 import { Logo } from "../../../../../public/Logo"
 import { UserProfile } from "./UserProfile"
 
 
 const navigation = [
-  {
-    name: "Home",
-    href: "/admin/home",
-    icon: House,
-    notifications: false,
-  },
   {
     name: "Inbox",
     href: "/admin/inbox",
@@ -91,14 +85,14 @@ const navigation2 = [
   },
 ] as const
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
-  const [openMenus, setOpenMenus] = React.useState<string[]>([
+  const [openMenus, setOpenMenus] = useState<string[]>([
     navigation2[0].name,
     navigation2[1].name,
   ])
 
-  const isActivePath = React.useCallback(
+  const isActivePath = useCallback(
     (href: string) => {
       if (!pathname) {
         return false

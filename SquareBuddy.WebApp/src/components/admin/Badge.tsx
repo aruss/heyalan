@@ -1,6 +1,6 @@
 // Tremor Badge [v0.0.1]
 
-import React from "react"
+import { forwardRef, type ComponentPropsWithoutRef } from "react"
 import { tv, type VariantProps } from "tailwind-variants"
 
 import { cx } from "@/lib/utils"
@@ -39,10 +39,10 @@ const badgeVariants = tv({
 })
 
 interface BadgeProps
-  extends React.ComponentPropsWithoutRef<"span">,
+  extends ComponentPropsWithoutRef<"span">,
     VariantProps<typeof badgeVariants> {}
 
-const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant, ...props }: BadgeProps, forwardedRef) => {
     return (
       <span
