@@ -12,7 +12,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="flex flex-col min-h-screen m-0">
+        <header className="h-20 flex items-center px-6 shrink-0">
+          <div className="text-xl font-bold tracking-tight">Square<span className="text-zinc-500">Buddy</span></div>
+        </header>
+        <main className="flex-1 flex flex-col justify-center">
+          <div className="max-w-xl mx-auto text-center p-6 w-full ">
+            {children}
+          </div>
+        </main>
+      </body>
     </html>
   )
 }
