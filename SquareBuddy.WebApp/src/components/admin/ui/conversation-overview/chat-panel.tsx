@@ -1,6 +1,12 @@
 import { Button } from "@/components/admin/Button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/admin/DropdownMenu"
 import { ConversationChannel, ConversationItem, MessageItem } from "@/data/data"
-import { Bot, ChevronLeft, Info, MessageSquare, Phone, Send } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, MessageSquare, MoreHorizontal, Phone, Send } from "lucide-react"
 import type { ElementType } from "react"
 
 
@@ -58,26 +64,36 @@ export function ChatPanel({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" className="!p-2">
+                <MoreHorizontal className="size-4" aria-hidden="true" />
+                <span className="sr-only">Open chat actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  onAgentToggle()
+                }}
+              >
+                {agentActive ? "Take Over" : "Return to AI"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {isMobile ? (
             <Button
               type="button"
-              variant="secondary"
-              className="!px-2.5 !py-1.5"
+              variant="ghost"
+              className="!p-2"
               onClick={onOpenInfo}
             >
-              <Info className="mr-1 size-4" aria-hidden="true" />
-              Info
+              <ChevronRight className="size-4" aria-hidden="true" />
+              <span className="sr-only">Open chat info</span>
             </Button>
           ) : null}
-          <Button
-            type="button"
-            variant={agentActive ? "primary" : "secondary"}
-            className="!px-2.5 !py-1.5 text-xs"
-            onClick={onAgentToggle}
-          >
-            {agentActive ? "Take Over" : "Return to AI"}
-          </Button>
         </div>
       </header>
 
