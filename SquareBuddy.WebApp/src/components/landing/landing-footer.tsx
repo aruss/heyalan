@@ -32,23 +32,18 @@ export const LandingFooter = (): ReactElement => {
                     <h4 className="mb-4 text-sm font-semibold tracking-wider text-zinc-400 uppercase">Platform</h4>
                     <ul className="space-y-3 text-sm text-zinc-500">
                         <li>
-                            <Link href="#" className="transition-colors hover:text-white">
+                            <Link href="#features" className="transition-colors hover:text-white">
                                 Features
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="transition-colors hover:text-white">
-                                Integrations
+                            <Link href="#dashboard" className="transition-colors hover:text-white">
+                                Merchant Dashboard
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="transition-colors hover:text-white">
+                            <Link href="#pricing" className="transition-colors hover:text-white">
                                 Pricing
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="#" className="transition-colors hover:text-white">
-                                API Documentation
                             </Link>
                         </li>
                     </ul>
@@ -58,22 +53,22 @@ export const LandingFooter = (): ReactElement => {
                     <h4 className="mb-4 text-sm font-semibold tracking-wider text-zinc-400 uppercase">Legal</h4>
                     <ul className="space-y-3 text-sm text-zinc-500">
                         <li>
-                            <Link href="#" className="transition-colors hover:text-white">
+                            <Link href="/terms" className="transition-colors hover:text-white">
                                 Terms of Service
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="transition-colors hover:text-white">
+                            <Link href="/privacy" className="transition-colors hover:text-white">
                                 Privacy Policy
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="transition-colors hover:text-white">
+                            <Link href="/privacy#cookies" className="transition-colors hover:text-white">
                                 Cookie Policy
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="transition-colors hover:text-white">
+                            <Link href="/imprint" className="transition-colors hover:text-white">
                                 Imprint
                             </Link>
                         </li>

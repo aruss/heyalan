@@ -18,7 +18,7 @@ import {
 } from "@/components/admin/Sidebar"
 import { cx, focusRing } from "@/lib/utils"
 import { RiArrowDownSFill } from "@remixicon/react"
-import { BookText, House, PackageSearch, Settings, type LucideIcon } from "lucide-react"
+import { PackageSearch, Settings, Bug, type LucideIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react"
 import { Logo } from "../../../../../public/Logo"
@@ -72,6 +72,28 @@ const navigation: NavigationItem[] = [
       },
     ],
   },
+  {
+    name: "Debug",
+    href: "#",
+    icon: Bug,
+    children: [
+      {
+        name: "Login",
+        href: "/login",
+        active: true,
+      },
+      {
+        name: "Onboarding",
+        href: "/onboarding",
+        active: false,
+      },
+      {
+        name: "Landing",
+        href: "/",
+        active: false,
+      }
+    ],
+  }
 ]
 
 const SIDEBAR_AUTO_COLLAPSE_BREAKPOINT = 1200
