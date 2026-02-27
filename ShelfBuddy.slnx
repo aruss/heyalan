@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Tests/">
+    <Project Path="ShelfBuddy.Tests/ShelfBuddy.Tests.csproj" />
+  </Folder>
+  <Project Path="ShelfBuddy.AppHost/ShelfBuddy.AppHost.csproj" />
+  <Project Path="ShelfBuddy.Initializer/ShelfBuddy.Initializer.csproj" Id="e3d6f173-bda4-44ce-b23a-07cd5afef5e5" />
+  <Project Path="ShelfBuddy/ShelfBuddy.csproj" />
+  <Project Path="ShelfBuddy.WebApi/ShelfBuddy.WebApi.csproj" />
+</Solution>

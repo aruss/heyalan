@@ -1,7 +1,7 @@
 # M2 - Admin Dashboard (Tremor Shell)
 
 ## Summary
-Build a basic Tremor-based admin dashboard in `SquareBuddy.WebApp` with:
+Build a basic Tremor-based admin dashboard in `ShelfBuddy.WebApp` with:
 - Top bar (notifications dropdown + user menu dropdown)
 - Sidebar with example navigation links
 - Main content area with sample dashboard cards

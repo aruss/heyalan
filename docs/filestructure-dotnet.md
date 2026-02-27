@@ -1,6 +1,6 @@
-# SquareBuddy WebApi File Structure (Feature-First)
+# ShelfBuddy WebApi File Structure (Feature-First)
 
-This document describes the current .NET `SquareBuddy.WebApi` folder structure used in SquareBuddy. The goal is to keep files close to the feature they belong to.
+This document describes the current .NET `ShelfBuddy.WebApi` folder structure used in ShelfBuddy. The goal is to keep files close to the feature they belong to.
 
 ## Principles
 
@@ -12,11 +12,11 @@ This document describes the current .NET `SquareBuddy.WebApi` folder structure u
 ## Current Structure
 
 ```text
-SquareBuddy.WebApi/
+ShelfBuddy.WebApi/
 |- AppJsonContext.cs
 |- Program.cs
 |- README.md
-|- SquareBuddy.WebApi.csproj
+|- ShelfBuddy.WebApi.csproj
 |- config.yaml
 |- test.http
 |- Dockerfile

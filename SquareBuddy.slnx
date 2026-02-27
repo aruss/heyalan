@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/Tests/">
-    <Project Path="SquareBuddy.Tests/SquareBuddy.Tests.csproj" />
-  </Folder>
-  <Project Path="SquareBuddy.AppHost/SquareBuddy.AppHost.csproj" />
-  <Project Path="SquareBuddy.Initializer/SquareBuddy.Initializer.csproj" Id="e3d6f173-bda4-44ce-b23a-07cd5afef5e5" />
-  <Project Path="SquareBuddy/SquareBuddy.csproj" />
-  <Project Path="SquareBuddy.WebApi/SquareBuddy.WebApi.csproj" />
-</Solution>

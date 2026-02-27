@@ -7,7 +7,7 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/SquareBuddy.sln",
+        "${workspaceFolder}/ShelfBuddy.sln",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary"
       ],
@@ -21,7 +21,7 @@
       "args": [
         "run",
         "--project",
-        "${workspaceFolder}/SquareBuddy.AppHost/SquareBuddy.AppHost.csproj",
+        "${workspaceFolder}/ShelfBuddy.AppHost/ShelfBuddy.AppHost.csproj",
         "--launch-profile",
         "https" // Or "http" depending on your preference
       ],

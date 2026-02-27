@@ -2,9 +2,9 @@ services:
   # ---------------------------------------------------------------------------
   # Infrastructure: Postgres
   # ---------------------------------------------------------------------------
-  squarebuddy-postgres:
+  shelfbuddy-postgres:
     image: postgres:16-alpine
-    container_name: squarebuddy-postgres
+    container_name: shelfbuddy-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -24,39 +24,39 @@ services:
   # ---------------------------------------------------------------------------
   # Infrastructure: Creates postgres databases
   # ---------------------------------------------------------------------------
-  squarebuddy-db-init:
+  shelfbuddy-db-init:
     image: postgres:16-alpine
-    container_name: squarebuddy-db-init
+    container_name: shelfbuddy-db-init
     depends_on:
-      squarebuddy-postgres:
+      shelfbuddy-postgres:
         condition: service_healthy
     environment:
-      PGHOST: squarebuddy-postgres
+      PGHOST: shelfbuddy-postgres
       PGUSER: postgres
       PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
     command: >
       sh -c "
         echo 'Checking for databases...';
-        psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'squarebuddydb'\" | grep -q 1 || createdb squarebuddydb;
+        psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'shelfbuddydb'\" | grep -q 1 || createdb shelfbuddydb;
         psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'litellmdb'\" | grep -q 1 || createdb litellmdb;
         echo 'Initialization complete.'
       "
 
-  squarebuddy-pgadmin:
+  shelfbuddy-pgadmin:
     image: dpage/pgadmin4
-    container_name: squarebuddy-pgadmin
+    container_name: shelfbuddy-pgadmin
     restart: unless-stopped
     ports:
       - "5050:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@squarebuddy.ai}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@shelfbuddy.ai}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-Passwort123!}
     depends_on:
-      - squarebuddy-postgres
+      - shelfbuddy-postgres
 
-  squarebuddy-minio:
+  shelfbuddy-minio:
     image: quay.io/minio/minio
-    container_name: squarebuddy-minio
+    container_name: shelfbuddy-minio
     command: server /data --console-address :9001
     ports:
       - "9000:9000" # API
@@ -72,67 +72,67 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      squarebuddy-postgres:
+      shelfbuddy-postgres:
         condition: service_healthy
-      squarebuddy-db-init:
+      shelfbuddy-db-init:
         condition: service_completed_successfully
 
   # ---------------------------------------------------------------------------
   # Application: Initializer (Migrations & Bucket Setup)
   # ---------------------------------------------------------------------------
-  squarebuddy-initializer:
-    image: europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-initializer:latest
-    container_name: squarebuddy-initializer
+  shelfbuddy-initializer:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-initializer:latest
+    container_name: shelfbuddy-initializer
     environment:
-      # Connects to default 'postgres' DB or creates 'squarebuddydb' on fly depending on logic
-      ConnectionStrings__squarebuddydb: Host=squarebuddy-postgres;Port=5432;Database=squarebuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
-      MINIO_ENDPOINT: http://squarebuddy-minio:9000
+      # Connects to default 'postgres' DB or creates 'shelfbuddydb' on fly depending on logic
+      ConnectionStrings__shelfbuddydb: Host=shelfbuddy-postgres;Port=5432;Database=shelfbuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      MINIO_ENDPOINT: http://shelfbuddy-minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-parent@squarebuddy.ai}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-parent@shelfbuddy.ai}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Passwort123!}
     depends_on:
-      squarebuddy-postgres:
+      shelfbuddy-postgres:
         condition: service_healthy
-      squarebuddy-minio:
+      shelfbuddy-minio:
         condition: service_healthy
-      squarebuddy-db-init:
+      shelfbuddy-db-init:
         condition: service_completed_successfully
    
 
   # ---------------------------------------------------------------------------
   # AI Gateway: LiteLLM
   # ---------------------------------------------------------------------------
-  squarebuddy-litellm:
+  shelfbuddy-litellm:
     image: ghcr.io/berriai/litellm:litellm_stable_release_branch-v1.77.5-stable
-    container_name: squarebuddy-litellm
+    container_name: shelfbuddy-litellm
     ports:
       - "4000:4000"
     volumes:
-      - ./SquareBuddy.AppHost/LiteLLM/config.yaml:/app/config.yaml
+      - ./ShelfBuddy.AppHost/LiteLLM/config.yaml:/app/config.yaml
     environment:
       # Connects to 'litellmdb' which must be created by Initializer first
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@squarebuddy-postgres:5432/litellmdb?schema=litellm
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@shelfbuddy-postgres:5432/litellmdb?schema=litellm
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
     command: --config /app/config.yaml
     depends_on:
       # Wait for initializer to create the DB structure
-      squarebuddy-initializer:
+      shelfbuddy-initializer:
         condition: service_completed_successfully
 
   # ---------------------------------------------------------------------------
   # Application: Web API
   # ---------------------------------------------------------------------------
-  squarebuddy-webapi:
-    image: europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapi:latest
-    container_name: squarebuddy-webapi
+  shelfbuddy-webapi:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapi:latest
+    container_name: shelfbuddy-webapi
     environment:
-      ConnectionStrings__squarebuddydb: Host=squarebuddy-postgres;Port=5432;Database=squarebuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__shelfbuddydb: Host=shelfbuddy-postgres;Port=5432;Database=shelfbuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
       Logging__LogLevel__Default: Debug
-      LITELLM_ENDPOINT: http://squarebuddy-litellm:4000
+      LITELLM_ENDPOINT: http://shelfbuddy-litellm:4000
       LITELLM_API_KEY: ${LITELLM_MASTER_KEY}
-      MINIO_ENDPOINT: http://squarebuddy-minio:9000
+      MINIO_ENDPOINT: http://shelfbuddy-minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -145,27 +145,27 @@ services:
       retries: 5
       start_period: 5s
     depends_on:
-      squarebuddy-initializer:
+      shelfbuddy-initializer:
         condition: service_completed_successfully
-      squarebuddy-postgres:
+      shelfbuddy-postgres:
         condition: service_healthy
-      squarebuddy-litellm:
+      shelfbuddy-litellm:
         condition: service_started
-      squarebuddy-minio:
+      shelfbuddy-minio:
         condition: service_healthy
 
 
   # ---------------------------------------------------------------------------
   # Application: Web API
   # ---------------------------------------------------------------------------
-  squarebuddy-webapp:
-    image: europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapp:latest
-    container_name: squarebuddy-webapp
+  shelfbuddy-webapp:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapp:latest
+    container_name: shelfbuddy-webapp
     ports:
       - "5010:5010"
     environment:
       NODE_ENV: production
-      WEBAPI_ENDPOINT: http://squarebuddy-webapi:5000
+      WEBAPI_ENDPOINT: http://shelfbuddy-webapi:5000
       NODE_OPTIONS: --dns-result-order=ipv4first
     healthcheck:
       test: 'wget --no-verbose --tries=1 --spider http://localhost:5010/health || exit 1'
@@ -174,7 +174,7 @@ services:
       retries: 5
       start_period: 5s
     depends_on:
-      squarebuddy-webapi:
+      shelfbuddy-webapi:
         condition: service_started
 
 volumes:

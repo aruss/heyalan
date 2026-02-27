@@ -1,6 +1,6 @@
 services:
   webapp:
-    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/squarebuddy-webapp:${IMAGE_TAG:-latest}'
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapp:${IMAGE_TAG:-latest}'
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
       - KEEP_ALIVE_TIMEOUT=70000
@@ -19,7 +19,7 @@ services:
       - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.scheme=http
       - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.passhostheader=true
       - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.responseforwarding.flushinterval=100ms
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.rule=Host(`squarebuddy.dev.econduct.de`)
+      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.rule=Host(`shelfbuddy.dev.econduct.de`)
       - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.entrypoints=https
       - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.tls.certresolver=letsencrypt
       - traefik.docker.network=coolify

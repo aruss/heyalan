@@ -12,7 +12,7 @@ Incoming Telegram webhooks must resolve the owning `Agent` by bot token, enrich 
 - [x] Implement `SendMessageAsync` in `TelegramService` using `TelegramClientFactory.GetClient(botToken)` and Telegram.Bot send API.
 
 ## Gate B - Telegram Webhook Ingestion Enrichment
-- [x] Update `SquareBuddy.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs` to inject `MainDataContext`.
+- [x] Update `ShelfBuddy.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs` to inject `MainDataContext`.
 - [x] Resolve `Agent` by exact `TelegramBotToken == botToken`.
 - [x] Return `NotFound` when no matching agent exists.
 - [x] Publish `IncomingMessage` with populated `SubscribtionId` and `AgentId` from resolved agent.
@@ -32,8 +32,8 @@ Incoming Telegram webhooks must resolve the owning `Agent` by bot token, enrich 
 - [x] Send message via `ITelegramService.SendMessageAsync` using consume cancellation token.
 
 ## Gate E - MassTransit Topology and Registrations
-- [x] Register `OutgoingTelegramMessageConsumer` in `SquareBuddy.WebApi/Infrastructure/MassTransitBuilderExtensions.cs`.
-- [x] Register `OutgoingTelegramMessageConsumer` in `SquareBuddy.Initializer/Program.cs` topology deployment section.
+- [x] Register `OutgoingTelegramMessageConsumer` in `ShelfBuddy.WebApi/Infrastructure/MassTransitBuilderExtensions.cs`.
+- [x] Register `OutgoingTelegramMessageConsumer` in `ShelfBuddy.Initializer/Program.cs` topology deployment section.
 - [x] Keep endpoint auto-configuration via `cfg.ConfigureEndpoints(context)`.
 
 ## Gate F - Channel Compatibility and Current Placeholders

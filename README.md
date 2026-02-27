@@ -1,26 +1,26 @@
-# SquareBuddy
+# ShelfBuddy
 
-SquareBuddy is an autonomous AI sales and support agent for merchants using Square.
+ShelfBuddy is an autonomous AI sales and support agent for merchants using Square.
 It engages customers over messaging channels (SMS, WhatsApp, and Telegram), helps drive upsells, and supports payment, order, and shipping workflows through natural conversation.
 
 ## System Overview
 
-SquareBuddy is a multi-tenant platform built around a subscription account model.
+ShelfBuddy is a multi-tenant platform built around a subscription account model.
 
 Each `Subscription` represents one tenant account and includes:
 - Team members (`SubscriptionUsers`) with roles (Owner, Member)
-- Billing and credit metadata for the SquareBuddy plan
+- Billing and credit metadata for the ShelfBuddy plan
 - A list of configured agents (data model supports multiple agents; current UI supports one)
 
 ## Integrations and Runtime Communication
 
-SquareBuddy currently integrates with:
+ShelfBuddy currently integrates with:
 - **Square**: product/catalog context, inventory awareness, and order-management workflows the agent can act on
 - **Twilio**: messaging channel integration (including SMS and WhatsApp delivery paths)
 - **Telegram**: messaging channel integration
-- **Stripe**: billing for SquareBuddy subscription plans (platform billing only)
+- **Stripe**: billing for ShelfBuddy subscription plans (platform billing only)
 
-For dashboard runtime communication, SquareBuddy uses **SignalR** to stream real-time events, including:
+For dashboard runtime communication, ShelfBuddy uses **SignalR** to stream real-time events, including:
 - Chat message updates
 - Notifications and activity events
 
@@ -53,7 +53,7 @@ Future onboarding is planned to be automated:
 
 ## Run Project
 
-    dotnet watch run --project .\SquareBuddy.AppHost\SquareBuddy.AppHost.csproj
+    dotnet watch run --project .\ShelfBuddy.AppHost\ShelfBuddy.AppHost.csproj
 
 ## Local Webhooks via ngrok
 
