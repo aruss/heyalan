@@ -33,7 +33,7 @@ var postgres = builder.AddPostgres("postgresql")
     )
     .WithLifetime(ContainerLifetime.Persistent);
 
-var litellmDb = postgres.AddDatabase("rabbitmqdb");
+var litellmDb = postgres.AddDatabase("litellmdb");
 
 var squarebuddyDb = postgres.AddDatabase("squarebuddydb");
 

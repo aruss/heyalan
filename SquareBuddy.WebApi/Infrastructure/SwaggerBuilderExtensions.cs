@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
+using System.Text.Json;
 
 public static class SwaggerBuilderExtensions
 {
@@ -14,6 +16,7 @@ public static class SwaggerBuilderExtensions
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
         {
+            // options.DescribeAllParametersInCamelCase();
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "SquareBuddy API",

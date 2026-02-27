@@ -64,6 +64,7 @@ app.MapHealthChecks();
 app.MapTwilioWebhookEndpoints();
 app.MapTelegramWebhookEndpoints(); 
 app.MapAuthEndpoints();
+app.MapConversationEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

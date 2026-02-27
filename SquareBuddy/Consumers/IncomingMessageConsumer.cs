@@ -3,6 +3,7 @@ namespace SquareBuddy.Consumers;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SquareBuddy.Core.Conversations;
 using SquareBuddy.Data;
 using SquareBuddy.Data.Entities;
 using SquareBuddy.TelegramIntegration;
@@ -32,13 +33,16 @@ public class IncomingMessageConsumer : IConsumer<IncomingMessage>
 
     private readonly ILogger<IncomingMessageConsumer> logger;
     private readonly IPublishEndpoint publishEndpoint;
+    private readonly IConversationStore conversationStore;
 
     public IncomingMessageConsumer(
         ILogger<IncomingMessageConsumer> logger,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        IConversationStore conversationStore)
     {
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         this.publishEndpoint = publishEndpoint ?? throw new ArgumentNullException(nameof(publishEndpoint));
+        this.conversationStore = conversationStore ?? throw new ArgumentNullException(nameof(conversationStore));
     }
 
     public async Task Consume(ConsumeContext<IncomingMessage> context)
@@ -51,6 +55,8 @@ public class IncomingMessageConsumer : IConsumer<IncomingMessage>
             message.AgentId,
             message.Channel,
             message.From);
+
+        await this.conversationStore.UpsertIncomingMessageAsync(message, context.CancellationToken);
 
         // Processes the message here ...
         if (message.Channel == MessageChannel.Telegram)
@@ -84,15 +90,18 @@ public class OutgoingTelegramMessageConsumer : IConsumer<OutgoingTelegramMessage
     private readonly ILogger<OutgoingTelegramMessageConsumer> logger;
     private readonly MainDataContext dbContext;
     private readonly ITelegramService telegramService;
+    private readonly IConversationStore conversationStore;
 
     public OutgoingTelegramMessageConsumer(
         ILogger<OutgoingTelegramMessageConsumer> logger,
         ITelegramService telegramService,
-        MainDataContext dbContext)
+        MainDataContext dbContext,
+        IConversationStore conversationStore)
     {
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         this.telegramService = telegramService ?? throw new ArgumentNullException(nameof(telegramService));
         this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        this.conversationStore = conversationStore ?? throw new ArgumentNullException(nameof(conversationStore));
     }
 
     public async Task Consume(ConsumeContext<OutgoingTelegramMessage> context)
@@ -129,6 +138,11 @@ public class OutgoingTelegramMessageConsumer : IConsumer<OutgoingTelegramMessage
             agent.TelegramBotToken,
             chatId,
             message.Content,
+            context.CancellationToken);
+
+        await this.conversationStore.AppendOutgoingTelegramMessageAsync(
+            message,
+            DateTimeOffset.UtcNow,
             context.CancellationToken);
     }
 }

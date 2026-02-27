@@ -11,9 +11,9 @@ using Polly;
 using Polly.Retry;
 using SquareBuddy;
 using SquareBuddy.Configuration;
+using SquareBuddy.Core.Conversations;
 using SquareBuddy.Data;
 using SquareBuddy.Data.Entities;
-using SquareBuddy;
 using SquareBuddy.Consumers;
 using SquareBuddy.TelegramIntegration;
 
@@ -35,6 +35,7 @@ public class Program
         builder.Services.AddServiceDiscovery();
         AppOptions appOptions = builder.Configuration.TryGetAppOptions();
         builder.Services.AddSingleton(appOptions);
+        builder.Services.AddScoped<IConversationStore, ConversationStore>();
 
         #region Database and Migrations 
 

@@ -25,6 +25,10 @@ public class MainDataContext :
 
     public DbSet<Agent> Agents { get; set; } = null!;
 
+    public DbSet<Conversation> Conversations { get; set; } = null!;
+
+    public DbSet<ConversationMessage> ConversationMessages { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -125,6 +129,63 @@ public class MainDataContext :
 
             entity.HasIndex(e => e.TwilioPhoneNumber)
                 .HasFilter("\"TwilioPhoneNumber\" IS NOT NULL");
+        });
+
+        builder.Entity<Conversation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ParticipantExternalId).IsRequired();
+            entity.Property(e => e.Channel).IsRequired();
+            entity.Property(e => e.LastMessagePreview).IsRequired(false);
+            entity.Property(e => e.LastMessageAt).IsRequired(false);
+            entity.Property(e => e.LastMessageRole).IsRequired(false);
+            entity.Property(e => e.UnreadCount).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.AgentId, e.ParticipantExternalId, e.Channel }).IsUnique();
+            entity.HasIndex(e => new { e.AgentId, e.LastMessageAt, e.Id })
+                .IsDescending(false, true, true);
+            entity.HasIndex(e => new { e.AgentId, e.UnreadCount });
+
+            entity
+                .HasOne(e => e.Agent)
+                .WithMany()
+                .HasForeignKey(e => e.AgentId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ConversationMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Role).IsRequired();
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.From).IsRequired();
+            entity.Property(e => e.To).IsRequired();
+            entity.Property(e => e.OccurredAt).IsRequired();
+            entity.Property(e => e.IsRead).IsRequired();
+            entity.Property(e => e.ReadAt).IsRequired(false);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.ConversationId, e.OccurredAt, e.Id })
+                .IsDescending(false, true, true);
+            entity.HasIndex(e => new { e.ConversationId, e.IsRead, e.Role });
+
+            entity
+                .HasOne(e => e.Conversation)
+                .WithMany(e => e.Messages)
+                .HasForeignKey(e => e.ConversationId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(e => e.Agent)
+                .WithMany()
+                .HasForeignKey(e => e.AgentId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Apply postgres nameing convetion to all table names and primary keys and indexes 

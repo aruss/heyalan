@@ -17,7 +17,7 @@ public static class TelegramWebhookEndpoints
 
         routeBuilder
             .MapPost("/webhooks/telegram/{botToken}", IngestTelegramMessage)
-            .WithTags("Telegram")
+            .WithTags("Webhooks")
             .AddEndpointFilter(new TelegramSecretTokenFilter(options.SecretToken));
 
         return routeBuilder;
@@ -25,7 +25,7 @@ public static class TelegramWebhookEndpoints
      
     private static async Task<Results<Ok, NotFound, UnauthorizedHttpResult>> IngestTelegramMessage(
             [FromRoute] string botToken,
-            [FromBody] Telegram.Bot.Types.Update input, 
+            [FromBody] IngestTelegramMessageInput input,
             IPublishEndpoint publishEndpoint,
             MainDataContext dbContext,
             CancellationToken ct)
@@ -46,6 +46,9 @@ public static class TelegramWebhookEndpoints
 
         // Telegram tokens follow the format: {BotId}:{Secret}
         string botId = botToken.Split(':')[0];
+        DateTimeOffset receivedAt = input.Message.DateUnixSeconds.HasValue
+            ? DateTimeOffset.FromUnixTimeSeconds(input.Message.DateUnixSeconds.Value)
+            : DateTimeOffset.UtcNow;
 
         IncomingMessage message = new()
         {
@@ -56,7 +59,7 @@ public static class TelegramWebhookEndpoints
             Content = text,
             From = input.Message.From?.Id.ToString() ?? string.Empty,
             To = botId,
-            ReceivedAt = input.Message.Date
+            ReceivedAt = receivedAt
         };
 
         await publishEndpoint.Publish(message, ct);
