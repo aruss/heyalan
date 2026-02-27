@@ -24,7 +24,7 @@ public class TelegramServiceTests
 
         await service.RegisterWebhookAsync("12345:token-value");
 
-        JsonDocument payload = ParseRequestPayload(handler.LastRequest!);
+        JsonDocument payload = ParseRequestPayload(handler.LastRequestContent!);
         string webhookUrl = ReadRequiredString(payload.RootElement, "url");
 
         Assert.Equal("https://squarebuddy.test/webhooks/telegram/12345:token-value", webhookUrl);
@@ -42,7 +42,7 @@ public class TelegramServiceTests
 
         await service.RegisterWebhookAsync("12345:token-value");
 
-        JsonDocument payload = ParseRequestPayload(handler.LastRequest!);
+        JsonDocument payload = ParseRequestPayload(handler.LastRequestContent!);
         string secretToken = ReadRequiredString(payload.RootElement, "secret_token");
 
         Assert.Equal("integration-secret", secretToken);
@@ -63,7 +63,7 @@ public class TelegramServiceTests
         TelegramService service = CreateService(handler, new Uri("https://squarebuddy.test"));
 
         await Assert.ThrowsAsync<ArgumentException>(() => service.RegisterWebhookAsync("   "));
-        Assert.Null(handler.LastRequest);
+        Assert.Null(handler.LastRequestContent);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class TelegramServiceTests
 
         TelegramService service = CreateService(handler, new Uri("https://squarebuddy.test"));
 
-        await Assert.ThrowsAsync<ApiRequestException>(() => service.RegisterWebhookAsync("12345:token-value"));
+        await Assert.ThrowsAsync<RequestException>(() => service.RegisterWebhookAsync("12345:token-value"));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class TelegramServiceTests
 
         await service.SendMessageAsync("12345:token-value", 987654321L, "Hello from tests");
 
-        JsonDocument payload = ParseRequestPayload(handler.LastRequest!);
+        JsonDocument payload = ParseRequestPayload(handler.LastRequestContent!);
         long chatId = payload.RootElement.GetProperty("chat_id").GetInt64();
         string text = ReadRequiredString(payload.RootElement, "text");
 
@@ -124,7 +124,7 @@ public class TelegramServiceTests
         TelegramService service = CreateService(handler, new Uri("https://squarebuddy.test"));
 
         await Assert.ThrowsAsync<ArgumentException>(() => service.SendMessageAsync("  ", 1234L, "hello"));
-        Assert.Null(handler.LastRequest);
+        Assert.Null(handler.LastRequestContent);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class TelegramServiceTests
         TelegramService service = CreateService(handler, new Uri("https://squarebuddy.test"));
 
         await Assert.ThrowsAsync<ArgumentException>(() => service.SendMessageAsync("12345:token-value", 1234L, "   "));
-        Assert.Null(handler.LastRequest);
+        Assert.Null(handler.LastRequestContent);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public class TelegramServiceTests
 
         TelegramService service = CreateService(handler, new Uri("https://squarebuddy.test"));
 
-        await Assert.ThrowsAsync<ApiRequestException>(() => service.SendMessageAsync("12345:token-value", 1234L, "hello"));
+        await Assert.ThrowsAsync<RequestException>(() => service.SendMessageAsync("12345:token-value", 1234L, "hello"));
     }
 
     private static TelegramService CreateService(RecordingHandler handler, Uri baseUrl)
@@ -189,9 +189,8 @@ public class TelegramServiceTests
         };
     }
 
-    private static JsonDocument ParseRequestPayload(HttpRequestMessage request)
+    private static JsonDocument ParseRequestPayload(string payload)
     {
-        string payload = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
         return JsonDocument.Parse(payload);
     }
 
@@ -228,13 +227,16 @@ public class TelegramServiceTests
             this.responseFactory = responseFactory;
         }
 
-        public HttpRequestMessage? LastRequest { get; private set; }
+        public string? LastRequestContent { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            this.LastRequest = request;
+            this.LastRequestContent = request.Content is null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync(cancellationToken);
+
             HttpResponseMessage response = this.responseFactory(request);
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

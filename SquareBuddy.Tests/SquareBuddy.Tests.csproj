@@ -24,7 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SquareBuddy.AppHost\SquareBuddy.AppHost.csproj" />
     <ProjectReference Include="..\SquareBuddy.WebApi\SquareBuddy.WebApi.csproj" />
   </ItemGroup>
 
