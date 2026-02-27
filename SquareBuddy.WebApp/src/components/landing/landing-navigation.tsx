@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReactElement } from "react";
+import { PrimaryActionButton } from "@/components/landing/ui/action-buttons";
 
 export const LandingNavigation = (): ReactElement => {
     return (
@@ -26,12 +27,12 @@ export const LandingNavigation = (): ReactElement => {
                     <Link href="/login" className="hidden text-sm font-medium transition-colors hover:text-zinc-500 md:block">
                         Log In
                     </Link>
-                    <Link
+                    <PrimaryActionButton
                         href="/login"
-                        className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+                        size="sm"
                     >
                         Start Free Trial
-                    </Link>
+                    </PrimaryActionButton>
                 </div>
             </div>
         </nav>

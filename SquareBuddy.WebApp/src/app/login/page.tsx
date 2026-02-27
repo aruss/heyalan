@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import Link from "next/link";
+import { PrimaryActionButton } from "@/components/landing/ui/action-buttons";
 
 export default function LoginPage(): ReactElement {
     return (
@@ -9,14 +9,16 @@ export default function LoginPage(): ReactElement {
                 <h2 className="text-3xl font-bold tracking-tight text-neutral-900 mb-2">Welcome back</h2>
                 <p className="text-neutral-500">Log in to manage your workspace and integrations.</p>
             </div>
-            <Link
+            <PrimaryActionButton
                 href="/onboarding"
-                className="w-full flex items-center justify-center gap-3 bg-neutral-900 hover:bg-neutral-800 text-white py-3.5 px-6 rounded-lg font-semibold transition-all shadow-md active:scale-[0.98]">
+                fullWidth
+                className="flex items-center justify-center gap-3"
+            >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-square" aria-hidden="true">
                     <rect width="18" height="18" x="3" y="3" rx="2"></rect>
                 </svg>
                 Continue with Square
-            </Link>
+            </PrimaryActionButton>
         </div>
 
     );

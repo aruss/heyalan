@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ReactElement } from "react";
+import { PrimaryActionButton, SecondaryActionButton } from "@/components/landing/ui/action-buttons";
 
 export const LandingHero = (): ReactElement => {
     return (
@@ -15,18 +15,18 @@ export const LandingHero = (): ReactElement => {
                     Drive upsells, process payments, and schedule shipping - all through natural language.
                 </p>
                 <div className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0">
-                    <Link
+                    <PrimaryActionButton
                         href="/login"
-                        className="w-full rounded-full bg-zinc-900 px-8 py-4 text-lg font-medium text-white transition-all hover:scale-105 hover:bg-zinc-800 sm:w-auto"
+                        className="w-full sm:w-auto"
                     >
                         Connect Square
-                    </Link>
-                    <Link
+                    </PrimaryActionButton>
+                    <SecondaryActionButton
                         href="#demo"
-                        className="w-full rounded-full border border-zinc-200 px-8 py-4 text-lg font-medium text-zinc-900 transition-colors hover:bg-zinc-50 sm:w-auto"
+                        className="w-full sm:w-auto"
                     >
                         View Live Demo
-                    </Link>
+                    </SecondaryActionButton>
                 </div>
 
                 <div className="mt-24 flex flex-col items-center border-t border-zinc-100 pt-10">

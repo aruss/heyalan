@@ -16,6 +16,7 @@ import {
     Briefcase,
     MessagesSquare
 } from "lucide-react";
+import { PrimaryActionButton, SecondaryActionButton } from "@/components/landing/ui/action-buttons";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
@@ -128,19 +129,20 @@ const OnboardingPage = (): ReactElement => {
                         </div>
 
                         <div className="pt-4 flex flex-col gap-3">
-                            <button
+                            <PrimaryActionButton
                                 onClick={handleConnectSquare}
-                                className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-6 rounded-full font-semibold transition-colors shadow-md"
+                                fullWidth
+                                className="flex items-center justify-center gap-2"
                             >
                                 <LinkIcon size={18} />
                                 Connect SquareUp Account
-                            </button>
-                            <button
+                            </PrimaryActionButton>
+                            <SecondaryActionButton
                                 onClick={skipStep}
-                                className="w-full py-3.5 px-6 bg-white border border-slate-200 hover:border-slate-300 text-slate-900 rounded-full font-medium transition-colors"
+                                fullWidth
                             >
                                 Skip for now
-                            </button>
+                            </SecondaryActionButton>
                         </div>
                     </div>
                 )}
@@ -163,7 +165,7 @@ const OnboardingPage = (): ReactElement => {
                                     placeholder="e.g. Buddy, SupportBot"
                                     value={formData.agentName}
                                     onChange={handleAgentNameChange}
-                                    className="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
+                                    className="w-full px-5 py-3.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                                     autoFocus
                                 />
                             </div>
@@ -175,21 +177,21 @@ const OnboardingPage = (): ReactElement => {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <button
                                         onClick={() => handlePersonalityChange("casual")}
-                                        className={`p-4 border rounded-2xl flex flex-col items-center gap-2 transition-all ${formData.agentPersonality === "casual" ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300"}`}
+                                        className={`p-4 border rounded-xl flex flex-col items-center gap-2 transition-all ${formData.agentPersonality === "casual" ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300"}`}
                                     >
                                         <Smile size={24} className={formData.agentPersonality === "casual" ? "text-slate-900" : "text-slate-500"} />
                                         <span className="text-sm font-medium text-slate-900">Casual</span>
                                     </button>
                                     <button
                                         onClick={() => handlePersonalityChange("balanced")}
-                                        className={`p-4 border rounded-2xl flex flex-col items-center gap-2 transition-all ${formData.agentPersonality === "balanced" ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300"}`}
+                                        className={`p-4 border rounded-xl flex flex-col items-center gap-2 transition-all ${formData.agentPersonality === "balanced" ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300"}`}
                                     >
                                         <MessagesSquare size={24} className={formData.agentPersonality === "balanced" ? "text-slate-900" : "text-slate-500"} />
                                         <span className="text-sm font-medium text-slate-900">Balanced</span>
                                     </button>
                                     <button
                                         onClick={() => handlePersonalityChange("business")}
-                                        className={`p-4 border rounded-2xl flex flex-col items-center gap-2 transition-all ${formData.agentPersonality === "business" ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300"}`}
+                                        className={`p-4 border rounded-xl flex flex-col items-center gap-2 transition-all ${formData.agentPersonality === "business" ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300"}`}
                                     >
                                         <Briefcase size={24} className={formData.agentPersonality === "business" ? "text-slate-900" : "text-slate-500"} />
                                         <span className="text-sm font-medium text-slate-900">Business</span>
@@ -199,20 +201,19 @@ const OnboardingPage = (): ReactElement => {
                         </div>
 
                         <div className="pt-4 flex gap-3">
-                            <button
+                            <SecondaryActionButton
                                 onClick={() => setStep(1)}
-                                className="py-3.5 px-6 bg-white border border-slate-200 hover:border-slate-300 text-slate-900 rounded-full font-medium transition-colors"
                             >
                                 Back
-                            </button>
-                            <button
+                            </SecondaryActionButton>
+                            <PrimaryActionButton
                                 onClick={nextStep}
                                 disabled={!formData.agentName.trim()}
-                                className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 px-6 rounded-full font-semibold transition-colors shadow-md"
+                                className="flex flex-1 items-center justify-center gap-2"
                             >
                                 Continue
                                 <ArrowRight size={18} />
-                            </button>
+                            </PrimaryActionButton>
                         </div>
                     </div>
                 )}
@@ -272,18 +273,17 @@ const OnboardingPage = (): ReactElement => {
                         </div>
 
                         <div className="pt-4 flex gap-3">
-                            <button
+                            <SecondaryActionButton
                                 onClick={() => setStep(2)}
-                                className="py-3.5 px-6 bg-white border border-slate-200 hover:border-slate-300 text-slate-900 rounded-full font-medium transition-colors"
                             >
                                 Back
-                            </button>
-                            <button
+                            </SecondaryActionButton>
+                            <PrimaryActionButton
                                 onClick={nextStep}
-                                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-6 rounded-full font-semibold transition-colors shadow-md"
+                                className="flex-1"
                             >
                                 Continue
-                            </button>
+                            </PrimaryActionButton>
                         </div>
                         <div>
                             <button
@@ -337,18 +337,17 @@ const OnboardingPage = (): ReactElement => {
                         </div>
 
                         <div className="pt-4 flex gap-3">
-                            <button
+                            <SecondaryActionButton
                                 onClick={() => setStep(3)}
-                                className="py-3.5 px-6 bg-white border border-slate-200 hover:border-slate-300 text-slate-900 rounded-full font-medium transition-colors"
                             >
                                 Back
-                            </button>
-                            <button
+                            </SecondaryActionButton>
+                            <PrimaryActionButton
                                 onClick={completeOnboarding}
-                                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-6 rounded-full font-semibold transition-colors shadow-md"
+                                className="flex-1"
                             >
                                 Complete Setup
-                            </button>
+                            </PrimaryActionButton>
                         </div>
                         <div>
                             <button
@@ -371,16 +370,16 @@ const OnboardingPage = (): ReactElement => {
                             Welcome aboard. {formData.agentName || "Your AI agent"} is ready.
                         </p>
                         <div className="pt-6 text-left bg-slate-50 p-5 rounded-2xl border border-slate-200 text-sm font-mono text-slate-600 overflow-hidden shadow-inner">
-                            <p className="text-slate-400 mb-2">// Configuration Output</p>
+                            <p className="text-slate-400 mb-2">{"// Configuration Output"}</p>
                             <pre>{JSON.stringify(formData, null, 2)}</pre>
                         </div>
-                        <a
+                        <PrimaryActionButton
                             href="/admin"
-
-                            className="mt-8 w-full block bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-6 rounded-full font-semibold transition-colors shadow-md"
+                            fullWidth
+                            className="mt-8 block text-center"
                         >
                             Go to Dashboard
-                        </a>
+                        </PrimaryActionButton>
                     </div>
                 )}
             </div>
