@@ -1,7 +1,7 @@
 ﻿namespace SquareBuddy.WebApi.Infrastructure;
 
 using MassTransit;
-using SquareBuddy.Shared.Consumers;
+using SquareBuddy.Consumers;
 
 public static class MassTransitBuilderExtensions
 {

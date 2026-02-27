@@ -1,4 +1,4 @@
-﻿namespace SquareBuddy.Shared;
+﻿namespace SquareBuddy.TelegramIntegration;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

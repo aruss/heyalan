@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.CookiePolicy;
-using SquareBuddy.Shared;
+using SquareBuddy;
+using SquareBuddy.TelegramIntegration;
 using SquareBuddy.WebApi.Core;
 using SquareBuddy.WebApi.Identity;
 using SquareBuddy.WebApi.Infrastructure;
+using SquareBuddy.WebApi.TwilioIntegration;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 

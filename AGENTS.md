@@ -8,7 +8,7 @@ All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, S
 
 ## Terms 
 - Solution: the Visual Studio Solution containing all SquareBuddy projects, ./SquareBuddy.slnx 
-- Project: a .NET project within the SquareBuddy solution, e.g. SquareBuddy.WebApp, SquareBuddy.WebApi, SquareBuddy.Initializer, SquareBuddy.Data, SquareBuddy.Shared
+- Project: a .NET project within the SquareBuddy solution, e.g. SquareBuddy.WebApp, SquareBuddy.WebApi, SquareBuddy.Initializer, SquareBuddy.Data, SquareBuddy
 
 ## Package Documentation & External References
 - You MUST use the context7 MCP server to search documentation of external packages and libraries before making assumptions.
@@ -27,7 +27,7 @@ All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, S
 ## Coding Style & Naming Conventions
 - You MUST first read the ./docs/CODE_GUIDELINE_DOTNET.md when writing .net C# code
 - You MUST first read the ./docs/CODE_GUIDELINE_NODE.md when writing node/typescript code
-- You MUST first read the project README before working in that project (e.g., `SquareBuddy.WebApp/README.md`, `SquareBuddy.WebApi/README.md`, `SquareBuddy.Initializer/README.md`, `SquareBuddy.Data/README.md`, `SquareBuddy.Shared/README.md`)
+- You MUST first read the project README before working in that project (e.g., `SquareBuddy.WebApp/README.md`, `SquareBuddy.WebApi/README.md`, `SquareBuddy.Initializer/README.md`, `SquareBuddy.Data/README.md`, `SquareBuddy/README.md`)
 
 ## Dependencies & Package Management
 - When working with `package.json` dependencies or making upgrades, you MUST use `npm view` to check the latest package version.

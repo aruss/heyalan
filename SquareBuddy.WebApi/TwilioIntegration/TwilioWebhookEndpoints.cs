@@ -1,9 +1,9 @@
-namespace SquareBuddy.WebApi.Core;
+namespace SquareBuddy.WebApi.TwilioIntegration;
 
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using SquareBuddy.Shared.Consumers;
+using SquareBuddy.Consumers;
 
 public static class TwilioWebhookEndpoints
 {

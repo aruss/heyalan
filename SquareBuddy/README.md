@@ -1,4 +1,4 @@
-# SquareBuddy.Shared
+# SquareBuddy
 
 Shared library for SquareBuddy services. Provides common models, configuration helpers, constants, and service defaults.
 

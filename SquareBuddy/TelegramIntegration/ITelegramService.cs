@@ -1,4 +1,4 @@
-namespace SquareBuddy.Shared;
+namespace SquareBuddy.TelegramIntegration;
 
 public interface ITelegramService
 {

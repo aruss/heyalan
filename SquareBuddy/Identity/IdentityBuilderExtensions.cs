@@ -1,8 +1,11 @@
 ﻿namespace SquareBuddy.WebApi.Identity;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Identity;
 using SquareBuddy.Data;
 using SquareBuddy.Data.Entities;
+using Microsoft.AspNetCore.Http;
 
 public static class IdentityBuilderExtensions
 {

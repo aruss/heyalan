@@ -1,4 +1,4 @@
-﻿namespace SquareBuddy.Shared.Collections;
+﻿namespace SquareBuddy.Collections;
 
 using Microsoft.EntityFrameworkCore;
 using System;

@@ -1,4 +1,4 @@
-﻿namespace SquareBuddy.Shared.Consumers;
+﻿namespace SquareBuddy.Consumers;
 
 using MassTransit;
 using Microsoft.Extensions.Logging;

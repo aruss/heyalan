@@ -9,26 +9,6 @@ using SquareBuddy.Data.Entities;
 using System.Linq;
 using System.Security.Claims;
 
-/// <summary>
-/// Represents the currently authenticated user.
-/// </summary>
-/// <param name="Id">The user's unique identifier.</param>
-/// <param name="Email">The user's email address.</param>
-/// <param name="DisplayName">The user's display name.</param>
-/// <param name="Roles">The roles assigned to the user.</param>
-public record CurrentUserResult(Guid Id, string Email, string DisplayName, string[] Roles);
-
-// Copied from  Microsoft.AspNetCore.Identity.Data.LoginRequest
-/// <summary>
-/// The input type for login endpoint.
-/// </summary>
-/// <param name="Email">The user's email address which acts as a user name.</param>
-/// <param name="Password">The user's password.</param>
-public record LoginInput(
-    string Email,
-    string Password
-);
-
 public static class IdentityEndpoints
 {
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder endpoints)

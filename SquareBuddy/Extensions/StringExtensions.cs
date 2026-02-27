@@ -1,4 +1,4 @@
-﻿namespace SquareBuddy.Shared;
+﻿namespace SquareBuddy;
 
 using System.Text.RegularExpressions;
 

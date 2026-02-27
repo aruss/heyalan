@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using SquareBuddy.Data.Entities;
-using SquareBuddy.Shared;
+using SquareBuddy;
 
 public class MainDataContext :
     IdentityDbContext<ApplicationUser, ApplicationRole, Guid>, IDataProtectionKeyContext

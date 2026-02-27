@@ -16,7 +16,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 # Cache .NET dependencies
-COPY ["SquareBuddy.Shared/SquareBuddy.Shared.csproj", "SquareBuddy.Shared/"]
+COPY ["SquareBuddy/SquareBuddy.csproj", "SquareBuddy/"]
 COPY ["SquareBuddy.Data/SquareBuddy.Data.csproj", "SquareBuddy.Data/"]
 COPY ["SquareBuddy.WebApi/SquareBuddy.WebApi.csproj", "SquareBuddy.WebApi/"]
 

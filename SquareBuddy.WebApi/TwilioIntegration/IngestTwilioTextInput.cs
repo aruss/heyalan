@@ -1,4 +1,4 @@
-namespace SquareBuddy.WebApi.Core;
+namespace SquareBuddy.WebApi.TwilioIntegration;
 
 public sealed class IngestTwilioTextInput
 {

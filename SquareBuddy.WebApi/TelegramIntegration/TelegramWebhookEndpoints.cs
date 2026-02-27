@@ -1,10 +1,10 @@
-namespace SquareBuddy.WebApi.Core;
+namespace SquareBuddy.TelegramIntegration;
 
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using SquareBuddy.Shared;
-using SquareBuddy.Shared.Consumers;
+using SquareBuddy;
+using SquareBuddy.Consumers;
 
 public static class TelegramWebhookEndpoints
 {

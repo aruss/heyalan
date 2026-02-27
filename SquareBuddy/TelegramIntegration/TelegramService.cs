@@ -1,4 +1,4 @@
-namespace SquareBuddy.Shared;
+namespace SquareBuddy.TelegramIntegration;
 
 using Microsoft.Extensions.Logging;
 using SquareBuddy.Configuration;
@@ -38,8 +38,7 @@ public sealed class TelegramService : ITelegramService
         if (string.IsNullOrWhiteSpace(botToken))
         {
             throw new ArgumentException("Telegram bot token is required.", nameof(botToken));
-        }
-  
+        }  
 
         string normalizedBotToken = botToken.Trim();
 

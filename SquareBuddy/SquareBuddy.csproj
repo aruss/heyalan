@@ -30,6 +30,8 @@
     <!-- MQ -->
     <PackageReference Include="MassTransit.RabbitMQ" Version="9.0.1" />
 
+    <!-- Integrations -->
+    <PackageReference Include="Square" Version="43.0.0" />
     <PackageReference Include="Telegram.Bot" Version="22.9.0" />
   </ItemGroup>
   

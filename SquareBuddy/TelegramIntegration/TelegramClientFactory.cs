@@ -1,4 +1,4 @@
-namespace SquareBuddy.Shared;
+namespace SquareBuddy.TelegramIntegration;
 
 using System.Collections.Concurrent;
 using Telegram.Bot;

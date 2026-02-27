@@ -13,8 +13,9 @@ using SquareBuddy;
 using SquareBuddy.Configuration;
 using SquareBuddy.Data;
 using SquareBuddy.Data.Entities;
-using SquareBuddy.Shared;
-using SquareBuddy.Shared.Consumers;
+using SquareBuddy;
+using SquareBuddy.Consumers;
+using SquareBuddy.TelegramIntegration;
 
 public class Program
 {

@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SquareBuddy.Shared\SquareBuddy.Shared.csproj" />
+    <ProjectReference Include="..\SquareBuddy\SquareBuddy.csproj" />
   </ItemGroup>
 
   <ItemGroup>

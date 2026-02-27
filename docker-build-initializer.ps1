@@ -53,8 +53,7 @@ try {
         }
     }
 
-    Copy-Clean "./SquareBuddy.Shared" (Join-Path $TempDir "SquareBuddy.Shared") $IgnorePathes
-    Copy-Clean "./SquareBuddy.Data" (Join-Path $TempDir "SquareBuddy.Data") $IgnorePathes
+    Copy-Clean "./SquareBuddy" (Join-Path $TempDir "SquareBuddy") $IgnorePathes
     Copy-Clean "./SquareBuddy.Initializer" (Join-Path $TempDir "SquareBuddy.Initializer") $IgnorePathes
 
     # Diagnostic: Print the actual size of the context before building

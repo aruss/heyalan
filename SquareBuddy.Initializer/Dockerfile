@@ -8,7 +8,7 @@ WORKDIR /src
 ENV PATH="$PATH:/root/.dotnet/tools"
 
 # 2. Restore (Relative paths are preserved in temp folder)
-COPY ["SquareBuddy.Shared/SquareBuddy.Shared.csproj", "SquareBuddy.Shared/"]
+COPY ["SquareBuddy/SquareBuddy.csproj", "SquareBuddy/"]
 COPY ["SquareBuddy.Data/SquareBuddy.Data.csproj", "SquareBuddy.Data/"]
 COPY ["SquareBuddy.Initializer/SquareBuddy.Initializer.csproj", "SquareBuddy.Initializer/"]
 

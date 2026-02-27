@@ -2,22 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 using SquareBuddy.Data;
-using System.Security.Claims;
-
-public static class ClaimsPrincipalExtensions
-{
-    public static Guid? GetUserId(this ClaimsPrincipal user)
-    {
-        var userIdString = user.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (Guid.TryParse(userIdString, out var userId))
-        {
-            return userId; 
-        }
-
-        return null; 
-    }
-}
 public static class IHostExtensions
 {
     // TODO: make it generic so it accepts any DbContext type

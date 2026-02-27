@@ -1,4 +1,4 @@
-namespace SquareBuddy.WebApi.Core;
+namespace SquareBuddy.TelegramIntegration;
 
 public sealed class TelegramSecretTokenFilter(string expectedToken) : IEndpointFilter
 {

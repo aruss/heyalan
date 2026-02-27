@@ -2,7 +2,7 @@ namespace SquareBuddy.Tests;
 
 using Microsoft.Extensions.Logging.Abstractions;
 using SquareBuddy.Configuration;
-using SquareBuddy.Shared;
+using SquareBuddy.TelegramIntegration;
 using System.Net;
 using System.Text;
 using System.Text.Json;
