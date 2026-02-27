@@ -16,14 +16,18 @@ public static class TwilioWebhookEndpoints
 
         routeGroup
             .MapPost("text", IngestTwilioText)
-            .WithName("IngestText");
+            .WithName("IngestText")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         // TODO: voice 
 
         return routeBuilder;
     }
 
-    private static async Task<Results<Ok, NotFound, UnauthorizedHttpResult>> IngestTwilioText(
+    private static async Task<Results<Ok, NotFound, UnauthorizedHttpResult, ProblemHttpResult>> IngestTwilioText(
             [FromBody] IngestTwilioTextInput input,
             IPublishEndpoint publishEndpoint,
             CancellationToken ct)

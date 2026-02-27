@@ -1,11 +1,13 @@
 namespace SquareBuddy.WebApi.Core;
 
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SquareBuddy;
 using SquareBuddy.Collections;
 using SquareBuddy.Data;
 using SquareBuddy.Data.Entities;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 public static class ConversationEndpoints
@@ -17,19 +19,44 @@ public static class ConversationEndpoints
              // .RequireAuthorization()
              .WithTags("Conversations");
 
-         routeGroup.MapGet(string.Empty, GetAgentConversationsAsync);
-         routeGroup.MapGet("{conversationId:guid}/messages", GetConversationMessagesAsync);
-         routeGroup.MapPatch("{conversationId:guid}/messages/{messageId:guid}/read", MarkConversationMessageReadAsync);
-         routeGroup.MapPatch("{conversationId:guid}/read", MarkConversationReadAsync);
+         routeGroup
+             .MapGet(string.Empty, GetAgentConversationsAsync)
+             .ProducesProblem(StatusCodes.Status400BadRequest)
+             .ProducesProblem(StatusCodes.Status404NotFound)
+             .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+         routeGroup
+             .MapGet("{conversationId:guid}/messages", GetConversationMessagesAsync)
+             .ProducesProblem(StatusCodes.Status400BadRequest)
+             .ProducesProblem(StatusCodes.Status404NotFound)
+             .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+         routeGroup
+             .MapPatch("{conversationId:guid}/messages/{messageId:guid}/read", MarkConversationMessageReadAsync)
+             .ProducesProblem(StatusCodes.Status400BadRequest)
+             .ProducesProblem(StatusCodes.Status404NotFound)
+             .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+         routeGroup
+             .MapPatch("{conversationId:guid}/read", MarkConversationReadAsync)
+             .ProducesProblem(StatusCodes.Status400BadRequest)
+             .ProducesProblem(StatusCodes.Status404NotFound)
+             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         return routeBuilder;
     }
 
-    private static async Task<Results<Ok<GetAgentConversationsResult>, NotFound>> GetAgentConversationsAsync(
-        [AsParameters] GetAgentConversationsInput input,
+    private static async Task<Results<Ok<GetAgentConversationsResult>, NotFound, ProblemHttpResult>> GetAgentConversationsAsync(
+        [FromRoute] Guid agentId,
         ClaimsPrincipal user,
         MainDataContext dbContext,
-        CancellationToken ct)
+        CancellationToken ct,
+        [FromQuery]
+        [Range(Constants.SkipMin, Constants.SkipMax)]
+        int skip = Constants.SkipDefault,
+        [FromQuery]
+        [Range(Constants.TakeMin, Constants.TakeMax)]
+        int take = Constants.TakeDefault)
     {
         Guid? userId = user.GetUserId();
         if (userId is null)
@@ -37,17 +64,14 @@ public static class ConversationEndpoints
             return TypedResults.NotFound();
         }
 
-        bool hasAccess = await HasAgentAccessAsync(dbContext, input.AgentId, userId.Value, ct);
+        bool hasAccess = await HasAgentAccessAsync(dbContext, agentId, userId.Value, ct);
         if (!hasAccess)
         {
             return TypedResults.NotFound();
         }
 
-        int skip = NormalizeSkip(input.Skip);
-        int take = ClampTake(input.Take, 30, 100);
-
         CursorList<ConversationListItem> cursor = await dbContext.Conversations
-            .Where(conversation => conversation.AgentId == input.AgentId)
+            .Where(conversation => conversation.AgentId == agentId)
             .OrderByDescending(conversation => conversation.LastMessageAt)
             .ThenByDescending(conversation => conversation.Id)
             .Select(conversation => new ConversationListItem(
@@ -65,11 +89,18 @@ public static class ConversationEndpoints
         return TypedResults.Ok(result);
     }
 
-    private static async Task<Results<Ok<GetConversationMessagesResult>, NotFound>> GetConversationMessagesAsync(
-        [AsParameters] GetConversationMessagesInput input,
+    private static async Task<Results<Ok<GetConversationMessagesResult>, NotFound, ProblemHttpResult>> GetConversationMessagesAsync(
+        [FromRoute] Guid agentId,
+        [FromRoute] Guid conversationId,
         ClaimsPrincipal user,
         MainDataContext dbContext,
-        CancellationToken ct)
+        CancellationToken ct,
+        [FromQuery]
+        [Range(Constants.SkipMin, Constants.SkipMax)]
+        int skip = Constants.SkipDefault,
+        [FromQuery]
+        [Range(Constants.TakeMin, Constants.TakeMax)]
+        int take = Constants.TakeDefault)
     {
         Guid? userId = user.GetUserId();
         if (userId is null)
@@ -77,7 +108,7 @@ public static class ConversationEndpoints
             return TypedResults.NotFound();
         }
 
-        bool hasAccess = await HasAgentAccessAsync(dbContext, input.AgentId, userId.Value, ct);
+        bool hasAccess = await HasAgentAccessAsync(dbContext, agentId, userId.Value, ct);
         if (!hasAccess)
         {
             return TypedResults.NotFound();
@@ -86,8 +117,8 @@ public static class ConversationEndpoints
         bool conversationExists = await dbContext.Conversations
             .AnyAsync(
                 conversation =>
-                    conversation.Id == input.ConversationId &&
-                    conversation.AgentId == input.AgentId,
+                    conversation.Id == conversationId &&
+                    conversation.AgentId == agentId,
                 ct);
 
         if (!conversationExists)
@@ -95,13 +126,10 @@ public static class ConversationEndpoints
             return TypedResults.NotFound();
         }
 
-        int skip = NormalizeSkip(input.Skip);
-        int take = ClampTake(input.Take, 50, 100);
-
         CursorList<ConversationMessageItem> cursor = await dbContext.ConversationMessages
             .Where(message =>
-                message.AgentId == input.AgentId &&
-                message.ConversationId == input.ConversationId)
+                message.AgentId == agentId &&
+                message.ConversationId == conversationId)
             .OrderByDescending(message => message.OccurredAt)
             .ThenByDescending(message => message.Id)
             .Select(message => new ConversationMessageItem(
@@ -119,8 +147,10 @@ public static class ConversationEndpoints
         return TypedResults.Ok(result);
     }
 
-    private static async Task<Results<Ok<MarkConversationMessageReadResult>, NotFound>> MarkConversationMessageReadAsync(
-        [AsParameters] MarkConversationMessageReadInput input,
+    private static async Task<Results<Ok<MarkConversationMessageReadResult>, NotFound, ProblemHttpResult>> MarkConversationMessageReadAsync(
+        [FromRoute] Guid agentId,
+        [FromRoute] Guid conversationId,
+        [FromRoute] Guid messageId,
         ClaimsPrincipal user,
         MainDataContext dbContext,
         CancellationToken ct)
@@ -131,7 +161,7 @@ public static class ConversationEndpoints
             return TypedResults.NotFound();
         }
 
-        bool hasAccess = await HasAgentAccessAsync(dbContext, input.AgentId, userId.Value, ct);
+        bool hasAccess = await HasAgentAccessAsync(dbContext, agentId, userId.Value, ct);
         if (!hasAccess)
         {
             return TypedResults.NotFound();
@@ -139,7 +169,7 @@ public static class ConversationEndpoints
 
         Conversation? conversation = await dbContext.Conversations
             .SingleOrDefaultAsync(
-                item => item.Id == input.ConversationId && item.AgentId == input.AgentId,
+                item => item.Id == conversationId && item.AgentId == agentId,
                 ct);
 
         if (conversation is null)
@@ -150,9 +180,9 @@ public static class ConversationEndpoints
         ConversationMessage? message = await dbContext.ConversationMessages
             .SingleOrDefaultAsync(
                 item =>
-                    item.Id == input.MessageId &&
-                    item.ConversationId == input.ConversationId &&
-                    item.AgentId == input.AgentId,
+                    item.Id == messageId &&
+                    item.ConversationId == conversationId &&
+                    item.AgentId == agentId,
                 ct);
 
         if (message is null)
@@ -178,8 +208,9 @@ public static class ConversationEndpoints
         return TypedResults.Ok(result);
     }
 
-    private static async Task<Results<Ok<MarkConversationReadResult>, NotFound>> MarkConversationReadAsync(
-        [AsParameters] MarkConversationReadInput input,
+    private static async Task<Results<Ok<MarkConversationReadResult>, NotFound, ProblemHttpResult>> MarkConversationReadAsync(
+        [FromRoute] Guid agentId,
+        [FromRoute] Guid conversationId,
         ClaimsPrincipal user,
         MainDataContext dbContext,
         CancellationToken ct)
@@ -190,7 +221,7 @@ public static class ConversationEndpoints
             return TypedResults.NotFound();
         }
 
-        bool hasAccess = await HasAgentAccessAsync(dbContext, input.AgentId, userId.Value, ct);
+        bool hasAccess = await HasAgentAccessAsync(dbContext, agentId, userId.Value, ct);
         if (!hasAccess)
         {
             return TypedResults.NotFound();
@@ -198,7 +229,7 @@ public static class ConversationEndpoints
 
         Conversation? conversation = await dbContext.Conversations
             .SingleOrDefaultAsync(
-                item => item.Id == input.ConversationId && item.AgentId == input.AgentId,
+                item => item.Id == conversationId && item.AgentId == agentId,
                 ct);
 
         if (conversation is null)
@@ -209,8 +240,8 @@ public static class ConversationEndpoints
         DateTimeOffset now = DateTimeOffset.UtcNow;
         List<ConversationMessage> unreadMessages = await dbContext.ConversationMessages
             .Where(message =>
-                message.AgentId == input.AgentId &&
-                message.ConversationId == input.ConversationId &&
+                message.AgentId == agentId &&
+                message.ConversationId == conversationId &&
                 message.Role == MessageRole.Customer &&
                 !message.IsRead)
             .ToListAsync(ct);
@@ -249,18 +280,4 @@ public static class ConversationEndpoints
         return hasAccess;
     }
 
-    private static int NormalizeSkip(int skip)
-    {
-        return Math.Max(0, skip);
-    }
-
-    private static int ClampTake(int take, int defaultTake, int maxTake)
-    {
-        if (take <= 0)
-        {
-            return defaultTake;
-        }
-
-        return Math.Min(take, maxTake);
-    }
 }

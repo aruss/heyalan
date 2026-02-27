@@ -19,14 +19,23 @@ public static class IdentityEndpoints
 
         routeGroup
             .MapPost("/login", LoginAsync)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
             .AllowAnonymous();
 
         routeGroup
             .MapGet("/me", GetCurrentUserAsync)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
             .RequireAuthorization();
 
         routeGroup
             .MapPost("/logout", LogoutAsync)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
             .RequireAuthorization();
 
         return endpoints;

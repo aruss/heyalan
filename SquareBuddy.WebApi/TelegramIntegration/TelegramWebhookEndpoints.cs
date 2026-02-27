@@ -18,12 +18,16 @@ public static class TelegramWebhookEndpoints
         routeBuilder
             .MapPost("/webhooks/telegram/{botToken}", IngestTelegramMessage)
             .WithTags("Webhooks")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
             .AddEndpointFilter(new TelegramSecretTokenFilter(options.SecretToken));
 
         return routeBuilder;
     }
      
-    private static async Task<Results<Ok, NotFound, UnauthorizedHttpResult>> IngestTelegramMessage(
+    private static async Task<Results<Ok, NotFound, UnauthorizedHttpResult, ProblemHttpResult>> IngestTelegramMessage(
             [FromRoute] string botToken,
             [FromBody] IngestTelegramMessageInput input,
             IPublishEndpoint publishEndpoint,

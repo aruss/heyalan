@@ -121,8 +121,8 @@ Authorization rule for every endpoint:
 ### 1) List conversations for agent
 `GET /agents/{agentId}/conversations?skip=0&take=30`
 
-Input DTO:
-- `GetAgentConversationsInput` (`AsParameters`): `AgentId`, `Skip`, `Take`
+Input parameters:
+- Route/query params: `AgentId`, `Skip`, `Take`
 
 Result DTOs:
 - `ConversationListItem`:
@@ -144,8 +144,8 @@ Query:
 ### 2) List messages for conversation
 `GET /agents/{agentId}/conversations/{conversationId}/messages?skip=0&take=50`
 
-Input DTO:
-- `GetConversationMessagesInput`: `AgentId`, `ConversationId`, `Skip`, `Take`
+Input parameters:
+- Route/query params: `AgentId`, `ConversationId`, `Skip`, `Take`
 
 Result DTOs:
 - `ConversationMessageItem`:
@@ -167,8 +167,8 @@ Query:
 ### 3) Mark one message as read
 `PATCH /agents/{agentId}/conversations/{conversationId}/messages/{messageId}/read`
 
-Input DTO:
-- `MarkConversationMessageReadInput`: path params only
+Input parameters:
+- Path params only: `AgentId`, `ConversationId`, `MessageId`
 
 Behavior:
 - Only affects inbound unread messages (`Role = Customer`, `IsRead = false`)
@@ -187,8 +187,8 @@ Result DTO:
 ### 4) Mark all unread inbound messages in conversation as read
 `PATCH /agents/{agentId}/conversations/{conversationId}/read`
 
-Input DTO:
-- `MarkConversationReadInput`: path params only
+Input parameters:
+- Path params only: `AgentId`, `ConversationId`
 
 Behavior:
 - Bulk update all messages in conversation where `Role = Customer && IsRead = false`

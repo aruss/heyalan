@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Mvc;
 using SquareBuddy;
 using SquareBuddy.TelegramIntegration;
 using SquareBuddy.WebApi.Core;
@@ -20,10 +21,20 @@ builder.AddMinioServices();
 builder.AddMassTransitServices(); 
 builder.AddCoreServices();
 builder.AddTelegram();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalProblemExceptionHandler>();
+builder.Services.Configure<RouteHandlerOptions>(options =>
+{
+    options.ThrowOnBadRequest = true;
+});
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddOpenApi();
+    builder.Services.AddOpenApi(options =>
+    {
+        options.AddOperationTransformer<CamelCaseQueryParameterOperationTransformer>();
+        options.AddSchemaTransformer<PaginationIntegerSchemaTransformer>();
+    });
 }
 
 builder.Services.AddValidation();
@@ -46,6 +57,59 @@ app.UseCookiePolicy(new CookiePolicyOptions
     MinimumSameSitePolicy = SameSiteMode.Lax,
     Secure = CookieSecurePolicy.Always,
     HttpOnly = HttpOnlyPolicy.Always
+});
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception exception)
+    {
+        if (context.Response.HasStarted)
+        {
+            throw;
+        }
+
+        IProblemDetailsService problemDetailsService = context.RequestServices.GetRequiredService<IProblemDetailsService>();
+        int statusCode = exception is BadHttpRequestException badHttpRequestException
+            ? badHttpRequestException.StatusCode
+            : StatusCodes.Status500InternalServerError;
+
+        ProblemDetails problemDetails = new()
+        {
+            Status = statusCode,
+            Title = statusCode == StatusCodes.Status500InternalServerError ? "Internal Server Error" : "Bad Request",
+            Detail = statusCode == StatusCodes.Status500InternalServerError
+                ? "An unexpected error occurred."
+                : exception.Message,
+            Type = $"https://httpstatuses.com/{statusCode}"
+        };
+
+        context.Response.Clear();
+        context.Response.StatusCode = statusCode;
+
+        bool written = await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = context,
+            Exception = exception,
+            ProblemDetails = problemDetails
+        });
+
+        if (!written)
+        {
+            await context.Response.WriteAsJsonAsync(problemDetails);
+        }
+    }
+});
+
+app.UseExceptionHandler();
+app.UseStatusCodePages(async statusCodeContext =>
+{
+    await TypedResults
+        .Problem(statusCode: statusCodeContext.HttpContext.Response.StatusCode)
+        .ExecuteAsync(statusCodeContext.HttpContext);
 });
 
 app.UseAuthentication();
