@@ -1,6 +1,6 @@
 # ShelfBuddy.Initializer
 
-Initializer service that applies EF Core migrations, seeds the admin user, and ensures the MinIO bucket exists.
+Initializer service that applies EF Core migrations, seeds the admin user, registers Telegram webhook defaults, and deploys RabbitMQ topology.
 
 **Tech Stack**
 - .NET 10 console/hosted app
@@ -17,7 +17,7 @@ Initializer service that applies EF Core migrations, seeds the admin user, and e
 
 **Operational Notes**
 - Reads connection string `shelfbuddy` and `ADMIN_EMAIL` / `ADMIN_PASSWORD` from configuration.
-- Uses retry policy for database connectivity during startup.
+- Uses separate Polly resilience pipelines per startup lane and runs DB and RabbitMQ setup concurrently.
 
 
 **Create new migration**

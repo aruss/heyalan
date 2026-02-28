@@ -23,6 +23,10 @@ public class Program
     private static readonly Guid SubscriptionId = Guid.Parse("81c0b65c-1325-48a3-9389-2369173dff7a");
     private static readonly Guid AgentId = Guid.Parse("b4099979-fceb-41e1-bfb6-135f3ccb1701");
     private static readonly string TelegramBotToken = "7592736264:AAGpsXEe03dUe3O5WWCjDYtemWmpwvCoFVE";
+    private const int DatabaseMaxRetryAttempts = 10;
+    private const int RabbitMaxRetryAttempts = 8;
+    private static readonly TimeSpan DatabaseRetryDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan RabbitRetryDelay = TimeSpan.FromSeconds(1);
 
     private static async Task<int> Main(string[] args)
     {
@@ -129,60 +133,185 @@ public class Program
 
         var host = builder.Build();
 
-        // 1. Define the modern Resilience Pipeline
-        var pipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions
-            {
-                // Handle database-specific connection errors
-                ShouldHandle = new PredicateBuilder().Handle<NpgsqlException>(),
-                MaxRetryAttempts = 10,
-                Delay = TimeSpan.FromSeconds(2),
-                BackoffType = DelayBackoffType.Exponential,
-                UseJitter = true
-            })
-            .Build();
+        ResiliencePipeline databasePipeline = BuildDatabasePipeline();
+        ResiliencePipeline rabbitTopologyPipeline = BuildRabbitTopologyPipeline();
 
-        // 2. Execute migrations through the pipeline
-        await pipeline.ExecuteAsync(async token =>
-        {
-            using var scope = host.Services.CreateScope();
-            var services = scope.ServiceProvider;
+        using CancellationTokenSource startupCts = new();
 
-            // 1. Database Migrations
-            Console.WriteLine("Attempting to apply migrations...");
-            var db = scope.ServiceProvider.GetRequiredService<MainDataContext>();
-            await db.Database.MigrateAsync(token);
-            Console.WriteLine("Migrations complete.");
+        Task databaseLaneTask = ExecuteDatabaseLaneAsync(
+            host.Services,
+            builder.Configuration,
+            databasePipeline,
+            startupCts.Token);
 
-            // 2. Admin user seed
-            string adminEmail = builder.Configuration["ADMIN_EMAIL"] ?? "admin@shelfbuddy.ai";
-            string adminPassword = builder.Configuration["ADMIN_PASSWORD"] ?? "admin@shelfbuddy.ai";
+        Task rabbitLaneTask = ExecuteRabbitLaneAsync(
+            host.Services,
+            rabbitTopologyPipeline,
+            startupCts.Token);
 
-            await SeedAdminUserAsync(services, adminEmail, adminPassword, token);
+        await WaitForStartupLanesAsync(databaseLaneTask, rabbitLaneTask, startupCts);
 
-            await DeployRabbitMqTopology(services);
-
-            // 4. Seed default dev data 
-            await SeedBasicData(services, token);
-        });
-
-        Console.WriteLine("Migrations complete.");
+        Console.WriteLine("Initializer startup complete.");
         return 0;
     }
 
-    private static async Task DeployRabbitMqTopology(IServiceProvider services)
+    private static ResiliencePipeline BuildDatabasePipeline()
     {
-        var busControl = services.GetRequiredService<IBusControl>();
+        ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().Handle<NpgsqlException>(),
+                MaxRetryAttempts = DatabaseMaxRetryAttempts,
+                Delay = DatabaseRetryDelay,
+                BackoffType = DelayBackoffType.Exponential,
+                UseJitter = true,
+                OnRetry = static args =>
+                {
+                    Console.WriteLine(
+                        $"[DB] Retry {args.AttemptNumber + 1} after {args.RetryDelay}. Cause: {args.Outcome.Exception?.Message}");
+                    return default;
+                }
+            })
+            .Build();
+
+        return pipeline;
+    }
+
+    private static ResiliencePipeline BuildRabbitTopologyPipeline()
+    {
+        ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().Handle<Exception>(exception => exception is not OperationCanceledException),
+                MaxRetryAttempts = RabbitMaxRetryAttempts,
+                Delay = RabbitRetryDelay,
+                BackoffType = DelayBackoffType.Exponential,
+                UseJitter = true,
+                OnRetry = static args =>
+                {
+                    Console.WriteLine(
+                        $"[Rabbit] Retry {args.AttemptNumber + 1} after {args.RetryDelay}. Cause: {args.Outcome.Exception?.Message}");
+                    return default;
+                }
+            })
+            .Build();
+
+        return pipeline;
+    }
+
+    private static async Task ExecuteDatabaseLaneAsync(
+        IServiceProvider rootServices,
+        IConfiguration configuration,
+        ResiliencePipeline pipeline,
+        CancellationToken cancellationToken)
+    {
+        await pipeline.ExecuteAsync(async token =>
+        {
+            using IServiceScope scope = rootServices.CreateScope();
+            IServiceProvider services = scope.ServiceProvider;
+
+            Console.WriteLine("[DB] Starting database lane.");
+
+            MainDataContext db = services.GetRequiredService<MainDataContext>();
+            Console.WriteLine("[DB] Applying migrations...");
+            await db.Database.MigrateAsync(token);
+            Console.WriteLine("[DB] Migrations complete.");
+
+            string adminEmail = configuration["ADMIN_EMAIL"] ?? "admin@shelfbuddy.ai";
+            string adminPassword = configuration["ADMIN_PASSWORD"] ?? "admin@shelfbuddy.ai";
+
+            Console.WriteLine("[DB] Seeding admin user...");
+            await SeedAdminUserAsync(services, adminEmail, adminPassword, token);
+
+            Console.WriteLine("[DB] Seeding basic data and registering Telegram webhook...");
+            await SeedBasicData(services, token);
+
+            Console.WriteLine("[DB] Database lane complete.");
+        }, cancellationToken);
+    }
+
+    private static async Task ExecuteRabbitLaneAsync(
+        IServiceProvider rootServices,
+        ResiliencePipeline pipeline,
+        CancellationToken cancellationToken)
+    {
+        await pipeline.ExecuteAsync(async token =>
+        {
+            using IServiceScope scope = rootServices.CreateScope();
+            IServiceProvider services = scope.ServiceProvider;
+
+            Console.WriteLine("[Rabbit] Starting topology lane.");
+            await DeployRabbitMqTopologyAsync(services, token);
+            Console.WriteLine("[Rabbit] Topology lane complete.");
+        }, cancellationToken);
+    }
+
+    private static async Task WaitForStartupLanesAsync(
+        Task databaseLaneTask,
+        Task rabbitLaneTask,
+        CancellationTokenSource startupCts)
+    {
+        Task[] laneTasks = [databaseLaneTask, rabbitLaneTask];
 
         try
         {
-            // This connects to RabbitMQ, creates all exchanges/queues/bindings, and returns
-            await busControl.DeployAsync();
-            Console.WriteLine("RabbitMQ Topology successfully deployed.");
+            await Task.WhenAll(laneTasks);
+        }
+        catch
+        {
+            startupCts.Cancel();
+
+            try
+            {
+                await Task.WhenAll(laneTasks);
+            }
+            catch
+            {
+                // Swallow to inspect lane task exceptions below and throw a clearer startup error.
+            }
+
+            Exception? databaseError = databaseLaneTask.Exception?.GetBaseException();
+            Exception? rabbitError = rabbitLaneTask.Exception?.GetBaseException();
+
+            if (databaseError != null && rabbitError != null)
+            {
+                throw new AggregateException(
+                    "Initializer startup failed in database and RabbitMQ lanes.",
+                    databaseError,
+                    rabbitError);
+            }
+
+            if (databaseError != null)
+            {
+                throw new InvalidOperationException(
+                    "Initializer startup failed in database lane.",
+                    databaseError);
+            }
+
+            if (rabbitError != null)
+            {
+                throw new InvalidOperationException(
+                    "Initializer startup failed in RabbitMQ topology lane.",
+                    rabbitError);
+            }
+
+            throw;
+        }
+    }
+
+    private static async Task DeployRabbitMqTopologyAsync(
+        IServiceProvider services, CancellationToken cancellationToken)
+    {
+        IBusControl busControl = services.GetRequiredService<IBusControl>();
+
+        try
+        {
+            await busControl.DeployAsync(cancellationToken);
+            Console.WriteLine("[Rabbit] Topology successfully deployed.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to deploy RabbitMQ Topology: {ex.Message}");
+            Console.WriteLine($"[Rabbit] Failed to deploy topology: {ex.Message}");
             throw;
         }
     }
@@ -219,8 +348,8 @@ public class Program
 
     private static async Task SeedBasicData(IServiceProvider services, CancellationToken ct)
     {
-        var dbContext = services.GetRequiredService<MainDataContext>();
-        var telegramService = services.GetRequiredService<ITelegramService>();
+        MainDataContext dbContext = services.GetRequiredService<MainDataContext>();
+        ITelegramService telegramService = services.GetRequiredService<ITelegramService>();
 
         await telegramService.RegisterWebhookAsync(TelegramBotToken, ct);
 
@@ -229,7 +358,7 @@ public class Program
             return;
         }
 
-        var agent = new Agent
+        Agent agent = new Agent
         {
             Id = Program.AgentId,
             Name = "Alan",
@@ -237,7 +366,7 @@ public class Program
             TelegramBotToken = TelegramBotToken
         };
 
-        var subscription = new Subscription
+        Subscription subscription = new Subscription
         {
             Id = Program.SubscriptionId,
             SubscriptionCreditBalance = 10000,
