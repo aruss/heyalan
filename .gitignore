@@ -42,3 +42,4 @@ junk
 .dotnet-cli
 hosttrace.txt
 .dotnet
+.out

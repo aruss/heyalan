@@ -1,10 +1,13 @@
 namespace ShelfBuddy.WebApi.Identity;
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ShelfBuddy.Configuration;
 using ShelfBuddy.Data;
 using ShelfBuddy.Data.Entities;
@@ -17,6 +20,9 @@ public static class IdentityBuilderExtensions
     public static TBuilder AddIdentityServices<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         AppOptions appOptions = builder.Configuration.TryGetAppOptions();
+        CookieSecurePolicy authCookieSecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
 
         builder.Services
             .AddIdentityCore<ApplicationUser>()
@@ -35,28 +41,81 @@ public static class IdentityBuilderExtensions
         if (!String.IsNullOrWhiteSpace(appOptions.GoogleClientId) &&
             !String.IsNullOrWhiteSpace(appOptions.GoogleClientSecret))
         {
-            authBuilder.AddGoogle("Google", "Google", options =>
+            authBuilder.AddGoogle("google", "Google", options =>
             {
                 options.ClientId = appOptions.GoogleClientId;
                 options.ClientSecret = appOptions.GoogleClientSecret;
-                options.CallbackPath = "/auth/signin-google";
+                options.CallbackPath = "/auth/google/signin";
+                options.UserInformationEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo";
                 options.SignInScheme = IdentityConstants.ExternalScheme;
+                options.Events.OnCreatingTicket = context =>
+                {
+                    if (TryGetVerificationValue(context.User, "verified_email", out bool isVerifiedEmail))
+                    {
+                        context.Identity?.AddClaim(new Claim("verified_email", isVerifiedEmail ? "true" : "false"));
+                    }
+
+                    if (TryGetVerificationValue(context.User, "email_verified", out bool isEmailVerified))
+                    {
+                        context.Identity?.AddClaim(new Claim("email_verified", isEmailVerified ? "true" : "false"));
+                    }
+
+                    if (builder.Environment.IsDevelopment())
+                    {
+                        // TEMP-DIAG-REMOVE: Temporary diagnostics for Google email verification investigation.
+                        string rawGoogleProfile = context.User.GetRawText();
+                        string path = context.HttpContext.Request.Path;
+                        string traceId = context.HttpContext.TraceIdentifier;
+                        ILogger logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("GoogleAuthDiagnostics");
+
+                        logger.LogInformation(
+                            "Google raw profile received. TraceId: {TraceId}; Path: {Path}; Profile: {Profile}",
+                            traceId,
+                            path,
+                            rawGoogleProfile);
+                    }
+
+                    return Task.CompletedTask;
+                };
+                options.Events.OnRemoteFailure = context =>
+                {
+                    string callbackPath = BuildAuthPath(
+                        context.Request.PathBase,
+                        "/auth/external/callback");
+
+                    string callbackUrl = QueryHelpers.AddQueryString(
+                        callbackPath,
+                        "remoteError",
+                        "external_provider_error");
+
+                    context.Response.Redirect(callbackUrl);
+                    context.HandleResponse();
+                    return Task.CompletedTask;
+                };
             });
         }
 
         if (!string.IsNullOrWhiteSpace(appOptions.SquareClientId) &&
             !string.IsNullOrWhiteSpace(appOptions.SquareClientSecret))
         {
-            authBuilder.AddOAuth("Square", "Square", options =>
+            authBuilder.AddOAuth("square", "Square", options =>
             {
+                bool isSandbox = appOptions.SquareClientId.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase);
+
+                string squareBaseUrl = isSandbox
+                    ? "https://connect.squareupsandbox.com"
+                    : "https://connect.squareup.com";
+
                 options.ClientId = appOptions.SquareClientId;
                 options.ClientSecret = appOptions.SquareClientSecret;
-                options.CallbackPath = "/auth/signin-square";
+                options.CallbackPath = "/auth/square/signin";
                 options.SignInScheme = IdentityConstants.ExternalScheme;
 
-                options.AuthorizationEndpoint = "https://connect.squareup.com/oauth2/authorize";
-                options.TokenEndpoint = "https://connect.squareup.com/oauth2/token";
-                options.UserInformationEndpoint = "https://connect.squareup.com/v2/merchants/me";
+                options.AuthorizationEndpoint = $"{squareBaseUrl}/oauth2/authorize";
+                options.TokenEndpoint = $"{squareBaseUrl}/oauth2/token";
+                options.UserInformationEndpoint = $"{squareBaseUrl}/v2/merchants/me";
 
                 options.Scope.Add("MERCHANT_PROFILE_READ");
 
@@ -64,6 +123,18 @@ public static class IdentityBuilderExtensions
                 options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
                 options.ClaimActions.MapJsonKey(ClaimTypes.Email, "main_email");
                 options.ClaimActions.MapJsonKey("name", "business_name");
+
+                options.Events.OnRedirectToAuthorizationEndpoint = context =>
+                {
+                    // Enforce explicit login for Production per Square OAuth guidelines
+                    string authorizationUrl = isSandbox
+                        ? context.RedirectUri
+                        : Microsoft.AspNetCore.WebUtilities.QueryHelpers
+                            .AddQueryString(context.RedirectUri, "session", "false");
+
+                    context.Response.Redirect(authorizationUrl);
+                    return Task.CompletedTask;
+                };
 
                 options.Events.OnCreatingTicket = async context =>
                 {
@@ -74,10 +145,12 @@ public static class IdentityBuilderExtensions
                     // Square requires an explicit API version header
                     request.Headers.Add("Square-Version", "2024-01-18");
 
-                    using var response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+                    using var response = await context.Backchannel
+                        .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
                     response.EnsureSuccessStatusCode();
 
-                    using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(context.HttpContext.RequestAborted));
+                    using var document = await JsonDocument
+                        .ParseAsync(await response.Content.ReadAsStreamAsync(context.HttpContext.RequestAborted));
                     JsonElement merchant = document.RootElement.GetProperty("merchant");
 
                     context.RunClaimActions(merchant);
@@ -98,9 +171,7 @@ public static class IdentityBuilderExtensions
 
         builder.Services.ConfigureApplicationCookie(options =>
         {
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            ConfigureAuthCookie(options.Cookie, authCookieSecurePolicy);
             options.SlidingExpiration = true;
             options.ExpireTimeSpan = TimeSpan.FromDays(7);
             options.Events.OnRedirectToLogin = context =>
@@ -113,6 +184,11 @@ public static class IdentityBuilderExtensions
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return Task.CompletedTask;
             };
+        });
+
+        builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ExternalScheme, options =>
+        {
+            ConfigureAuthCookie(options.Cookie, authCookieSecurePolicy);
         });
 
         // for development phase use simple passwords
@@ -130,5 +206,77 @@ public static class IdentityBuilderExtensions
         }
 
         return builder;
+    }
+
+    private static string BuildAuthPath(PathString pathBase, string authPath)
+    {
+        if (!authPath.StartsWith('/'))
+        {
+            throw new ArgumentException("Auth path must start with '/'.", nameof(authPath));
+        }
+
+        return pathBase.HasValue
+            ? $"{pathBase}{authPath}"
+            : authPath;
+    }
+
+    internal static void ConfigureAuthCookie(CookieBuilder cookie, CookieSecurePolicy securePolicy)
+    {
+        cookie.HttpOnly = true;
+        cookie.Path = "/";
+        cookie.SameSite = SameSiteMode.Lax;
+        cookie.SecurePolicy = securePolicy;
+    }
+
+    internal static bool TryGetVerificationValue(JsonElement source, string propertyName, out bool result)
+    {
+        result = false;
+
+        if (!source.TryGetProperty(propertyName, out JsonElement property))
+        {
+            return false;
+        }
+
+        if (property.ValueKind == JsonValueKind.True)
+        {
+            result = true;
+            return true;
+        }
+
+        if (property.ValueKind == JsonValueKind.False)
+        {
+            result = false;
+            return true;
+        }
+
+        if (property.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        string? propertyValue = property.GetString();
+        if (string.IsNullOrWhiteSpace(propertyValue))
+        {
+            return false;
+        }
+
+        string normalizedValue = propertyValue.Trim();
+        if (string.Equals(normalizedValue, "true", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(normalizedValue, "1", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(normalizedValue, "yes", StringComparison.OrdinalIgnoreCase))
+        {
+            result = true;
+            return true;
+        }
+
+        if (string.Equals(normalizedValue, "false", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(normalizedValue, "0", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(normalizedValue, "no", StringComparison.OrdinalIgnoreCase))
+        {
+            result = false;
+            return true;
+        }
+
+        return false;
     }
 }

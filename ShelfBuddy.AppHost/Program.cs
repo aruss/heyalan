@@ -128,7 +128,7 @@ if (!String.IsNullOrEmpty(ngrokDomain))
 */
 
 // if WebApp run is via yarn/npm, use AddExecutable
-var webapp = builder.AddExecutable("webapp", "yarn.cmd",  "../ShelfBuddy.WebApp", "dev")
+/*var webapp = builder.AddExecutable("webapp", "yarn.cmd",  "../ShelfBuddy.WebApp", "dev")
     // explicitly allow unsecure transport for local dev if needed, or use https
     .WithHttpEndpoint(env: "PORT", port: 5010, name: "http")
     .WithExternalHttpEndpoints()
@@ -137,7 +137,7 @@ var webapp = builder.AddExecutable("webapp", "yarn.cmd",  "../ShelfBuddy.WebApp"
     .WithOtlpExporter()
     .WithEnvironment("APP_VERSION", "1.2.3")
     .WithEnvironment("WEBAPI_ENDPOINT", webapi.GetEndpoint("http"))
-    .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
+    .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");*/
 
 #endregion
 

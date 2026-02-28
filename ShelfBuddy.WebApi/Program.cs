@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using ShelfBuddy;
 using ShelfBuddy.TelegramIntegration;
@@ -37,6 +38,20 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
+});
+
 builder.Services.AddValidation();
 
 /*builder.Services.Configure<JsonOptions>(options =>
@@ -49,13 +64,27 @@ builder.Services.AddValidation();
 builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();
+CookieSecurePolicy cookieSecurePolicy = app.Environment.IsDevelopment()
+    ? CookieSecurePolicy.SameAsRequest
+    : CookieSecurePolicy.Always;
+
+app.UseForwardedHeaders();
+
+app.Use((context, next) =>
+{
+    if (context.Request.Headers.TryGetValue("X-Forwarded-Prefix", out var prefix))
+    {
+        context.Request.PathBase = prefix.ToString();
+    }
+    return next(context);
+});
 
 app.UseStaticFiles();
 
 app.UseCookiePolicy(new CookiePolicyOptions
 {
     MinimumSameSitePolicy = SameSiteMode.Lax,
-    Secure = CookieSecurePolicy.Always,
+    Secure = cookieSecurePolicy,
     HttpOnly = HttpOnlyPolicy.Always
 });
 

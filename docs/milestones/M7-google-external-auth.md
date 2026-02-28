@@ -91,18 +91,20 @@ Failure behavior:
 ## Callback Path Requirements (`/auth` only)
 
 Google middleware callback path:
-- [x] Configure `GoogleOptions.CallbackPath = "/auth/signin-google"`.
+- [x] Configure `GoogleOptions.CallbackPath = "/auth/google/signin"`.
 
 Flow:
 - [x] Browser starts at `/auth/external/google/start`.
-- [x] Google redirects to `/auth/signin-google`.
+- [x] Google redirects to `/auth/google/signin`.
 - [x] Middleware finalizes external auth handshake and returns to `/auth/external/callback`.
+- [x] When running behind a proxy path prefix (for example `/api`), callback redirects preserve that prefix (`/api/auth/...`).
 
 ## Security Requirements
 - [x] `returnUrl` MUST be local path only (`/something`) to prevent open redirect attacks.
 - [x] Reject absolute external URLs and protocol-relative URLs.
 - [x] Do not log external tokens or Google credentials.
 - [x] Continue using secure cookie settings (`HttpOnly`, `Secure`, `SameSite=Lax`) already configured.
+- [x] Configure Identity application/external cookie path to `/` so proxy `/api` callbacks and `/admin` routes share the same session cookie.
 
 ## Implementation Plan by Gate
 
@@ -114,7 +116,7 @@ Flow:
 
 ## Gate B: Identity Registration
 - [x] Update `ShelfBuddy/Identity/IdentityBuilderExtensions.cs` to conditionally register Google auth only when both credentials exist.
-- [x] Configure callback path to `/auth/signin-google`.
+- [x] Configure callback path to `/auth/google/signin`.
 - [x] Ensure Identity external sign-in temp cookie flow remains compatible with `SignInManager`.
 
 ## Gate C: Custom Identity Endpoints
@@ -179,6 +181,44 @@ Flow:
   - [ ] Onboarded user callback redirects to normalized requested route.
   - [x] Unit tests cover redirect-target decision helper for onboarded/non-onboarded outcomes.
 
+
+## Gate H: Login Page Auth Error Display (UI-Only, Current API State)
+  - [x] Surface auth callback errors on `/login` via `authError` query parameter.
+    - [x] Parse `authError` from `searchParams` and render a single top banner on the login page.
+    - [x] If multiple `authError` values are present, display the first value only.
+    - [x] Keep `returnUrl` safety logic unchanged.
+  - [x] Map all currently emitted API error codes to user-facing copy.
+    - [x] `external_provider_error`
+    - [x] `external_login_info_missing`
+    - [x] `user_not_allowed`
+    - [x] `user_locked_out`
+    - [x] `email_claim_missing`
+    - [x] `external_email_not_verified`
+    - [x] `user_create_failed`
+    - [x] `local_email_not_confirmed`
+    - [x] `external_login_link_failed`
+    - [x] Unknown code fallback: generic sign-in failure message.
+  - [x] Implement unconfirmed-email guidance behavior.
+    - [x] For `local_email_not_confirmed`, tell user to confirm email first.
+    - [x] Show “or use another provider” guidance only when more than one provider is available on the page.
+  - [x] Preserve existing provider rendering behavior.
+    - [x] Auth error banner should display independently of provider load/empty states.
+    - [x] Existing provider-load error handling remains intact.
+  - [x] Add tests for UI error behavior.
+    - [x] Mapping/parsing tests for known and unknown codes.
+    - [x] Multiple `authError` values select the first one.
+    - [x] `local_email_not_confirmed` message variant changes based on provider count.
+
+
+## Gate I: Google UserInfo Verification Claim Normalization
+  - [x] Update Google auth registration in `ShelfBuddy/Identity/IdentityBuilderExtensions.cs` to explicitly source verification data from
+  Google UserInfo endpoint.
+    - [x] Configure/confirm `GoogleOptions.UserInformationEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo"`.
+    - [x] Update `WithError(...)` logic in `ShelfBuddy.WebApi/Identity/IdentityEndpoints.cs` to replace existing `authError` rather than
+  append duplicates.
+    - [x] Missing/false verification still rejects deterministically.
+    - [x] `authError` deduplication emits a single value in redirect URL.
+
 ## Acceptance Criteria
 - [ ] Frontend can call `/auth/providers` and render Google login only when configured.
 - [ ] Google sign-in starts at `/auth/external/google/start` and callback traffic stays under `/auth/*`.
@@ -191,7 +231,10 @@ Flow:
 - [ ] Onboarding-protected APIs are reachable only when user has satisfied onboarding policy.
 - [ ] External callback sends non-onboarded users to onboarding route and onboarded users to normalized target route.
 
+
 ## Notes
 - `docs/IdentityApiEndpointRouteBuilderExtensions.cs` is currently empty and is not used for implementation.
 - This milestone intentionally customizes only the required Identity endpoint subset and keeps API-specific request/response contracts.
 - Security baseline for this milestone: email-based account linking MUST NOT rely on `ClaimTypes.Email` alone.
+- TEMP-DIAG-REMOVE: Development-only raw Google profile logging and external claim dump were added to diagnose `external_email_not_verified` outcomes and should be removed after root-cause confirmation.
+

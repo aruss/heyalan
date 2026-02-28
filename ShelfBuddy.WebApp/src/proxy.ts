@@ -15,8 +15,6 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     const pathname = request.nextUrl.pathname;
     const webApiEndpoint = process.env.WEBAPI_ENDPOINT;
 
-    console.log("Proxy call ..........................................................."); 
-    
     if (pathname.startsWith('/api/')) {
         if (!webApiEndpoint) {
             return new NextResponse(null, { status: 500, statusText: 'Config Error' });
@@ -52,25 +50,21 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         const cookieHeader = request.headers.get('cookie');
 
         try {
-            console.log("fetching", authMeUrl); 
-
             const authMeResponse = await fetch(authMeUrl, {
                 method: 'GET',
                 headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
                 cache: 'no-store',
             });
 
-            console.log("got response", authMeResponse.status);
-            console.log(authMeResponse.body); 
-
             if (authMeResponse.status !== 200) {
+                // check authMeResponse if onbording is requred
                 return createLoginRedirect(request);
             }
         } catch {
             return createLoginRedirect(request);
         }
     }
-   
+
     return NextResponse.next();
 }
 

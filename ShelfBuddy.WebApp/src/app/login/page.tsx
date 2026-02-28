@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { getAuthProviders, type ExternalLoginProviderItem } from "@/lib/api";
+import { resolveAuthErrorCode, resolveAuthErrorMessage } from "./auth-error";
 
 type LoginPageProps = {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -56,15 +57,22 @@ function createProviderLoginHref(providerName: string, returnUrl: string): strin
 export default async function LoginPage({ searchParams }: LoginPageProps): Promise<ReactElement> {
     const resolvedSearchParams = await searchParams;
     const returnUrl = resolveSafeReturnUrl(resolvedSearchParams.returnUrl);
+    const authErrorCode = resolveAuthErrorCode(resolvedSearchParams.authError);
     const webApiEndpoint = process.env.WEBAPI_ENDPOINT;
 
     if (!webApiEndpoint) {
+        const authErrorMessage = resolveAuthErrorMessage(authErrorCode, 0);
         return (
             <div className="w-full max-w-sm mx-auto">
                 <div className="mb-10 text-center lg:text-left">
                     <h2 className="text-3xl font-bold tracking-tight text-neutral-900 mb-2">Welcome back</h2>
                     <p className="text-neutral-500">Log in to manage your workspace and integrations.</p>
                 </div>
+                {authErrorMessage ? (
+                    <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                        <p className="text-sm text-red-700">{authErrorMessage}</p>
+                    </div>
+                ) : null}
                 <p className="text-sm text-red-700">Unable to load login providers. Please try again later.</p>
             </div>
         );
@@ -83,6 +91,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps): Promi
     } catch {
         hasProviderLoadError = true;
     }
+    const authErrorMessage = resolveAuthErrorMessage(authErrorCode, providers.length);
 
     return (
         <div className="w-full max-w-sm mx-auto">
@@ -90,6 +99,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps): Promi
                 <h2 className="text-3xl font-bold tracking-tight text-neutral-900 mb-2">Welcome back</h2>
                 <p className="text-neutral-500">Log in to manage your workspace and integrations.</p>
             </div>
+            {authErrorMessage ? (
+                <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                    <p className="text-sm text-red-700">{authErrorMessage}</p>
+                </div>
+            ) : null}
 
             {hasProviderLoadError ? (
                 <p className="text-sm text-red-700">Unable to load login providers. Please try again later.</p>
