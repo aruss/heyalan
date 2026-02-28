@@ -45,7 +45,7 @@ public static class IdentityBuilderExtensions
             {
                 options.ClientId = appOptions.GoogleClientId;
                 options.ClientSecret = appOptions.GoogleClientSecret;
-                options.CallbackPath = "/auth/google/signin";
+                options.CallbackPath = "/auth/providers/google/callback";
                 options.UserInformationEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo";
                 options.SignInScheme = IdentityConstants.ExternalScheme;
                 options.Events.OnCreatingTicket = context =>
@@ -83,7 +83,7 @@ public static class IdentityBuilderExtensions
                 {
                     string callbackPath = BuildAuthPath(
                         context.Request.PathBase,
-                        "/auth/external/callback");
+                        "/auth/external-callback");
 
                     string callbackUrl = QueryHelpers.AddQueryString(
                         callbackPath,
@@ -110,7 +110,7 @@ public static class IdentityBuilderExtensions
 
                 options.ClientId = appOptions.SquareClientId;
                 options.ClientSecret = appOptions.SquareClientSecret;
-                options.CallbackPath = "/auth/square/signin";
+                options.CallbackPath = "/auth/providers/microsoft/callback";
                 options.SignInScheme = IdentityConstants.ExternalScheme;
 
                 options.AuthorizationEndpoint = $"{squareBaseUrl}/oauth2/authorize";

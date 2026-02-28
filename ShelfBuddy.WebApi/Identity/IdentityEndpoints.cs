@@ -34,14 +34,14 @@ public static class IdentityEndpoints
             .AllowAnonymous();
 
         routeGroup
-            .MapGet("/external/{provider}/start", StartExternalLoginAsync)
+            .MapGet("/providers/{provider}/authorize", StartExternalLoginAsync)
             .Produces(StatusCodes.Status302Found)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status500InternalServerError)
             .AllowAnonymous();
 
         routeGroup
-            .MapGet("/external/callback", CompleteExternalLoginAsync)
+            .MapGet("/external-callback", CompleteExternalLoginAsync)
             .Produces(StatusCodes.Status302Found)
             .ProducesProblem(StatusCodes.Status500InternalServerError)
             .AllowAnonymous();
@@ -101,7 +101,7 @@ public static class IdentityEndpoints
         }
 
         string safeReturnUrl = NormalizeReturnUrl(returnUrl);
-        string callbackPath = BuildAuthPath(context.Request.PathBase, "/auth/external/callback");
+        string callbackPath = BuildAuthPath(context.Request.PathBase, "/auth/external-callback");
         string callbackUrl = QueryHelpers.AddQueryString(callbackPath, "returnUrl", safeReturnUrl);
 
         AuthenticationProperties properties = 

@@ -42,7 +42,7 @@ export const getAuthProviders = <ThrowOnError extends boolean = false>(options?:
 
 export const getAuthExternalByProviderStart = <ThrowOnError extends boolean = false>(options: Options<GetAuthExternalByProviderStartData, ThrowOnError>) => (options.client ?? client).get<unknown, GetAuthExternalByProviderStartErrors, ThrowOnError>({ url: '/auth/external/{provider}/start', ...options });
 
-export const getAuthExternalCallback = <ThrowOnError extends boolean = false>(options?: Options<GetAuthExternalCallbackData, ThrowOnError>) => (options?.client ?? client).get<unknown, GetAuthExternalCallbackErrors, ThrowOnError>({ url: '/auth/external/callback', ...options });
+export const getAuthExternalCallback = <ThrowOnError extends boolean = false>(options?: Options<GetAuthExternalCallbackData, ThrowOnError>) => (options?.client ?? client).get<unknown, GetAuthExternalCallbackErrors, ThrowOnError>({ url: '/auth/external-callback', ...options });
 
 export const getAuthMe = <ThrowOnError extends boolean = false>(options?: Options<GetAuthMeData, ThrowOnError>) => (options?.client ?? client).get<GetAuthMeResponses, GetAuthMeErrors, ThrowOnError>({ url: '/auth/me', ...options });
 

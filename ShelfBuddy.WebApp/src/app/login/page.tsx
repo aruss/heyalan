@@ -51,7 +51,7 @@ function resolveSafeReturnUrl(rawReturnUrl: string | string[] | undefined): stri
 function createProviderLoginHref(providerName: string, returnUrl: string): string {
     const encodedProvider = encodeURIComponent(providerName);
     const encodedReturnUrl = encodeURIComponent(returnUrl);
-    return `/api/auth/external/${encodedProvider}/start?returnUrl=${encodedReturnUrl}`;
+    return `/api/auth/providers/${encodedProvider}/authorize?returnUrl=${encodedReturnUrl}`;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps): Promise<ReactElement> {

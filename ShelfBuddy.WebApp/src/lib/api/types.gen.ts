@@ -266,7 +266,7 @@ export type GetAuthExternalCallbackData = {
         returnUrl?: string;
         remoteError?: string;
     };
-    url: '/auth/external/callback';
+    url: '/auth/external-callback';
 };
 
 export type GetAuthExternalCallbackErrors = {

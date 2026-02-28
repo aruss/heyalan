@@ -52,8 +52,8 @@ public class IdentityEndpointsSecurityTests
     }
 
     [Theory]
-    [InlineData("", "/auth/external/callback", "/auth/external/callback")]
-    [InlineData("/api", "/auth/external/callback", "/api/auth/external/callback")]
+    [InlineData("", "/auth/external-callback", "/auth/external-callback")]
+    [InlineData("/api", "/auth/external-callback", "/api/auth/external-callback")]
     public void BuildAuthPath_ReturnsExpectedPath(string pathBase, string authPath, string expected)
     {
         string result = IdentityEndpoints.BuildAuthPath(new PathString(pathBase), authPath);
@@ -65,7 +65,7 @@ public class IdentityEndpointsSecurityTests
     public void BuildAuthPath_WhenAuthPathIsInvalid_ThrowsArgumentException()
     {
         ArgumentException exception = Assert.Throws<ArgumentException>(() =>
-            IdentityEndpoints.BuildAuthPath(new PathString("/api"), "auth/external/callback"));
+            IdentityEndpoints.BuildAuthPath(new PathString("/api"), "auth/external-callback"));
 
         Assert.Contains("Auth path must start with '/'", exception.Message);
     }

@@ -56,7 +56,7 @@ Result DTOs:
   - `Providers: ExternalLoginProviderItem[]`
 
 ### 2) Start external login
-`GET /auth/external/{provider}/start?returnUrl=/admin/...`
+`GET /auth/providers/{provider}/start?returnUrl=/admin/...`
 
 Behavior:
 - [x] Validate provider exists in external auth schemes.
@@ -69,7 +69,7 @@ Error behavior:
 - [x] Unknown provider returns `404`.
 
 ### 3) External callback completion
-`GET /auth/external/callback?returnUrl=/admin/...&remoteError=...`
+`GET /auth/external-callback?returnUrl=/admin/...&remoteError=...`
 
 Behavior:
 - [x] If `remoteError` is present, redirect to sanitized return target with error marker.
@@ -91,12 +91,12 @@ Failure behavior:
 ## Callback Path Requirements (`/auth` only)
 
 Google middleware callback path:
-- [x] Configure `GoogleOptions.CallbackPath = "/auth/google/signin"`.
+- [x] Configure `GoogleOptions.CallbackPath = "/auth/google/callback"`.
 
 Flow:
-- [x] Browser starts at `/auth/external/google/start`.
-- [x] Google redirects to `/auth/google/signin`.
-- [x] Middleware finalizes external auth handshake and returns to `/auth/external/callback`.
+- [x] Browser starts at `/auth/providers/google/authorize`.
+- [x] Google redirects to `/auth/providers/google/callback`.
+- [x] Middleware finalizes external auth handshake and returns to `/auth/external-callback`.
 - [x] When running behind a proxy path prefix (for example `/api`), callback redirects preserve that prefix (`/api/auth/...`).
 
 ## Security Requirements
@@ -116,14 +116,14 @@ Flow:
 
 ## Gate B: Identity Registration
 - [x] Update `ShelfBuddy/Identity/IdentityBuilderExtensions.cs` to conditionally register Google auth only when both credentials exist.
-- [x] Configure callback path to `/auth/google/signin`.
+- [x] Configure callback path to `/auth/google/callback`.
 - [x] Ensure Identity external sign-in temp cookie flow remains compatible with `SignInManager`.
 
 ## Gate C: Custom Identity Endpoints
 - [x] Update `ShelfBuddy.WebApi/Identity/IdentityEndpoints.cs` to add:
   - [x] `GET /auth/providers`
-  - [x] `GET /auth/external/{provider}/start`
-  - [x] `GET /auth/external/callback`
+  - [x] `GET /auth/providers/{provider}/start`
+  - [x] `GET /auth/external-callback`
 - [x] Keep existing `/auth/me` and `/auth/logout`.
 - [x] Add returnUrl sanitization helper and `/admin` fallback.
 - [x] Add operation-centric DTOs in `ShelfBuddy.WebApi/Identity`:
@@ -143,7 +143,7 @@ Flow:
   - [ ] New user auto-provision creates user + external login and signs in.
 
 ## Gate E: External Login Security Hardening
-- [x] Update `GET /auth/external/callback` linking flow to prevent account takeover via unverified external emails.
+- [x] Update `GET /auth/external-callback` linking flow to prevent account takeover via unverified external emails.
 - [x] Introduce provider email-verification validation before linking to an existing local user by email.
   - [x] Require provider email claim to be present.
   - [x] Require provider email-verified indicator claim to be true before any existing-user email link.
@@ -156,7 +156,7 @@ Flow:
 ## Gate F: Post-Login Authorization & Onboarding Enforcement
 - [x] Enforce authentication by default for private API surfaces.
   - [x] Enable authorization on conversation endpoints (remove temporary unauthenticated behavior).
-  - [x] Preserve anonymous access only for intended public endpoints (`/auth/providers`, `/auth/external/*`, webhook endpoints as needed).
+  - [x] Preserve anonymous access only for intended public endpoints (`/auth/providers`, `/auth/providers/*`, webhook endpoints as needed).
 - [x] Apply onboarding policy to private admin/API route groups where business rules require completed onboarding.
   - [x] Use existing `OnboardedOnly` policy for protected groups.
   - [ ] Confirm policy expectations for service/webhook endpoints that should remain outside onboarding requirements.
@@ -221,7 +221,7 @@ Flow:
 
 ## Acceptance Criteria
 - [ ] Frontend can call `/auth/providers` and render Google login only when configured.
-- [ ] Google sign-in starts at `/auth/external/google/start` and callback traffic stays under `/auth/*`.
+- [ ] Google sign-in starts at `/auth/providers/google/authorize` and callback traffic stays under `/auth/*`.
 - [ ] Successful login ends with Identity cookie authentication and redirects to frontend `returnUrl`.
 - [ ] Missing or invalid `returnUrl` redirects to `/admin`.
 - [ ] Partial Google credential configuration fails fast at startup with clear config error.
