@@ -24,11 +24,11 @@ export const LandingNavigation = (): ReactElement => {
                     </Link>
                 </div>
                 <div className="flex items-center space-x-4">
-                    <Link href="/login" className="hidden text-sm font-medium transition-colors hover:text-zinc-500 md:block">
+                    <Link href="/admin" className="hidden text-sm font-medium transition-colors hover:text-zinc-500 md:block">
                         Log In
                     </Link>
                     <PrimaryActionButton
-                        href="/login"
+                        href="/admin"
                         size="sm"
                     >
                         Start Free Trial

@@ -3,7 +3,7 @@ import { PrimaryActionButton, SecondaryActionButton } from "@/components/landing
 
 export const LandingHero = (): ReactElement => {
     return (
-        <section className="flex min-h-screen items-center px-6 pb-12 pt-20">
+        <section className="flex min-h-screen items-center px-6 pb-12 pt-24 md:pt-20">
             <div className="mx-auto max-w-5xl text-center">
                 <h1 className="mb-8 text-5xl leading-tight font-bold tracking-tighter md:text-7xl">
                     Conversational Sales <br className="hidden md:block" /> for your <span className="bg-gradient-to-r from-zinc-900 to-zinc-500 bg-clip-text text-transparent">
@@ -16,7 +16,7 @@ export const LandingHero = (): ReactElement => {
                 </p>
                 <div className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0">
                     <PrimaryActionButton
-                        href="/login"
+                        href="/admin"
                         className="w-full sm:w-auto"
                     >
                         Connect Square

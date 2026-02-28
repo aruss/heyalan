@@ -15,6 +15,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     const pathname = request.nextUrl.pathname;
     const webApiEndpoint = process.env.WEBAPI_ENDPOINT;
 
+    console.log("Proxy call ..........................................................."); 
+    
     if (pathname.startsWith('/api/')) {
         if (!webApiEndpoint) {
             return new NextResponse(null, { status: 500, statusText: 'Config Error' });
@@ -23,10 +25,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         const path = pathname.replace(/^\/api/, '');
         const targetUrl = `${webApiEndpoint.replace(/\/$/, '')}${path}${request.nextUrl.search}`;
 
-        return NextResponse.rewrite(new URL(targetUrl));
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set('X-Forwarded-Host', request.nextUrl.host);
+        requestHeaders.set('X-Forwarded-Proto', request.nextUrl.protocol.replace(':', ''));
+        requestHeaders.set('X-Forwarded-Prefix', '/api');
+
+        return NextResponse.rewrite(new URL(targetUrl), {
+            request: {
+                headers: requestHeaders,
+            },
+        });
     }
 
-    /*
     if (pathname.startsWith('/admin')) {
         const authCookie = request.cookies.get(AUTH_COOKIE_NAME);
 
@@ -42,11 +52,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         const cookieHeader = request.headers.get('cookie');
 
         try {
+            console.log("fetching", authMeUrl); 
+
             const authMeResponse = await fetch(authMeUrl, {
                 method: 'GET',
                 headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
                 cache: 'no-store',
             });
+
+            console.log("got response", authMeResponse.status);
+            console.log(authMeResponse.body); 
 
             if (authMeResponse.status !== 200) {
                 return createLoginRedirect(request);
@@ -55,7 +70,6 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
             return createLoginRedirect(request);
         }
     }
-    */
    
     return NextResponse.next();
 }
