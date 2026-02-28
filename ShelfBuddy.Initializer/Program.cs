@@ -11,11 +11,14 @@ using Polly;
 using Polly.Retry;
 using ShelfBuddy;
 using ShelfBuddy.Configuration;
+using ShelfBuddy.Consumers;
 using ShelfBuddy.Core.Conversations;
 using ShelfBuddy.Data;
 using ShelfBuddy.Data.Entities;
-using ShelfBuddy.Consumers;
 using ShelfBuddy.TelegramIntegration;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 public class Program
 {
@@ -115,10 +118,18 @@ public class Program
             x.AddConsumer<IncomingMessageConsumer>();
             x.AddConsumer<OutgoingTelegramMessageConsumer>();
 
+            
+
             x.UsingRabbitMq((context, cfg) =>
             {
                 var rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
-                cfg.Host(rabbitConnectionString);
+                var vhostName = builder.Configuration["RABBITMQ_VHOST"] ?? "shelfbuddy";
+
+                var uriBuilder = new UriBuilder(rabbitConnectionString);
+                // uriBuilder.Path = vhostName;
+
+                // cfg.Host(rabbitConnectionString);
+                cfg.Host(new Uri($"{uriBuilder}/{vhostName}"));
 
                 // 2. The magic flag: Tells MassTransit NOT to start consuming messages
                 cfg.DeployTopologyOnly = true;
@@ -299,13 +310,64 @@ public class Program
         }
     }
 
+    private static async Task EnsureVirtualHostExistsAsync(
+        string managementUrl, string username, string password, string vhost, CancellationToken cancellationToken = default)
+    {
+        using var client = new HttpClient();
+
+        var authString = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}"));
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authString);
+
+        var encodedVhost = Uri.EscapeDataString(vhost);
+
+        // 1. Create the Virtual Host
+        var vhostResponse = await client.PutAsync(
+            $"{managementUrl}/api/vhosts/{encodedVhost}",
+            null,
+            cancellationToken);
+
+        vhostResponse.EnsureSuccessStatusCode();
+
+        // 2. Grant permissions
+        var permissions = new { configure = ".*", write = ".*", read = ".*" };
+        var content = new StringContent(JsonSerializer.Serialize(permissions), Encoding.UTF8, "application/json");
+
+        var permResponse = await client.PutAsync(
+            $"{managementUrl}/api/permissions/{encodedVhost}/{username}",
+            content,
+            cancellationToken);
+
+        permResponse.EnsureSuccessStatusCode();
+    }
+
     private static async Task DeployRabbitMqTopologyAsync(
         IServiceProvider services, CancellationToken cancellationToken)
     {
-        IBusControl busControl = services.GetRequiredService<IBusControl>();
-
         try
         {
+            var configuration = services.GetRequiredService<IConfiguration>();
+
+            var managementUrl = configuration["RABBITMQ_MANAGEMENTURL"];
+            var rabbitUser = configuration["RABBITMQ_USER"];
+            var rabbitPass = configuration["RABBITMQ_PASS"];
+            var vhostName = configuration["RABBITMQ_VHOST"] ?? "shelfbuddy"; // Fallback just in case
+
+            // 2. Ensure the Virtual Host exists BEFORE MassTransit connects
+            if (!string.IsNullOrEmpty(managementUrl) && !string.IsNullOrEmpty(rabbitUser) && !string.IsNullOrEmpty(rabbitPass))
+            {
+                Console.WriteLine($"[Rabbit] Ensuring virtual host '{vhostName}' exists via Management API...");
+                await EnsureVirtualHostExistsAsync(
+                    managementUrl, rabbitUser, rabbitPass, vhostName, cancellationToken);
+            }
+            else
+            {
+                Console.WriteLine("[Rabbit] Warning: Management API configuration missing. Skipping VHost creation.");
+            }
+
+            Console.WriteLine("[Rabbit] Deploying MassTransit topology...");
+
+            IBusControl busControl = services.GetRequiredService<IBusControl>();
+
             await busControl.DeployAsync(cancellationToken);
             Console.WriteLine("[Rabbit] Topology successfully deployed.");
         }

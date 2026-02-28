@@ -67,6 +67,10 @@ var initializer = builder.AddProject<Projects.ShelfBuddy_Initializer>("initializ
     .WithEnvironment("DOTNET_ENVIRONMENT", "Development")
     .WithEnvironment("PUBLIC_BASE_URL", publicBaseUrl)
     .WithEnvironment("TELEGRAM_SECRET_TOKEN", telegramSecretToken)
+    .WithEnvironment("RABBITMQ_MANAGEMENTURL", rabbitmq.GetEndpoint("management"))
+    .WithEnvironment("RABBITMQ_USER", rabbitUser)
+    .WithEnvironment("RABBITMQ_PASS", rabbitPass)
+    .WithEnvironment("RABBITMQ_VHOST", "shelfbuddy") // The vhost name you want to use
     .WithReference(rabbitmq)
     .WaitFor(postgres)
     .WaitFor(rabbitmq); 
@@ -87,6 +91,7 @@ var webapi = builder.AddProject<Projects.ShelfBuddy_WebApi>("webapi")
     .WithEnvironment("SQUARE_CLIENT_ID", builder.Configuration["SQUARE_CLIENT_ID"])
     .WithEnvironment("SQUARE_CLIENT_SECRET", builder.Configuration["SQUARE_CLIENT_SECRET"])
     .WithReference(rabbitmq)
+    .WithEnvironment("ConnectionStrings__rabbitmq", ReferenceExpression.Create($"{rabbitmq}/shelfbuddy"))
     .WithReference(shelfbuddyDb)
     .WaitFor(postgres)
     .WaitFor(rabbitmq)
@@ -128,7 +133,7 @@ if (!String.IsNullOrEmpty(ngrokDomain))
 */
 
 // if WebApp run is via yarn/npm, use AddExecutable
-/*var webapp = builder.AddExecutable("webapp", "yarn.cmd",  "../ShelfBuddy.WebApp", "dev")
+var webapp = builder.AddExecutable("webapp", "yarn.cmd",  "../ShelfBuddy.WebApp", "dev")
     // explicitly allow unsecure transport for local dev if needed, or use https
     .WithHttpEndpoint(env: "PORT", port: 5010, name: "http")
     .WithExternalHttpEndpoints()
@@ -137,7 +142,7 @@ if (!String.IsNullOrEmpty(ngrokDomain))
     .WithOtlpExporter()
     .WithEnvironment("APP_VERSION", "1.2.3")
     .WithEnvironment("WEBAPI_ENDPOINT", webapi.GetEndpoint("http"))
-    .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");*/
+    .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 
 #endregion
 
