@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getAgentsByAgentIdConversations, getAgentsByAgentIdConversationsByConversationIdMessages, getAppInfo, getAuthExternalByProviderStart, getAuthExternalCallback, getAuthMe, getAuthProviders, ingestText, type Options, patchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdRead, patchAgentsByAgentIdConversationsByConversationIdRead, postAuthLogout, postWebhooksTelegramByBotToken } from '../sdk.gen';
-import type { GetAgentsByAgentIdConversationsByConversationIdMessagesData, GetAgentsByAgentIdConversationsByConversationIdMessagesError, GetAgentsByAgentIdConversationsByConversationIdMessagesResponse, GetAgentsByAgentIdConversationsData, GetAgentsByAgentIdConversationsError, GetAgentsByAgentIdConversationsResponse, GetAppInfoData, GetAppInfoResponse, GetAuthExternalByProviderStartData, GetAuthExternalByProviderStartError, GetAuthExternalCallbackData, GetAuthExternalCallbackError, GetAuthMeData, GetAuthMeError, GetAuthMeResponse, GetAuthProvidersData, GetAuthProvidersError, GetAuthProvidersResponse, IngestTextData, IngestTextError, PatchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdReadData, PatchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdReadError, PatchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdReadResponse, PatchAgentsByAgentIdConversationsByConversationIdReadData, PatchAgentsByAgentIdConversationsByConversationIdReadError, PatchAgentsByAgentIdConversationsByConversationIdReadResponse, PostAuthLogoutData, PostAuthLogoutError, PostWebhooksTelegramByBotTokenData, PostWebhooksTelegramByBotTokenError } from '../types.gen';
+import { getAgentsByAgentIdConversations, getAgentsByAgentIdConversationsByConversationIdMessages, getAppInfo, getAuthExternalCallback, getAuthMe, getAuthProviders, getAuthProvidersByProviderAuthorize, ingestText, type Options, patchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdRead, patchAgentsByAgentIdConversationsByConversationIdRead, postAuthLogout, postWebhooksTelegramByBotToken } from '../sdk.gen';
+import type { GetAgentsByAgentIdConversationsByConversationIdMessagesData, GetAgentsByAgentIdConversationsByConversationIdMessagesError, GetAgentsByAgentIdConversationsByConversationIdMessagesResponse, GetAgentsByAgentIdConversationsData, GetAgentsByAgentIdConversationsError, GetAgentsByAgentIdConversationsResponse, GetAppInfoData, GetAppInfoResponse, GetAuthExternalCallbackData, GetAuthExternalCallbackError, GetAuthMeData, GetAuthMeError, GetAuthMeResponse, GetAuthProvidersByProviderAuthorizeData, GetAuthProvidersByProviderAuthorizeError, GetAuthProvidersData, GetAuthProvidersError, GetAuthProvidersResponse, IngestTextData, IngestTextError, PatchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdReadData, PatchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdReadError, PatchAgentsByAgentIdConversationsByConversationIdMessagesByMessageIdReadResponse, PatchAgentsByAgentIdConversationsByConversationIdReadData, PatchAgentsByAgentIdConversationsByConversationIdReadError, PatchAgentsByAgentIdConversationsByConversationIdReadResponse, PostAuthLogoutData, PostAuthLogoutError, PostWebhooksTelegramByBotTokenData, PostWebhooksTelegramByBotTokenError } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -97,11 +97,11 @@ export const getAuthProvidersOptions = (options?: Options<GetAuthProvidersData>)
     queryKey: getAuthProvidersQueryKey(options)
 });
 
-export const getAuthExternalByProviderStartQueryKey = (options: Options<GetAuthExternalByProviderStartData>) => createQueryKey('getAuthExternalByProviderStart', options);
+export const getAuthProvidersByProviderAuthorizeQueryKey = (options: Options<GetAuthProvidersByProviderAuthorizeData>) => createQueryKey('getAuthProvidersByProviderAuthorize', options);
 
-export const getAuthExternalByProviderStartOptions = (options: Options<GetAuthExternalByProviderStartData>) => queryOptions<unknown, GetAuthExternalByProviderStartError, unknown, ReturnType<typeof getAuthExternalByProviderStartQueryKey>>({
+export const getAuthProvidersByProviderAuthorizeOptions = (options: Options<GetAuthProvidersByProviderAuthorizeData>) => queryOptions<unknown, GetAuthProvidersByProviderAuthorizeError, unknown, ReturnType<typeof getAuthProvidersByProviderAuthorizeQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getAuthExternalByProviderStart({
+        const { data } = await getAuthProvidersByProviderAuthorize({
             ...options,
             ...queryKey[0],
             signal,
@@ -109,7 +109,7 @@ export const getAuthExternalByProviderStartOptions = (options: Options<GetAuthEx
         });
         return data;
     },
-    queryKey: getAuthExternalByProviderStartQueryKey(options)
+    queryKey: getAuthProvidersByProviderAuthorizeQueryKey(options)
 });
 
 export const getAuthExternalCallbackQueryKey = (options?: Options<GetAuthExternalCallbackData>) => createQueryKey('getAuthExternalCallback', options);

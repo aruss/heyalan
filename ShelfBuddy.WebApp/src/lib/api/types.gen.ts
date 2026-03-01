@@ -235,7 +235,7 @@ export type GetAuthProvidersResponses = {
 
 export type GetAuthProvidersResponse = GetAuthProvidersResponses[keyof GetAuthProvidersResponses];
 
-export type GetAuthExternalByProviderStartData = {
+export type GetAuthProvidersByProviderAuthorizeData = {
     body?: never;
     path: {
         provider: string;
@@ -243,10 +243,10 @@ export type GetAuthExternalByProviderStartData = {
     query?: {
         returnUrl?: string;
     };
-    url: '/auth/external/{provider}/start';
+    url: '/auth/providers/{provider}/authorize';
 };
 
-export type GetAuthExternalByProviderStartErrors = {
+export type GetAuthProvidersByProviderAuthorizeErrors = {
     /**
      * Not Found
      */
@@ -257,7 +257,7 @@ export type GetAuthExternalByProviderStartErrors = {
     500: ProblemDetails;
 };
 
-export type GetAuthExternalByProviderStartError = GetAuthExternalByProviderStartErrors[keyof GetAuthExternalByProviderStartErrors];
+export type GetAuthProvidersByProviderAuthorizeError = GetAuthProvidersByProviderAuthorizeErrors[keyof GetAuthProvidersByProviderAuthorizeErrors];
 
 export type GetAuthExternalCallbackData = {
     body?: never;

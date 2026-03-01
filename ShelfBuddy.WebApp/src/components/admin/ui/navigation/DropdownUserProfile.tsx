@@ -14,6 +14,7 @@ import {
   DropdownMenuSubMenuTrigger,
   DropdownMenuTrigger,
 } from "@/components/admin/DropdownMenu"
+import { triggerLogoutFromBrowser } from "@/lib/logout-action"
 import { ArrowUpRight, Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useEffect, useState, type ReactNode } from "react"
@@ -110,10 +111,12 @@ export function DropdownUserProfile({
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <a href="#" className="w-full">
-                Sign out
-              </a>
+            <DropdownMenuItem
+              onSelect={() => {
+                triggerLogoutFromBrowser()
+              }}
+            >
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
