@@ -1,15 +1,15 @@
 namespace ShelfBuddy.SquareIntegration;
 
 using System.Collections.Concurrent;
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ShelfBuddy.Configuration;
 using ShelfBuddy.Data;
 using ShelfBuddy.Data.Entities;
+using Square;
+using Square.OAuth;
+using System.Text.Json;
 
 public sealed class SquareTokenService : ISquareTokenService
 {
@@ -196,7 +196,10 @@ public sealed class SquareTokenService : ISquareTokenService
             lockedConnection.EncryptedAccessToken = this.dataProtector.Protect(payload.AccessToken);
             lockedConnection.EncryptedRefreshToken = this.dataProtector.Protect(rotatedRefreshToken);
             lockedConnection.AccessTokenExpiresAtUtc = payload.AccessTokenExpiresAtUtc;
-            lockedConnection.Scopes = NormalizeScopes(payload.Scopes);
+            if (payload.Scopes.Count > 0)
+            {
+                lockedConnection.Scopes = NormalizeScopes(payload.Scopes);
+            }
             lockedConnection.DisconnectedAtUtc = null;
 
             if (!string.IsNullOrWhiteSpace(payload.MerchantId))
@@ -251,30 +254,41 @@ public sealed class SquareTokenService : ISquareTokenService
             return new RefreshTokenApiOutcome(RefreshTokenApiResultType.ReconnectRequired, "square_not_configured");
         }
 
-        bool isSandbox = this.appOptions.SquareClientId.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase);
-        string baseUrl = isSandbox
+        string baseUrl = this.appOptions.SquareClientId.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase)
             ? "https://connect.squareupsandbox.com"
             : "https://connect.squareup.com";
 
-        HttpClient client = this.httpClientFactory.CreateClient("SquareOAuthClient");
-        using HttpRequestMessage request = new(HttpMethod.Post, $"{baseUrl}/oauth2/token");
-        request.Headers.Add("Square-Version", "2024-01-18");
-        request.Content = JsonContent.Create(new
+        ClientOptions clientOptions = new()
         {
-            client_id = this.appOptions.SquareClientId,
-            client_secret = this.appOptions.SquareClientSecret,
-            grant_type = "refresh_token",
-            refresh_token = refreshToken
-        });
+            BaseUrl = baseUrl,
+            HttpClient = this.httpClientFactory.CreateClient("SquareOAuthClient")
+        };
 
-        using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
-        string responseText = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        SquareClient client = new(this.appOptions.SquareClientSecret!, clientOptions: clientOptions);
+        ObtainTokenRequest request = new()
         {
-            string? errorCode = TryReadSquareErrorCode(responseText);
-            bool reconnectRequired = response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized ||
-                                     string.Equals(errorCode, "invalid_grant", StringComparison.OrdinalIgnoreCase);
+            ClientId = this.appOptions.SquareClientId,
+            ClientSecret = this.appOptions.SquareClientSecret,
+            GrantType = "refresh_token",
+            RefreshToken = refreshToken
+        };
+
+        try
+        {
+            ObtainTokenResponse response = await client.OAuth.ObtainTokenAsync(request, null, cancellationToken);
+            RefreshTokenApiPayload? payload = ToRefreshPayload(response);
+            if (payload is null)
+            {
+                return new RefreshTokenApiOutcome(RefreshTokenApiResultType.Failed, "refresh_response_invalid");
+            }
+
+            return new RefreshTokenApiOutcome(RefreshTokenApiResultType.Success, "ok", payload);
+        }
+        catch (SquareApiException exception)
+        {
+            bool reconnectRequired = exception.StatusCode is 400 or 401 ||
+                                     HasErrorCode(exception.Errors, "invalid_grant") ||
+                                     HasErrorCode(exception.Errors, "ACCESS_TOKEN_REVOKED");
 
             if (reconnectRequired)
             {
@@ -283,14 +297,6 @@ public sealed class SquareTokenService : ISquareTokenService
 
             return new RefreshTokenApiOutcome(RefreshTokenApiResultType.Failed, "refresh_request_failed");
         }
-
-        RefreshTokenApiPayload? payload = TryParseRefreshPayload(responseText);
-        if (payload is null)
-        {
-            return new RefreshTokenApiOutcome(RefreshTokenApiResultType.Failed, "refresh_response_invalid");
-        }
-
-        return new RefreshTokenApiOutcome(RefreshTokenApiResultType.Success, "ok", payload);
     }
 
     private static string NormalizeScopes(IEnumerable<string>? scopes)
@@ -310,124 +316,100 @@ public sealed class SquareTokenService : ISquareTokenService
         return string.Join(' ', normalizedScopes);
     }
 
-    private static RefreshTokenApiPayload? TryParseRefreshPayload(string responseText)
+    private static RefreshTokenApiPayload? ToRefreshPayload(ObtainTokenResponse response)
     {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(responseText);
-            JsonElement root = document.RootElement;
-
-            string? accessToken = root.TryGetProperty("access_token", out JsonElement accessTokenElement)
-                ? accessTokenElement.GetString()
-                : null;
-            string? refreshToken = root.TryGetProperty("refresh_token", out JsonElement refreshTokenElement)
-                ? refreshTokenElement.GetString()
-                : null;
-            string? merchantId = root.TryGetProperty("merchant_id", out JsonElement merchantIdElement)
-                ? merchantIdElement.GetString()
-                : null;
-
-            DateTime accessTokenExpiresAtUtc = ResolveAccessTokenExpiry(root);
-            string[] scopes = ResolveScopes(root);
-
-            return new RefreshTokenApiPayload(
-                accessToken,
-                refreshToken,
-                merchantId,
-                accessTokenExpiresAtUtc,
-                scopes);
-        }
-        catch
+        if (string.IsNullOrWhiteSpace(response.AccessToken))
         {
             return null;
         }
+
+        DateTime accessTokenExpiresAtUtc = ResolveAccessTokenExpiry(response.ExpiresAt);
+        IReadOnlyCollection<string> scopes = ResolveScopes(response);
+
+        return new RefreshTokenApiPayload(
+            response.AccessToken,
+            response.RefreshToken,
+            response.MerchantId,
+            accessTokenExpiresAtUtc,
+            scopes);
     }
 
-    private static DateTime ResolveAccessTokenExpiry(JsonElement root)
+    private static DateTime ResolveAccessTokenExpiry(object? expiresAtRaw)
     {
-        if (root.TryGetProperty("expires_at", out JsonElement expiresAtElement))
+        if (expiresAtRaw is null)
         {
-            string? expiresAtRaw = expiresAtElement.GetString();
-            if (!string.IsNullOrWhiteSpace(expiresAtRaw) &&
-                DateTimeOffset.TryParse(expiresAtRaw, out DateTimeOffset parsedOffset))
-            {
-                return parsedOffset.UtcDateTime;
-            }
+            return DateTime.UtcNow.AddMinutes(-1);
         }
 
-        if (root.TryGetProperty("expires_in", out JsonElement expiresInElement) &&
-            expiresInElement.TryGetInt32(out int expiresInSeconds) &&
-            expiresInSeconds > 0)
+        if (expiresAtRaw is DateTime expiresAtDateTime)
         {
-            return DateTime.UtcNow.AddSeconds(expiresInSeconds);
+            return expiresAtDateTime.Kind == DateTimeKind.Utc
+                ? expiresAtDateTime
+                : expiresAtDateTime.ToUniversalTime();
+        }
+
+        if (expiresAtRaw is DateTimeOffset expiresAtOffset)
+        {
+            return expiresAtOffset.UtcDateTime;
+        }
+
+        if (DateTimeOffset.TryParse(expiresAtRaw.ToString(), out DateTimeOffset parsedOffset))
+        {
+            return parsedOffset.UtcDateTime;
         }
 
         return DateTime.UtcNow.AddMinutes(-1);
     }
 
-    private static string[] ResolveScopes(JsonElement root)
+    private static string[] ResolveScopes(ObtainTokenResponse response)
     {
-        if (root.TryGetProperty("scope", out JsonElement singleScopeElement) &&
-            singleScopeElement.ValueKind == JsonValueKind.String)
+        if (response.AdditionalProperties is null || response.AdditionalProperties.Count == 0)
         {
-            string? singleScope = singleScopeElement.GetString();
-            if (!string.IsNullOrWhiteSpace(singleScope))
-            {
-                return singleScope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            }
+            return [];
         }
 
-        if (root.TryGetProperty("scopes", out JsonElement scopesArrayElement) &&
-            scopesArrayElement.ValueKind == JsonValueKind.Array)
+        if (response.AdditionalProperties.TryGetValue("scopes", out JsonElement scopesElement) &&
+            scopesElement.ValueKind == JsonValueKind.Array)
         {
-            List<string> scopes = [];
-            foreach (JsonElement scopeElement in scopesArrayElement.EnumerateArray())
-            {
-                string? scope = scopeElement.GetString();
-                if (!string.IsNullOrWhiteSpace(scope))
-                {
-                    scopes.Add(scope.Trim());
-                }
-            }
+            return scopesElement
+                .EnumerateArray()
+                .Where(item => item.ValueKind == JsonValueKind.String)
+                .Select(item => item.GetString())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Select(item => item!.Trim())
+                .ToArray();
+        }
 
-            return scopes.ToArray();
+        if (response.AdditionalProperties.TryGetValue("scope", out JsonElement scopeElement) &&
+            scopeElement.ValueKind == JsonValueKind.String)
+        {
+            string? scopeRaw = scopeElement.GetString();
+            if (!string.IsNullOrWhiteSpace(scopeRaw))
+            {
+                return scopeRaw
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
         }
 
         return [];
     }
 
-    private static string? TryReadSquareErrorCode(string responseText)
+    private static bool HasErrorCode(IEnumerable<Error>? errors, string expectedCode)
     {
-        try
+        if (errors is null)
         {
-            using JsonDocument document = JsonDocument.Parse(responseText);
-            JsonElement root = document.RootElement;
-
-            if (root.TryGetProperty("error", out JsonElement errorElement) &&
-                errorElement.ValueKind == JsonValueKind.String)
-            {
-                return errorElement.GetString();
-            }
-
-            if (root.TryGetProperty("errors", out JsonElement errorsElement) &&
-                errorsElement.ValueKind == JsonValueKind.Array)
-            {
-                JsonElement firstError = errorsElement.EnumerateArray().FirstOrDefault();
-                if (firstError.ValueKind != JsonValueKind.Undefined &&
-                    firstError.TryGetProperty("code", out JsonElement codeElement) &&
-                    codeElement.ValueKind == JsonValueKind.String)
-                {
-                    string? code = codeElement.GetString();
-                    return code;
-                }
-            }
-
-            return null;
+            return false;
         }
-        catch
+
+        foreach (Error error in errors)
         {
-            return null;
+            if (string.Equals(error.Code.ToString(), expectedCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
         }
+
+        return false;
     }
 
     private enum RefreshTokenApiResultType

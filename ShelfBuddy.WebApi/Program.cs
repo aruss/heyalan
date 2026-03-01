@@ -7,6 +7,8 @@ using ShelfBuddy.TelegramIntegration;
 using ShelfBuddy.WebApi.Core;
 using ShelfBuddy.WebApi.Identity;
 using ShelfBuddy.WebApi.Infrastructure;
+using ShelfBuddy.WebApi.Onboarding;
+using ShelfBuddy.WebApi.SquareIntegration;
 using ShelfBuddy.WebApi.TwilioIntegration;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -159,6 +161,8 @@ app.MapTwilioWebhookEndpoints();
 app.MapTelegramWebhookEndpoints(); 
 app.MapAuthEndpoints();
 app.MapConversationEndpoints();
+app.MapSquareConnectionEndpoints();
+app.MapOnboardingEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

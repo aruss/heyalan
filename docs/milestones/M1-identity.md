@@ -37,6 +37,21 @@ Integrate ASP.NET Core Identity into the existing `ShelfBuddy` solution so paren
 ## Gate C: Implement IEmailSender 
 - [x] Add IEmailSender to the ShelfBuddy.WebApi project, for development cases just send the email to log info stream. 
 
+## Gate D: Frontend Logout Action
+- [x] Add client-side logout helper in `ShelfBuddy.WebApp/src/lib`.
+- [x] Use same-origin `/api/auth/logout` call with best-effort semantics.
+- [x] Always redirect to `/login` after logout attempt.
+
+## Gate E: Dropdown Integration
+- [x] Replace placeholder sign-out anchor in `DropdownUserProfile.tsx`.
+- [x] Trigger logout helper from dropdown item selection.
+- [x] Keep existing dropdown structure and styling.
+
+## Gate F: Store the picture scope from third parly provider logins
+- [ ] Normalize `picture` claims and store it in ShelfBuddy user 
+- [ ] Expose the `picture` claim via `/me` endpoint 
+
+
 ## Risks & Notes
 - **Cookie Domains:** The `/api` proxy keeps cookies same-origin in dev. In production with separate domains, set the cookie `Domain` accordingly.
 - **Data Protection:** Persist keys (volume or Redis) so auth cookies survive container restarts.

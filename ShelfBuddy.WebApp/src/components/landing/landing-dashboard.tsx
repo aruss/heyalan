@@ -1,4 +1,5 @@
 import { ReactElement } from "react";
+import { LuCircleCheck } from "react-icons/lu";
 
 export const LandingDashboard = (): ReactElement => {
     return (
@@ -14,13 +15,7 @@ export const LandingDashboard = (): ReactElement => {
                         <ul className="space-y-8">
                             <li className="flex items-start">
                                 <div className="mt-1 shrink-0">
-                                    <svg className="h-5 w-5 text-zinc-900" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.707-9.293a1 1 0 0 0-1.414-1.414L9 10.586 7.707 9.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
+                                    <LuCircleCheck className="h-5 w-5 text-zinc-900" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
                                     <h4 className="text-lg font-semibold">Human Takeover Protocol</h4>
@@ -32,13 +27,7 @@ export const LandingDashboard = (): ReactElement => {
                             </li>
                             <li className="flex items-start">
                                 <div className="mt-1 shrink-0">
-                                    <svg className="h-5 w-5 text-zinc-900" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.707-9.293a1 1 0 0 0-1.414-1.414L9 10.586 7.707 9.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
+                                    <LuCircleCheck className="h-5 w-5 text-zinc-900" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
                                     <h4 className="text-lg font-semibold">Conversation-to-Order Attribution</h4>
@@ -50,13 +39,7 @@ export const LandingDashboard = (): ReactElement => {
                             </li>
                             <li className="flex items-start">
                                 <div className="mt-1 shrink-0">
-                                    <svg className="h-5 w-5 text-zinc-900" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.707-9.293a1 1 0 0 0-1.414-1.414L9 10.586 7.707 9.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
+                                    <LuCircleCheck className="h-5 w-5 text-zinc-900" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
                                     <h4 className="text-lg font-semibold">Behavioral Tuning</h4>

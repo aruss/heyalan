@@ -1,14 +1,78 @@
 "use client"
 
 import { Button } from "@/components/admin/Button"
+import { useSession } from "@/lib/session-context"
 import { cx, focusRing } from "@/lib/utils"
 import { ChevronsUpDown } from "lucide-react"
 
 import { DropdownUserProfile } from "./DropdownUserProfile"
 
+const EMPTY_INITIALS = "??"
+const LOADING_INITIALS = ".."
+const LOADING_LABEL = "Loading..."
+const FALLBACK_LABEL = "Account"
+
+function normalizeValue(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+function resolveDisplayLabel(email: string, displayName: string): string {
+  const trimmedEmail = email.trim()
+  const trimmedDisplayName = displayName.trim()
+
+  if (trimmedDisplayName.length === 0) {
+    return trimmedEmail
+  }
+
+  if (
+    trimmedEmail.length > 0 &&
+    normalizeValue(trimmedDisplayName) === normalizeValue(trimmedEmail)
+  ) {
+    return trimmedEmail
+  }
+
+  return trimmedDisplayName
+}
+
+function resolveInitials(label: string): string {
+  const trimmedLabel = label.trim()
+  if (trimmedLabel.length === 0) {
+    return EMPTY_INITIALS
+  }
+
+  const words = trimmedLabel.split(/\s+/).filter((word) => word.length > 0)
+  if (words.length >= 2) {
+    return `${words[0][0]}${words[1][0]}`.toUpperCase()
+  }
+
+  const characters = words[0]
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 2)
+    .toUpperCase()
+
+  if (characters.length === 0) {
+    return EMPTY_INITIALS
+  }
+
+  if (characters.length === 1) {
+    return `${characters}?`
+  }
+
+  return characters
+}
+
 export function UserProfile() {
+  const { currentUser, isLoading } = useSession()
+  const profileLabel = isLoading
+    ? LOADING_LABEL
+    : currentUser
+      ? resolveDisplayLabel(currentUser.email, currentUser.displayName)
+      : FALLBACK_LABEL
+  const initials = isLoading ? LOADING_INITIALS : resolveInitials(profileLabel)
+  const emailLabel = currentUser?.email ?? null
+
   return (
-    <DropdownUserProfile>
+    <DropdownUserProfile emailLabel={emailLabel}>
       <Button
         aria-label="User settings"
         variant="ghost"
@@ -22,9 +86,9 @@ export function UserProfile() {
             className="flex size-8 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white text-xs text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
             aria-hidden="true"
           >
-            ES
+            {initials}
           </span>
-          <span>Emma Stone</span>
+          <span>{profileLabel}</span>
         </span>
         <ChevronsUpDown
           className="size-4 shrink-0 text-gray-500 group-hover:text-gray-700 group-hover:dark:text-gray-400"

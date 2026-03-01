@@ -3,17 +3,11 @@
 import type { ReactElement, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext } from "react";
+import type { CurrentUserResult } from "@/lib/api";
 import { getAuthMeOptions } from "@/lib/api/@tanstack/react-query.gen";
 
-export type SessionUser = {
-  id: string;
-  email: string;
-  displayName: string;
-  roles: string[];
-};
-
 type SessionContextValue = {
-  currentUser: SessionUser | null;
+  currentUser: CurrentUserResult | null;
   isLoading: boolean;
   errorMessage: string | null;
   refresh: () => Promise<void>;
@@ -22,23 +16,6 @@ type SessionContextValue = {
 const DEFAULT_SESSION_ERROR = "Unable to load session.";
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
-
-function isSessionUser(value: unknown): value is SessionUser {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const record = value as Record<string, unknown>;
-  const roles = record.roles;
-
-  return (
-    typeof record.id === "string" &&
-    typeof record.email === "string" &&
-    typeof record.displayName === "string" &&
-    Array.isArray(roles) &&
-    roles.every((role) => typeof role === "string")
-  );
-}
 
 export const SessionProvider = ({
   children,
@@ -54,7 +31,7 @@ export const SessionProvider = ({
     await sessionQuery.refetch();
   };
 
-  const currentUser = isSessionUser(sessionQuery.data) ? sessionQuery.data : null;
+  const currentUser = sessionQuery.data ?? null;
 
   const isLoading = sessionQuery.isLoading || sessionQuery.isRefetching;
   const errorMessage = sessionQuery.error == null ? null : DEFAULT_SESSION_ERROR;

@@ -1,4 +1,5 @@
 import { ReactElement } from "react";
+import { LuCalendarDays, LuCreditCard, LuSearch, LuTrendingUp } from "react-icons/lu";
 
 export const LandingFeatures = (): ReactElement => {
     return (
@@ -19,14 +20,7 @@ export const LandingFeatures = (): ReactElement => {
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-3xl border border-zinc-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md">
                         <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-900">
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"
-                                />
-                            </svg>
+                            <LuSearch className="h-6 w-6" aria-hidden="true" />
                         </div>
                         <h3 className="mb-3 text-lg font-semibold">Product Expertise</h3>
                         <p className="text-sm leading-relaxed text-zinc-600">
@@ -37,14 +31,7 @@ export const LandingFeatures = (): ReactElement => {
 
                     <div className="rounded-3xl border border-zinc-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md">
                         <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-900">
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M13 7h8m0 0v8m0-8-8 8-4-4-6 6"
-                                />
-                            </svg>
+                            <LuTrendingUp className="h-6 w-6" aria-hidden="true" />
                         </div>
                         <h3 className="mb-3 text-lg font-semibold">Dynamic Upselling</h3>
                         <p className="text-sm leading-relaxed text-zinc-600">
@@ -55,14 +42,7 @@ export const LandingFeatures = (): ReactElement => {
 
                     <div className="rounded-3xl border border-zinc-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md">
                         <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-900">
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3z"
-                                />
-                            </svg>
+                            <LuCreditCard className="h-6 w-6" aria-hidden="true" />
                         </div>
                         <h3 className="mb-3 text-lg font-semibold">In-Chat Checkout</h3>
                         <p className="text-sm leading-relaxed text-zinc-600">
@@ -73,14 +53,7 @@ export const LandingFeatures = (): ReactElement => {
 
                     <div className="rounded-3xl border border-zinc-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md">
                         <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-900">
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"
-                                />
-                            </svg>
+                            <LuCalendarDays className="h-6 w-6" aria-hidden="true" />
                         </div>
                         <h3 className="mb-3 text-lg font-semibold">Logistics & Shipping</h3>
                         <p className="text-sm leading-relaxed text-zinc-600">

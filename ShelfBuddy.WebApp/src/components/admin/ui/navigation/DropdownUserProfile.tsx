@@ -22,11 +22,13 @@ import { useEffect, useState, type ReactNode } from "react"
 export type DropdownUserProfileProps = {
   children: ReactNode
   align?: "center" | "start" | "end"
+  emailLabel?: string | null
 }
 
 export function DropdownUserProfile({
   children,
   align = "start",
+  emailLabel = null,
 }: DropdownUserProfileProps) {
   const [mounted, setMounted] = useState(false)
   const { resolvedTheme, theme, setTheme } = useTheme()
@@ -46,7 +48,7 @@ export function DropdownUserProfile({
           align={align}
           className="sm:!min-w-[calc(var(--radix-dropdown-menu-trigger-width))]"
         >
-          <DropdownMenuLabel>emma.stone@acme.com</DropdownMenuLabel>
+          <DropdownMenuLabel>{emailLabel ?? "Signed in"}</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuSubMenu>
               <DropdownMenuSubMenuTrigger>Theme</DropdownMenuSubMenuTrigger>

@@ -469,10 +469,16 @@ public static class IdentityEndpoints
 
     private static async Task<bool> IsOnboardedAsync(Guid userId, MainDataContext dbContext)
     {
-        bool hasSubscriptionMembership = await dbContext.SubscriptionUsers
-            .AnyAsync(subscriptionUser => subscriptionUser.UserId == userId);
+        bool hasCompletedOnboarding = await (
+            from subscriptionUser in dbContext.SubscriptionUsers
+            join onboardingState in dbContext.SubscriptionOnboardingStates
+                on subscriptionUser.SubscriptionId equals onboardingState.SubscriptionId
+            where subscriptionUser.UserId == userId &&
+                  onboardingState.Status == SubscriptionOnboardingStatus.Completed
+            select subscriptionUser.SubscriptionId
+        ).AnyAsync();
 
-        return hasSubscriptionMembership;
+        return hasCompletedOnboarding;
     }
 
     private static async Task SignInWithOnboardingClaimAsync(
