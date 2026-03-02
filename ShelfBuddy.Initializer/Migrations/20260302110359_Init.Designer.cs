@@ -12,7 +12,7 @@ using ShelfBuddy.Data;
 namespace ShelfBuddy.Initializer.Migrations
 {
     [DbContext(typeof(MainDataContext))]
-    [Migration("20260301190805_Init")]
+    [Migration("20260302110359_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -204,6 +204,7 @@ namespace ShelfBuddy.Initializer.Migrations
                         .HasDatabaseName("srbd_ix_srbd_agents_subscription_id");
 
                     b.HasIndex("TelegramBotToken")
+                        .IsUnique()
                         .HasDatabaseName("srbd_ix_srbd_agents_telegram_bot_token")
                         .HasFilter("\"TelegramBotToken\" IS NOT NULL");
 

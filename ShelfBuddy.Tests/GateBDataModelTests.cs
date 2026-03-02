@@ -89,6 +89,20 @@ public class GateBDataModelTests
     }
 
     [Fact]
+    public void Agent_TelegramBotTokenIndex_IsUniqueWithFilter()
+    {
+        using MainDataContext context = CreateContext();
+        IEntityType entityType = context.Model.FindEntityType(typeof(Agent))!;
+
+        IIndex? telegramTokenIndex = entityType.GetIndexes()
+            .SingleOrDefault(index => index.Properties.Select(property => property.Name).SequenceEqual([nameof(Agent.TelegramBotToken)]));
+
+        Assert.NotNull(telegramTokenIndex);
+        Assert.True(telegramTokenIndex!.IsUnique);
+        Assert.Equal("\"TelegramBotToken\" IS NOT NULL", telegramTokenIndex.GetFilter());
+    }
+
+    [Fact]
     public void GateBEntities_ImplementAuditContract()
     {
         Assert.True(typeof(IEntityWithAudit).IsAssignableFrom(typeof(SubscriptionSquareConnection)));

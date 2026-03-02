@@ -402,6 +402,7 @@ namespace ShelfBuddy.Initializer.Migrations
                 name: "srbd_ix_srbd_agents_telegram_bot_token",
                 table: "srbd_agents",
                 column: "TelegramBotToken",
+                unique: true,
                 filter: "\"TelegramBotToken\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(

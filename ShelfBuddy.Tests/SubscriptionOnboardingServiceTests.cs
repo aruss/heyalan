@@ -1,10 +1,13 @@
 namespace ShelfBuddy.Tests;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using ShelfBuddy;
 using ShelfBuddy.Data;
 using ShelfBuddy.Data.Entities;
 using ShelfBuddy.Onboarding;
+using ShelfBuddy.TelegramIntegration;
+using Telegram.Bot.Exceptions;
 
 public class SubscriptionOnboardingServiceTests
 {
@@ -16,7 +19,7 @@ public class SubscriptionOnboardingServiceTests
         Guid userId = Guid.NewGuid();
         await SeedSubscriptionMemberAsync(dbContext, subscriptionId, userId);
 
-        SubscriptionOnboardingService service = new(dbContext);
+        SubscriptionOnboardingService service = CreateService(dbContext);
 
         GetSubscriptionOnboardingStateResult result = await service.GetStateAsync(subscriptionId, userId);
 
@@ -37,7 +40,7 @@ public class SubscriptionOnboardingServiceTests
         SeedConnectedSquare(dbContext, subscriptionId, userId);
         await dbContext.SaveChangesAsync();
 
-        SubscriptionOnboardingService service = new(dbContext);
+        SubscriptionOnboardingService service = CreateService(dbContext);
         CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
         CreateSubscriptionOnboardingAgentResult.Success createSuccess =
             Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
@@ -65,7 +68,7 @@ public class SubscriptionOnboardingServiceTests
         SeedConnectedSquare(dbContext, subscriptionId, userId);
         await dbContext.SaveChangesAsync();
 
-        SubscriptionOnboardingService service = new(dbContext);
+        SubscriptionOnboardingService service = CreateService(dbContext);
         CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
         CreateSubscriptionOnboardingAgentResult.Success createSuccess =
             Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
@@ -93,7 +96,7 @@ public class SubscriptionOnboardingServiceTests
         SeedConnectedSquare(dbContext, subscriptionId, userId);
         await dbContext.SaveChangesAsync();
 
-        SubscriptionOnboardingService service = new(dbContext);
+        SubscriptionOnboardingService service = CreateService(dbContext);
 
         CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
         CreateSubscriptionOnboardingAgentResult.Success createSuccess =
@@ -138,7 +141,7 @@ public class SubscriptionOnboardingServiceTests
         SeedConnectedSquare(dbContext, subscriptionId, userId);
         await dbContext.SaveChangesAsync();
 
-        SubscriptionOnboardingService service = new(dbContext);
+        SubscriptionOnboardingService service = CreateService(dbContext);
         CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
         CreateSubscriptionOnboardingAgentResult.Success createSuccess =
             Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
@@ -173,7 +176,7 @@ public class SubscriptionOnboardingServiceTests
         SeedConnectedSquare(dbContext, subscriptionId, userId);
         await dbContext.SaveChangesAsync();
 
-        SubscriptionOnboardingService service = new(dbContext);
+        SubscriptionOnboardingService service = CreateService(dbContext);
         CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
         CreateSubscriptionOnboardingAgentResult.Success createSuccess =
             Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
@@ -206,6 +209,121 @@ public class SubscriptionOnboardingServiceTests
         Assert.Equal("channels", state.CurrentStep);
     }
 
+    [Fact]
+    public async Task UpdateChannelsAsync_WhenTelegramWebhookRegistrationFails_RollsBackAndReturnsFailure()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedSubscriptionMemberAsync(dbContext, subscriptionId, userId);
+        SeedConnectedSquare(dbContext, subscriptionId, userId);
+        await dbContext.SaveChangesAsync();
+
+        SubscriptionOnboardingService service = CreateService(
+            dbContext,
+            new StubTelegramService(StubTelegramBehavior.AlwaysFail));
+
+        CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
+        CreateSubscriptionOnboardingAgentResult.Success createSuccess =
+            Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
+
+        UpdateSubscriptionOnboardingStepResult result = await service.UpdateChannelsAsync(
+            new UpdateSubscriptionOnboardingChannelsInput(
+                createSuccess.AgentId,
+                userId,
+                null,
+                "telegram-token",
+                null));
+
+        UpdateSubscriptionOnboardingStepResult.Failure failure =
+            Assert.IsType<UpdateSubscriptionOnboardingStepResult.Failure>(result);
+        Assert.Equal("telegram_webhook_registration_failed", failure.ErrorCode);
+
+        Agent agent = await dbContext.Agents.SingleAsync(item => item.Id == createSuccess.AgentId);
+        Assert.Null(agent.TelegramBotToken);
+    }
+
+    [Fact]
+    public async Task UpdateChannelsAsync_WhenTelegramTokenIsInvalid_ReturnsInvalidTokenError()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedSubscriptionMemberAsync(dbContext, subscriptionId, userId);
+        SeedConnectedSquare(dbContext, subscriptionId, userId);
+        await dbContext.SaveChangesAsync();
+
+        SubscriptionOnboardingService service = CreateService(
+            dbContext,
+            new StubTelegramService(StubTelegramBehavior.InvalidToken));
+
+        CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
+        CreateSubscriptionOnboardingAgentResult.Success createSuccess =
+            Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
+
+        UpdateSubscriptionOnboardingStepResult result = await service.UpdateChannelsAsync(
+            new UpdateSubscriptionOnboardingChannelsInput(
+                createSuccess.AgentId,
+                userId,
+                null,
+                "telegram-token",
+                null));
+
+        UpdateSubscriptionOnboardingStepResult.Failure failure =
+            Assert.IsType<UpdateSubscriptionOnboardingStepResult.Failure>(result);
+        Assert.Equal("telegram_bot_token_invalid", failure.ErrorCode);
+    }
+
+    [Fact]
+    public async Task UpdateChannelsAsync_WhenTelegramTokenAlreadyInUse_ReturnsDuplicateTokenError()
+    {
+        MainDataContext dbContext = CreateContext();
+
+        Guid firstSubscriptionId = Guid.NewGuid();
+        Guid firstUserId = Guid.NewGuid();
+        await SeedSubscriptionMemberAsync(dbContext, firstSubscriptionId, firstUserId);
+        SeedConnectedSquare(dbContext, firstSubscriptionId, firstUserId);
+
+        Guid secondSubscriptionId = Guid.NewGuid();
+        Guid secondUserId = Guid.NewGuid();
+        await SeedSubscriptionMemberAsync(dbContext, secondSubscriptionId, secondUserId);
+        SeedConnectedSquare(dbContext, secondSubscriptionId, secondUserId);
+
+        await dbContext.SaveChangesAsync();
+
+        SubscriptionOnboardingService service = CreateService(dbContext);
+
+        CreateSubscriptionOnboardingAgentResult firstCreateResult = await service.CreatePrimaryAgentAsync(firstSubscriptionId, firstUserId);
+        CreateSubscriptionOnboardingAgentResult.Success firstCreateSuccess =
+            Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(firstCreateResult);
+
+        UpdateSubscriptionOnboardingStepResult firstChannelsResult = await service.UpdateChannelsAsync(
+            new UpdateSubscriptionOnboardingChannelsInput(
+                firstCreateSuccess.AgentId,
+                firstUserId,
+                null,
+                "shared-telegram-token",
+                null));
+
+        Assert.IsType<UpdateSubscriptionOnboardingStepResult.Success>(firstChannelsResult);
+
+        CreateSubscriptionOnboardingAgentResult secondCreateResult = await service.CreatePrimaryAgentAsync(secondSubscriptionId, secondUserId);
+        CreateSubscriptionOnboardingAgentResult.Success secondCreateSuccess =
+            Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(secondCreateResult);
+
+        UpdateSubscriptionOnboardingStepResult secondChannelsResult = await service.UpdateChannelsAsync(
+            new UpdateSubscriptionOnboardingChannelsInput(
+                secondCreateSuccess.AgentId,
+                secondUserId,
+                null,
+                "shared-telegram-token",
+                null));
+
+        UpdateSubscriptionOnboardingStepResult.Failure failure =
+            Assert.IsType<UpdateSubscriptionOnboardingStepResult.Failure>(secondChannelsResult);
+        Assert.Equal("telegram_bot_token_already_in_use", failure.ErrorCode);
+    }
+
     private static MainDataContext CreateContext()
     {
         DbContextOptions<MainDataContext> options = new DbContextOptionsBuilder<MainDataContext>()
@@ -213,6 +331,16 @@ public class SubscriptionOnboardingServiceTests
             .Options;
 
         return new MainDataContext(options);
+    }
+
+    private static SubscriptionOnboardingService CreateService(
+        MainDataContext dbContext,
+        ITelegramService? telegramService = null)
+    {
+        return new SubscriptionOnboardingService(
+            dbContext,
+            telegramService ?? new StubTelegramService(StubTelegramBehavior.Success),
+            NullLogger<SubscriptionOnboardingService>.Instance);
     }
 
     private static async Task SeedSubscriptionMemberAsync(MainDataContext dbContext, Guid subscriptionId, Guid userId)
@@ -254,5 +382,42 @@ public class SubscriptionOnboardingServiceTests
             Scopes = "ITEMS_READ CUSTOMERS_READ CUSTOMERS_WRITE ORDERS_READ ORDERS_WRITE PAYMENTS_WRITE",
             ConnectedByUserId = connectedByUserId
         });
+    }
+
+    private enum StubTelegramBehavior
+    {
+        Success,
+        AlwaysFail,
+        InvalidToken
+    }
+
+    private sealed class StubTelegramService : ITelegramService
+    {
+        private readonly StubTelegramBehavior behavior;
+
+        public StubTelegramService(StubTelegramBehavior behavior)
+        {
+            this.behavior = behavior;
+        }
+
+        public Task RegisterWebhookAsync(string botToken, CancellationToken ct = default)
+        {
+            if (this.behavior == StubTelegramBehavior.Success)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (this.behavior == StubTelegramBehavior.InvalidToken)
+            {
+                throw new ApiRequestException("Unauthorized", 401);
+            }
+
+            throw new HttpRequestException("Transient transport failure.");
+        }
+
+        public Task SendMessageAsync(string botToken, long chatId, string text, CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

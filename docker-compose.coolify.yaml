@@ -1,4 +1,45 @@
 services:
+  initializer:
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-initializer:${IMAGE_TAG:-latest}'
+    restart: 'no'
+    environment:
+      - 'ConnectionStrings__shelfbuddy=${DATABASE_URL}'
+      - 'ConnectionStrings__rabbitmq=${RABBITMQ_URL}'
+      - 'PUBLIC_BASE_URL=${PUBLIC_BASE_URL}'
+      - 'TELEGRAM_SECRET_TOKEN=${TELEGRAM_SECRET_TOKEN}'
+      - 'RABBITMQ_MANAGEMENTURL=${RABBITMQ_MANAGEMENTURL}'
+      - 'RABBITMQ_USER=${RABBITMQ_USER}'
+      - 'RABBITMQ_PASS=${RABBITMQ_PASS}'
+      - 'RABBITMQ_VHOST=${RABBITMQ_VHOST}'
+    networks:
+      - coolify
+      - default
+  webapi:
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapi:${IMAGE_TAG:-latest}'
+    environment:
+      - 'ConnectionStrings__shelfbuddy=${DATABASE_URL}'
+      - 'ConnectionStrings__rabbitmq=${RABBITMQ_URL}'
+      - 'SWAGGER_ENABLED=${SWAGGER_ENABLED}'
+      - 'PUBLIC_BASE_URL=${PUBLIC_BASE_URL}'
+      - 'TELEGRAM_SECRET_TOKEN=${TELEGRAM_SECRET_TOKEN}'
+      - 'AUTH_GOOGLE_CLIENT_ID=${AUTH_GOOGLE_CLIENT_ID}'
+      - 'AUTH_GOOGLE_CLIENT_SECRET=${AUTH_GOOGLE_CLIENT_SECRET}'
+      - 'AUTH_SQUARE_CLIENT_ID=${AUTH_SQUARE_CLIENT_ID}'
+      - 'AUTH_SQUARE_CLIENT_SECRET=${AUTH_SQUARE_CLIENT_SECRET}'
+      - 'SQUARE_CLIENT_ID=${SQUARE_CLIENT_ID}'
+      - 'SQUARE_CLIENT_SECRET=${SQUARE_CLIENT_SECRET}'
+    healthcheck:
+      test: 'wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1'
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      initializer:
+        condition: service_completed_successfully
+    networks:
+      - coolify
+      - default
   webapp:
     image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapp:${IMAGE_TAG:-latest}'
     environment:
@@ -10,6 +51,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+    depends_on:
+      webapi:
+        condition: service_started
     networks:
       - coolify
       - default

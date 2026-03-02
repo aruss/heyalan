@@ -145,7 +145,8 @@ public class MainDataContext :
             entity.Property(e => e.WhatsappNumber).IsRequired(false);
 
             entity.HasIndex(e => e.TelegramBotToken)
-                .HasFilter("\"TelegramBotToken\" IS NOT NULL");
+                .HasFilter("\"TelegramBotToken\" IS NOT NULL")
+                .IsUnique();
 
             entity.HasIndex(e => e.TwilioPhoneNumber)
                 .HasFilter("\"TwilioPhoneNumber\" IS NOT NULL");

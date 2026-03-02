@@ -329,6 +329,9 @@ public static class OnboardingEndpoints
             "agent_name_required" => "Agent name is required.",
             "agent_personality_required" => "Agent personality is required.",
             "channels_at_least_one_required" => "At least one channel must be configured.",
+            "telegram_bot_token_already_in_use" => "This Telegram bot token is already connected to another agent. Use a different token.",
+            "telegram_webhook_registration_failed" => "Telegram webhook registration failed. Verify the bot token, webhook URL reachability, and BotFather webhook settings, then try again.",
+            "telegram_bot_token_invalid" => "Telegram rejected the bot token. Verify the token from BotFather and try again.",
             "onboarding_invitations_blocked" => "Complete square connection, profile, and channels before invitations.",
             "onboarding_finalize_incomplete" => "All required onboarding steps must be completed before finalize.",
             _ => "Onboarding request failed."

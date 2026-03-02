@@ -201,6 +201,7 @@ namespace ShelfBuddy.Initializer.Migrations
                         .HasDatabaseName("srbd_ix_srbd_agents_subscription_id");
 
                     b.HasIndex("TelegramBotToken")
+                        .IsUnique()
                         .HasDatabaseName("srbd_ix_srbd_agents_telegram_bot_token")
                         .HasFilter("\"TelegramBotToken\" IS NOT NULL");
 

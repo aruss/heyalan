@@ -18,9 +18,18 @@ public sealed class TelegramMessageInput
 
     [JsonPropertyName("from")]
     public TelegramUserInput? From { get; set; }
+
+    [JsonPropertyName("chat")]
+    public TelegramChatInput? Chat { get; set; }
 }
 
 public sealed class TelegramUserInput
+{
+    [JsonPropertyName("id")]
+    public long? Id { get; set; }
+}
+
+public sealed class TelegramChatInput
 {
     [JsonPropertyName("id")]
     public long? Id { get; set; }
