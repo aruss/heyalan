@@ -1,70 +1,54 @@
 # ShelfBuddy
 
-ShelfBuddy is an autonomous AI sales and support agent for merchants using Square.
-It engages customers over messaging channels (SMS, WhatsApp, and Telegram), helps drive upsells, and supports payment, order, and shipping workflows through natural conversation.
+ShelfBuddy is an AI teammate for merchants that handles customer conversations across SMS, WhatsApp, and Telegram.
+It helps teams respond faster, guide buyers, support orders, and keep sales conversations moving without requiring constant manual effort.
 
-## System Overview
+## Product Overview
 
-ShelfBuddy is a multi-tenant platform built around a subscription account model.
+ShelfBuddy is built for operators, support teams, and store owners who need reliable customer communication across channels.
+It combines channel messaging, merchant context, and workflow automation so teams can manage more conversations with less operational overhead.
 
-Each `Subscription` represents one tenant account and includes:
-- Team members (`SubscriptionUsers`) with roles (Owner, Member)
-- Billing and credit metadata for the ShelfBuddy plan
-- A list of configured agents (data model supports multiple agents; current UI supports one)
+### What ShelfBuddy Helps With
+- Responding to customer messages across supported channels.
+- Keeping conversation history and status available for follow-up.
+- Supporting sales and service journeys with AI-assisted responses.
+- Connecting merchant systems so conversation context can drive actions.
 
-## Integrations and Runtime Communication
+## Available Now
 
-ShelfBuddy currently integrates with:
-- **Square**: product/catalog context, inventory awareness, and order-management workflows the agent can act on
-- **Twilio**: messaging channel integration (including SMS and WhatsApp delivery paths)
-- **Telegram**: messaging channel integration
-- **Stripe**: billing for ShelfBuddy subscription plans (platform billing only)
+- Multi-channel messaging foundation for Telegram and SMS/Twilio paths, with outbound delivery pipeline support.
+- Conversation persistence model for inbox-style history and read-state tracking foundations.
+- Admin dashboard shell with authenticated user profile context.
+- Identity and session-based authentication flows (local and external provider paths).
+- Subscription-aware onboarding model with membership handling for first-time users.
+- Square connection model for subscription-scoped merchant access and onboarding workflows.
+- Feature-oriented backend organization improvements to make code easier to navigate and evolve.
 
-For dashboard runtime communication, ShelfBuddy uses **SignalR** to stream real-time events, including:
-- Chat message updates
-- Notifications and activity events
+## What's Next
 
-## Admin and Operations
+- Deeper onboarding completion and invitation/team collaboration flows.
+- Additional UI/UX polish in admin navigation and breadcrumb behavior.
+- Expanded operational automation around channel and integration setup.
+- Broader hardening of tests and end-to-end validation coverage.
 
-The dashboard is the control plane for operators and team members:
-- Subscription-level team access and collaboration
-- Agent configuration and prompt management
-- Channel credential and endpoint configuration
-- Human takeover and manual intervention when needed
-- Live updates for conversations and operational notifications via SignalR
+## Technical Principles
 
-## POC vs Future Onboarding
+ShelfBuddy follows a subscription-first operating model:
 
-Current POC onboarding is manual:
-- Merchant provides required phone numbers and bot tokens
-- Merchant configures Twilio and Telegram in their own accounts
+- Each subscription represents a tenant boundary for users, agents, and integrations.
+- Messaging flows are event-driven, with channel ingestion, processing, and delivery stages.
+- Conversation records are treated as durable operational history, not transient chat state.
+- Integrations are isolated by provider domain (for example, Square and Telegram) and follow least-privilege access principles.
+- Authentication and onboarding are aligned so users are provisioned into a valid subscription context before operational access.
+- Security and privacy are prioritized by design: sensitive credentials stay server-side, and integrations are scoped per subscription.
+- Backend code organization is feature-oriented, with shared infrastructure kept explicit and reusable.
 
-Future onboarding is planned to be automated:
-- Platform-managed channel provisioning and setup
-- Reduced manual provider configuration for merchants
+## Documentation
 
-## Technology
-- .NET (ASP.NET Core, EF Core)
-- Next.js (App Router, React)
-- Tailwind CSS
-- SignalR
-- OpenTelemetry
-- Docker
+For setup and operational HOWTOs, use the docs in `/docs`:
 
-## Run Project
-
-    dotnet watch run --project .\ShelfBuddy.AppHost\ShelfBuddy.AppHost.csproj
-
-## Local Webhooks via ngrok
-
-To expose local `webapi` for Telegram/Twilio webhooks through Aspire:
-
-1. Set `ENABLE_NGROK=true` in your local `.env`.
-2. Set `NGROK_AUTHTOKEN=<your-token>` in your local `.env`.
-3. Set `NGROK_DOMAIN=<your-reserved-domain>` (for example `gobbler-bright-llama.ngrok-free.app`).
-4. Set `PUBLIC_BASE_URL=https://<your-reserved-domain>`.
-5. Start AppHost.
-
-AppHost passes `PUBLIC_BASE_URL` to both `initializer` and `webapi` as environment variables.
-When ngrok is enabled, AppHost runs ngrok with `--url=<NGROK_DOMAIN>` so that exact domain is brought online.
-Note: the tunnel targets `http://host.docker.internal:5000` (WebApi dev URL from launch settings).
+- [Getting Started](./docs/getting-started.md)
+- [Setup Webhooks](./docs/setup-webhooks.md)
+- [Square App Setup](./docs/square-app-setup.md)
+- [Configuration Reference](./docs/configuration-reference.md)
+- [Architecture Overview](./docs/architecture-overview.md)

@@ -53,17 +53,9 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq", userName: rabbitUser, password: r
 
 #region Application: Intializer
 
-var adminEmail = builder.Configuration["ADMIN_EMAIL"]
-        ?? throw new InvalidOperationException("ADMIN_EMAIL is missing in host configuration.");
-
-var adminPassword = builder.Configuration["ADMIN_PASSWORD"]
-        ?? throw new InvalidOperationException("ADMIN_PASSWORD is missing in host configuration.");
-
 // Run database migrations and minio bucket setup before starting the main app
 var initializer = builder.AddProject<Projects.ShelfBuddy_Initializer>("initializer")
     .WithReference(shelfbuddyDb) // Injects the connection string
-    .WithEnvironment("ADMIN_EMAIL", adminEmail)
-    .WithEnvironment("ADMIN_PASSWORD", adminPassword)
     .WithEnvironment("DOTNET_ENVIRONMENT", "Development")
     .WithEnvironment("PUBLIC_BASE_URL", publicBaseUrl)
     .WithEnvironment("TELEGRAM_SECRET_TOKEN", telegramSecretToken)
