@@ -33,6 +33,8 @@ public class MainDataContext :
 
     public DbSet<SubscriptionOnboardingState> SubscriptionOnboardingStates { get; set; } = null!;
 
+    public DbSet<SubscriptionOnboardingStepState> SubscriptionOnboardingStepStates { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -106,6 +108,13 @@ public class MainDataContext :
                 .HasOne(e => e.OnboardingState)
                 .WithOne(e => e.Subscription)
                 .HasForeignKey<SubscriptionOnboardingState>(e => e.SubscriptionId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasMany(e => e.OnboardingStepStates)
+                .WithOne(e => e.Subscription)
+                .HasForeignKey(e => e.SubscriptionId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -197,6 +206,19 @@ public class MainDataContext :
                 .HasForeignKey(e => e.PrimaryAgentId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<SubscriptionOnboardingStepState>(entity =>
+        {
+            entity.HasKey(e => new { e.SubscriptionId, e.Step });
+            entity.Property(e => e.Step).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.CompletedAt).IsRequired(false);
+            entity.Property(e => e.SkippedAt).IsRequired(false);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => e.SubscriptionId);
         });
 
         builder.Entity<Conversation>(entity =>

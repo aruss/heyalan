@@ -4,7 +4,9 @@ using ShelfBuddy.Data.Entities;
 
 public sealed record OnboardingStepState(
     string Step,
-    string Status);
+    string Status,
+    bool IsSkippable,
+    string[] DependsOn);
 
 public sealed record OnboardingStateResult(
     string Status,
@@ -75,6 +77,12 @@ public interface ISubscriptionOnboardingService
     Task<UpdateSubscriptionOnboardingStepResult> FinalizeAsync(
         Guid subscriptionId,
         Guid userId,
+        CancellationToken cancellationToken = default);
+
+    Task<UpdateSubscriptionOnboardingStepResult> SkipStepAsync(
+        Guid subscriptionId,
+        Guid userId,
+        string step,
         CancellationToken cancellationToken = default);
 
     Task<OnboardingStateResult> RecomputeStateAsync(

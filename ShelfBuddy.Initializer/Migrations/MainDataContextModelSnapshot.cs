@@ -542,6 +542,39 @@ namespace ShelfBuddy.Initializer.Migrations
                     b.ToTable("srbd_subscription_onboarding_states");
                 });
 
+            modelBuilder.Entity("ShelfBuddy.Data.Entities.SubscriptionOnboardingStepState", b =>
+                {
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Step")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("SkippedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("SubscriptionId", "Step")
+                        .HasName("srbd_pk_srbd_subscription_onboarding_step_states");
+
+                    b.HasIndex("SubscriptionId")
+                        .HasDatabaseName("srbd_ix_srbd_subscription_onboarding_step_states_subscription_id");
+
+                    b.ToTable("srbd_subscription_onboarding_step_states");
+                });
+
             modelBuilder.Entity("ShelfBuddy.Data.Entities.SubscriptionSquareConnection", b =>
                 {
                     b.Property<Guid>("SubscriptionId")
@@ -754,6 +787,18 @@ namespace ShelfBuddy.Initializer.Migrations
                     b.Navigation("Subscription");
                 });
 
+            modelBuilder.Entity("ShelfBuddy.Data.Entities.SubscriptionOnboardingStepState", b =>
+                {
+                    b.HasOne("ShelfBuddy.Data.Entities.Subscription", "Subscription")
+                        .WithMany("OnboardingStepStates")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_srbd_subscription_onboarding_step_states_srbd_subscriptions~");
+
+                    b.Navigation("Subscription");
+                });
+
             modelBuilder.Entity("ShelfBuddy.Data.Entities.SubscriptionSquareConnection", b =>
                 {
                     b.HasOne("ShelfBuddy.Data.Entities.ApplicationUser", "ConnectedByUser")
@@ -811,6 +856,8 @@ namespace ShelfBuddy.Initializer.Migrations
                     b.Navigation("Agents");
 
                     b.Navigation("OnboardingState");
+
+                    b.Navigation("OnboardingStepStates");
 
                     b.Navigation("SquareConnection");
 

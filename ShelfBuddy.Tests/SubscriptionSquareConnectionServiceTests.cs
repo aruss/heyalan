@@ -402,7 +402,7 @@ public class SubscriptionSquareConnectionServiceTests
                 new GetSubscriptionOnboardingStateResult.Success(new OnboardingStateResult(
                     "Draft",
                     "square_connect",
-                    [new OnboardingStepState("square_connect", "in_progress")],
+                    [new OnboardingStepState("square_connect", "in_progress", true, [])],
                     null,
                     false)));
         }
@@ -450,6 +450,16 @@ public class SubscriptionSquareConnectionServiceTests
                 new UpdateSubscriptionOnboardingStepResult.Failure("not_implemented"));
         }
 
+        public Task<UpdateSubscriptionOnboardingStepResult> SkipStepAsync(
+            Guid subscriptionId,
+            Guid userId,
+            string step,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<UpdateSubscriptionOnboardingStepResult>(
+                new UpdateSubscriptionOnboardingStepResult.Failure("not_implemented"));
+        }
+
         public Task<OnboardingStateResult> RecomputeStateAsync(
             Guid subscriptionId,
             CancellationToken cancellationToken = default)
@@ -457,7 +467,7 @@ public class SubscriptionSquareConnectionServiceTests
             return Task.FromResult(new OnboardingStateResult(
                 "Draft",
                 "square_connect",
-                [new OnboardingStepState("square_connect", "in_progress")],
+                [new OnboardingStepState("square_connect", "in_progress", true, [])],
                 null,
                 false));
         }

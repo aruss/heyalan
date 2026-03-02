@@ -245,6 +245,29 @@ namespace ShelfBuddy.Initializer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "srbd_subscription_onboarding_step_states",
+                columns: table => new
+                {
+                    SubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Step = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    SkippedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("srbd_pk_srbd_subscription_onboarding_step_states", x => new { x.SubscriptionId, x.Step });
+                    table.ForeignKey(
+                        name: "srbd_fk_srbd_subscription_onboarding_step_states_srbd_subscriptions~",
+                        column: x => x.SubscriptionId,
+                        principalTable: "srbd_subscriptions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "srbd_subscription_square_connections",
                 columns: table => new
                 {
@@ -510,6 +533,11 @@ namespace ShelfBuddy.Initializer.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "srbd_ix_srbd_subscription_onboarding_step_states_subscription_id",
+                table: "srbd_subscription_onboarding_step_states",
+                column: "SubscriptionId");
+
+            migrationBuilder.CreateIndex(
                 name: "srbd_ix_srbd_subscription_square_connections_connected_by_user_id",
                 table: "srbd_subscription_square_connections",
                 column: "ConnectedByUserId");
@@ -560,6 +588,9 @@ namespace ShelfBuddy.Initializer.Migrations
 
             migrationBuilder.DropTable(
                 name: "srbd_subscription_onboarding_states");
+
+            migrationBuilder.DropTable(
+                name: "srbd_subscription_onboarding_step_states");
 
             migrationBuilder.DropTable(
                 name: "srbd_subscription_square_connections");

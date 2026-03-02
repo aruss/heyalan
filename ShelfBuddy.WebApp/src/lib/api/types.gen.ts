@@ -144,6 +144,8 @@ export type OnboardingErrorResult = {
 export type OnboardingStepState = {
     step: string;
     status: string;
+    isSkippable: boolean;
+    dependsOn: Array<string>;
 };
 
 export type PatchOnboardingAgentChannelsInput = {
