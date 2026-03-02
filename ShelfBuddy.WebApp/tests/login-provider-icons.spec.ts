@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resolveProviderIconKey } from "../src/app/login/page";
+import { resolveProviderIconKey } from "../src/app/login/provider-icons";
 
 test("resolveProviderIconKey returns google for google provider", () => {
     const providerIconKey = resolveProviderIconKey("google");

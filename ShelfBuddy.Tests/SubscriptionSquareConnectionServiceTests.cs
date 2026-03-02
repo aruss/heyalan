@@ -98,13 +98,46 @@ public class SubscriptionSquareConnectionServiceTests
             new StubSquareMerchantClient());
 
         CompleteSquareConnectResult result = await service.CompleteConnectAsync(
-            new CompleteSquareConnectInput("valid-state", "auth-code"));
+            new CompleteSquareConnectInput("valid-state", "auth-code", null));
 
         CompleteSquareConnectResult.Success success = Assert.IsType<CompleteSquareConnectResult.Success>(result);
         Assert.Contains("squareConnect=success", success.RedirectUrl, StringComparison.Ordinal);
         Assert.NotNull(tokenService.LastStoredInput);
         Assert.Equal(subscriptionId, tokenService.LastStoredInput!.SubscriptionId);
         Assert.Equal(userId, tokenService.LastStoredInput.ConnectedByUserId);
+    }
+
+    [Fact]
+    public async Task CompleteConnectAsync_WhenCallbackAccessDenied_ReturnsDeterministicFailureCode()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
+
+        RecordingOAuthStateProtector stateProtector = new()
+        {
+            PayloadToUnprotect = new SquareConnectStatePayload(
+                subscriptionId,
+                userId,
+                "/onboarding",
+                SquareConnectIntent.Onboarding,
+                DateTime.UtcNow)
+        };
+
+        SubscriptionSquareConnectionService service = CreateService(
+            dbContext,
+            stateProtector,
+            new StubSquareOAuthClient(),
+            new StubSquareTokenService(),
+            new StubSquareMerchantClient());
+
+        CompleteSquareConnectResult result = await service.CompleteConnectAsync(
+            new CompleteSquareConnectInput("valid-state", null, "access_denied"));
+
+        CompleteSquareConnectResult.Failure failure = Assert.IsType<CompleteSquareConnectResult.Failure>(result);
+        Assert.Equal("square_oauth_access_denied", failure.ErrorCode);
+        Assert.Contains("squareConnectError=square_oauth_access_denied", failure.RedirectUrl, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -179,14 +212,47 @@ public class SubscriptionSquareConnectionServiceTests
         Assert.Equal("square_reconnect_required", failure.ErrorCode);
     }
 
+    [Fact]
+    public async Task StartConnectAsync_WhenConnectionSquareCredentialsMissing_ReturnsSquareNotConfigured()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
+
+        AppOptions appOptions = new()
+        {
+            PublicBaseUrl = new Uri("https://shelfbuddy.test"),
+            AuthSquareClientId = "sandbox-auth-client-id",
+            AuthSquareClientSecret = "auth-square-client-secret",
+            SquareClientId = null,
+            SquareClientSecret = null
+        };
+
+        SubscriptionSquareConnectionService service = CreateService(
+            dbContext,
+            new RecordingOAuthStateProtector(),
+            new StubSquareOAuthClient(),
+            new StubSquareTokenService(),
+            new StubSquareMerchantClient(),
+            appOptions);
+
+        StartSquareConnectResult result = await service.StartConnectAsync(
+            new StartSquareConnectInput(subscriptionId, userId, "/onboarding", SquareConnectIntent.Onboarding));
+
+        StartSquareConnectResult.Failure failure = Assert.IsType<StartSquareConnectResult.Failure>(result);
+        Assert.Equal("square_not_configured", failure.ErrorCode);
+    }
+
     private static SubscriptionSquareConnectionService CreateService(
         MainDataContext dbContext,
         IOAuthStateProtector stateProtector,
         ISquareOAuthClient squareOAuthClient,
         ISquareTokenService squareTokenService,
-        ISquareMerchantClient squareMerchantClient)
+        ISquareMerchantClient squareMerchantClient,
+        AppOptions? appOptions = null)
     {
-        AppOptions appOptions = new()
+        AppOptions resolvedAppOptions = appOptions ?? new AppOptions
         {
             PublicBaseUrl = new Uri("https://shelfbuddy.test"),
             SquareClientId = "sandbox-client-id",
@@ -195,7 +261,7 @@ public class SubscriptionSquareConnectionServiceTests
 
         return new SubscriptionSquareConnectionService(
             dbContext,
-            appOptions,
+            resolvedAppOptions,
             stateProtector,
             squareOAuthClient,
             squareTokenService,

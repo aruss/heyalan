@@ -82,7 +82,7 @@ public sealed class SubscriptionSquareConnectionService : ISubscriptionSquareCon
             ["client_id"] = this.appOptions.SquareClientId,
             ["scope"] = string.Join(' ', RequiredFullScopes),
             ["state"] = protectedState,
-            ["redirect_uri"] = callbackUrl,
+            // ["redirect_uri"] = callbackUrl,
             ["response_type"] = "code"
         };
 
@@ -109,6 +109,17 @@ public sealed class SubscriptionSquareConnectionService : ISubscriptionSquareCon
         {
             string redirectUrl = AddQuery(state.ReturnUrl, "squareConnectError", "subscription_owner_required");
             return new CompleteSquareConnectResult.Failure(redirectUrl, "subscription_owner_required");
+        }
+
+        if (string.IsNullOrWhiteSpace(input.AuthorizationCode))
+        {
+            string? oauthError = NormalizeOAuthError(input.OAuthError);
+            if (!string.IsNullOrWhiteSpace(oauthError))
+            {
+                string errorCode = ResolveOAuthErrorCode(oauthError);
+                string oauthErrorRedirectUrl = AddQuery(state.ReturnUrl, "squareConnectError", errorCode);
+                return new CompleteSquareConnectResult.Failure(oauthErrorRedirectUrl, errorCode);
+            }
         }
 
         if (string.IsNullOrWhiteSpace(input.AuthorizationCode))
@@ -328,5 +339,25 @@ public sealed class SubscriptionSquareConnectionService : ISubscriptionSquareCon
     private static string AddQuery(string path, string key, string value)
     {
         return QueryHelpers.AddQueryString(path, key, value);
+    }
+
+    private static string? NormalizeOAuthError(string? rawOAuthError)
+    {
+        if (string.IsNullOrWhiteSpace(rawOAuthError))
+        {
+            return null;
+        }
+
+        return rawOAuthError.Trim();
+    }
+
+    private static string ResolveOAuthErrorCode(string oauthError)
+    {
+        if (string.Equals(oauthError, "access_denied", StringComparison.OrdinalIgnoreCase))
+        {
+            return "square_oauth_access_denied";
+        }
+
+        return "square_oauth_callback_error";
     }
 }

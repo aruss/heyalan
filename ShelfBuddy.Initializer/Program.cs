@@ -22,10 +22,10 @@ using System.Text.Json;
 
 public class Program
 {
-    private static readonly Guid AdminUserId = Guid.Parse("52299db7-d2bc-4ab3-9dc5-d9dadd40c37d");
-    private static readonly Guid SubscriptionId = Guid.Parse("81c0b65c-1325-48a3-9389-2369173dff7a");
-    private static readonly Guid AgentId = Guid.Parse("b4099979-fceb-41e1-bfb6-135f3ccb1701");
-    private static readonly string TelegramBotToken = "7592736264:AAGpsXEe03dUe3O5WWCjDYtemWmpwvCoFVE";
+    //private static readonly Guid AdminUserId = Guid.Parse("52299db7-d2bc-4ab3-9dc5-d9dadd40c37d");
+    //private static readonly Guid SubscriptionId = Guid.Parse("81c0b65c-1325-48a3-9389-2369173dff7a");
+    // private static readonly Guid AgentId = Guid.Parse("b4099979-fceb-41e1-bfb6-135f3ccb1701");
+    // private static readonly string TelegramBotToken = "7592736264:AAGpsXEe03dUe3O5WWCjDYtemWmpwvCoFVE";
     private const int DatabaseMaxRetryAttempts = 10;
     private const int RabbitMaxRetryAttempts = 8;
     private static readonly TimeSpan DatabaseRetryDelay = TimeSpan.FromSeconds(2);
@@ -231,11 +231,11 @@ public class Program
             string adminEmail = configuration["ADMIN_EMAIL"] ?? "admin@shelfbuddy.ai";
             string adminPassword = configuration["ADMIN_PASSWORD"] ?? "admin@shelfbuddy.ai";
 
-            Console.WriteLine("[DB] Seeding admin user...");
-            await SeedAdminUserAsync(services, adminEmail, adminPassword, token);
+            //Console.WriteLine("[DB] Seeding admin user...");
+            //await SeedAdminUserAsync(services, adminEmail, adminPassword, token);
 
-            Console.WriteLine("[DB] Seeding basic data and registering Telegram webhook...");
-            await SeedBasicData(services, token);
+            //Console.WriteLine("[DB] Seeding basic data and registering Telegram webhook...");
+            //await SeedBasicData(services, token);
 
             Console.WriteLine("[DB] Database lane complete.");
         }, cancellationToken);
@@ -378,6 +378,7 @@ public class Program
         }
     }
 
+    /*
     private static async Task SeedAdminUserAsync(
            IServiceProvider services,
            string adminEmail,
@@ -448,5 +449,6 @@ public class Program
         await dbContext.SaveChangesAsync();
 
     }
+    */
 }
 

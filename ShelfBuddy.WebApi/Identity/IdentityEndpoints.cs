@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ShelfBuddy.Data.Entities;
@@ -192,6 +193,11 @@ public static class IdentityEndpoints
             string normalizedEmail = emailClaim.Trim();
             ApplicationUser? applicationUser = await userManager.FindByEmailAsync(normalizedEmail);
             bool isOnboarded = false;
+            bool isNewUser = false;
+
+            await using IDbContextTransaction? provisioningTransaction = applicationUser is null
+                ? await dbContext.Database.BeginTransactionAsync(httpContext.RequestAborted)
+                : null;
 
             if (applicationUser is null)
             {
@@ -209,6 +215,8 @@ public static class IdentityEndpoints
                 {
                     return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "user_create_failed"));
                 }
+
+                isNewUser = true;
             }
             else
             {
@@ -226,6 +234,26 @@ public static class IdentityEndpoints
             if (!addLoginResult.Succeeded)
             {
                 return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "external_login_link_failed"));
+            }
+
+            if (isNewUser)
+            {
+                try
+                {
+                    await CreateInitialSubscriptionOwnerMembershipAsync(
+                        dbContext,
+                        applicationUser.Id,
+                        httpContext.RequestAborted);
+
+                    if (provisioningTransaction is not null)
+                    {
+                        await provisioningTransaction.CommitAsync(httpContext.RequestAborted);
+                    }
+                }
+                catch (Exception)
+                {
+                    return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "subscription_provision_failed"));
+                }
             }
 
             isOnboarded = await IsOnboardedAsync(applicationUser.Id, dbContext);
@@ -271,7 +299,8 @@ public static class IdentityEndpoints
 
     private static async Task<Results<Ok<CurrentUserResult>, UnauthorizedHttpResult>> GetCurrentUserAsync(
         ClaimsPrincipal user,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        MainDataContext dbContext)
     {
         string? userId = userManager.GetUserId(user);
 
@@ -288,12 +317,19 @@ public static class IdentityEndpoints
         }
 
         IList<string> roles = await userManager.GetRolesAsync(applicationUser);
+        Guid? activeSubscriptionId = await dbContext.SubscriptionUsers
+            .Where(membership => membership.UserId == applicationUser.Id)
+            .OrderBy(membership => membership.Role)
+            .ThenBy(membership => membership.CreatedAt)
+            .Select(membership => (Guid?)membership.SubscriptionId)
+            .FirstOrDefaultAsync();
 
         return TypedResults.Ok(new CurrentUserResult(
             applicationUser.Id,
             applicationUser.Email ?? "",
             ResolveDisplayName(applicationUser),
-            roles.ToArray()
+            roles.ToArray(),
+            activeSubscriptionId
         ));
     }
 
@@ -479,6 +515,37 @@ public static class IdentityEndpoints
         ).AnyAsync();
 
         return hasCompletedOnboarding;
+    }
+
+    // TODO: move to Subscription Service 
+    internal static async Task CreateInitialSubscriptionOwnerMembershipAsync(
+        MainDataContext dbContext,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        bool userHasMembership = await dbContext.SubscriptionUsers
+            .AnyAsync(membership => membership.UserId == userId, cancellationToken);
+
+        if (userHasMembership)
+        {
+            return;
+        }
+
+        Subscription subscription = new()
+        {
+            SubscriptionCreditBalance = 0,
+            TopUpCreditBalance = 0
+        };
+
+        SubscriptionUser ownerMembership = new()
+        {
+            Subscription = subscription,
+            UserId = userId,
+            Role = SubscriptionUserRole.Owner
+        };
+
+        dbContext.SubscriptionUsers.Add(ownerMembership);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private static async Task SignInWithOnboardingClaimAsync(

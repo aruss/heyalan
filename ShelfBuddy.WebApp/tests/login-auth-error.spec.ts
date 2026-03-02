@@ -34,3 +34,9 @@ test("local_email_not_confirmed omits alternate provider guidance with one provi
 
   expect(message).toBe("Please confirm your email for your existing account before signing in with this provider.");
 });
+
+test("subscription_provision_failed uses dedicated workspace provisioning message", () => {
+  const message = resolveAuthErrorMessage("subscription_provision_failed", 1);
+
+  expect(message).toBe("We created your account but could not initialize your workspace. Please try signing in again.");
+});

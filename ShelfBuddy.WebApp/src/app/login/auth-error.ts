@@ -7,6 +7,7 @@ const EXTERNAL_EMAIL_NOT_VERIFIED_ERROR_CODE = "external_email_not_verified";
 const USER_CREATE_FAILED_ERROR_CODE = "user_create_failed";
 const LOCAL_EMAIL_NOT_CONFIRMED_ERROR_CODE = "local_email_not_confirmed";
 const EXTERNAL_LOGIN_LINK_FAILED_ERROR_CODE = "external_login_link_failed";
+const SUBSCRIPTION_PROVISION_FAILED_ERROR_CODE = "subscription_provision_failed";
 
 export type KnownAuthErrorCode =
     | typeof EXTERNAL_PROVIDER_ERROR_CODE
@@ -17,7 +18,8 @@ export type KnownAuthErrorCode =
     | typeof EXTERNAL_EMAIL_NOT_VERIFIED_ERROR_CODE
     | typeof USER_CREATE_FAILED_ERROR_CODE
     | typeof LOCAL_EMAIL_NOT_CONFIRMED_ERROR_CODE
-    | typeof EXTERNAL_LOGIN_LINK_FAILED_ERROR_CODE;
+    | typeof EXTERNAL_LOGIN_LINK_FAILED_ERROR_CODE
+    | typeof SUBSCRIPTION_PROVISION_FAILED_ERROR_CODE;
 
 const GENERIC_AUTH_ERROR_MESSAGE = "We could not sign you in. Please try again.";
 const LOCAL_EMAIL_NOT_CONFIRMED_BASE_MESSAGE =
@@ -37,6 +39,8 @@ const AUTH_ERROR_MESSAGE_BY_CODE: Record<KnownAuthErrorCode, string> = {
     [LOCAL_EMAIL_NOT_CONFIRMED_ERROR_CODE]: LOCAL_EMAIL_NOT_CONFIRMED_BASE_MESSAGE,
     [EXTERNAL_LOGIN_LINK_FAILED_ERROR_CODE]:
         "We could not link your external login to your account. Please try again.",
+    [SUBSCRIPTION_PROVISION_FAILED_ERROR_CODE]:
+        "We created your account but could not initialize your workspace. Please try signing in again.",
 };
 
 function getFirstSearchParamValue(value: string | string[] | undefined): string | undefined {

@@ -74,8 +74,8 @@ public class IdentityBuilderExtensionsTests
         IServiceProvider services = BuildServices(new Dictionary<string, string?>
         {
             ["PUBLIC_BASE_URL"] = "https://shelfbuddy.test",
-            ["SQUARE_CLIENT_ID"] = "sandbox-client-id",
-            ["SQUARE_CLIENT_SECRET"] = "square-client-secret"
+            ["AUTH_SQUARE_CLIENT_ID"] = "sandbox-client-id",
+            ["AUTH_SQUARE_CLIENT_SECRET"] = "square-client-secret"
         });
 
         IAuthenticationSchemeProvider schemeProvider = services.GetRequiredService<IAuthenticationSchemeProvider>();

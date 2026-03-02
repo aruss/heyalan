@@ -44,7 +44,11 @@ public sealed class SquareOAuthClient : ISquareOAuthClient
         try
         {
             ObtainTokenResponse response = await client.OAuth.ObtainTokenAsync(request, null, cancellationToken);
-            SquareTokenExchangePayload? payload = ToTokenExchangePayload(response);
+            string[] resolvedScopes = await this.ResolveScopesWithTokenStatusFallbackAsync(
+                response,
+                cancellationToken);
+
+            SquareTokenExchangePayload? payload = ToTokenExchangePayload(response, resolvedScopes);
             if (payload is null)
             {
                 return new SquareTokenExchangeResult.Failure("square_token_exchange_failed");
@@ -138,7 +142,51 @@ public sealed class SquareOAuthClient : ISquareOAuthClient
         return new SquareClient(this.appOptions.SquareClientSecret!, clientOptions: options);
     }
 
-    private static SquareTokenExchangePayload? ToTokenExchangePayload(ObtainTokenResponse response)
+    private SquareClient CreateAccessTokenClient(string accessToken)
+    {
+        string baseUrl = this.appOptions.SquareClientId!.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase)
+            ? "https://connect.squareupsandbox.com"
+            : "https://connect.squareup.com";
+
+        ClientOptions options = new()
+        {
+            BaseUrl = baseUrl,
+            HttpClient = this.httpClientFactory.CreateClient("SquareOAuthClient")
+        };
+
+        return new SquareClient(accessToken, clientOptions: options);
+    }
+
+    private async Task<string[]> ResolveScopesWithTokenStatusFallbackAsync(
+        ObtainTokenResponse response,
+        CancellationToken cancellationToken)
+    {
+        string[] scopesFromExchange = ResolveScopes(response);
+        if (scopesFromExchange.Length > 0)
+        {
+            return scopesFromExchange;
+        }
+
+        if (string.IsNullOrWhiteSpace(response.AccessToken))
+        {
+            return [];
+        }
+
+        SquareClient accessTokenClient = this.CreateAccessTokenClient(response.AccessToken);
+        try
+        {
+            RetrieveTokenStatusResponse tokenStatus = await accessTokenClient.OAuth.RetrieveTokenStatusAsync(null, cancellationToken);
+            return NormalizeScopes(tokenStatus.Scopes);
+        }
+        catch (SquareApiException)
+        {
+            return [];
+        }
+    }
+
+    private static SquareTokenExchangePayload? ToTokenExchangePayload(
+        ObtainTokenResponse response,
+        string[] scopes)
     {
         if (string.IsNullOrWhiteSpace(response.AccessToken) ||
             string.IsNullOrWhiteSpace(response.RefreshToken) ||
@@ -152,8 +200,6 @@ public sealed class SquareOAuthClient : ISquareOAuthClient
         {
             return null;
         }
-
-        string[] scopes = ResolveScopes(response);
 
         return new SquareTokenExchangePayload(
             response.AccessToken,
@@ -221,6 +267,20 @@ public sealed class SquareOAuthClient : ISquareOAuthClient
         }
 
         return [];
+    }
+
+    private static string[] NormalizeScopes(IEnumerable<string>? scopes)
+    {
+        if (scopes is null)
+        {
+            return [];
+        }
+
+        return scopes
+            .Where(scope => !string.IsNullOrWhiteSpace(scope))
+            .Select(scope => scope.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
     }
 
     private static bool HasErrorCode(IEnumerable<Error>? errors, string expectedCode)

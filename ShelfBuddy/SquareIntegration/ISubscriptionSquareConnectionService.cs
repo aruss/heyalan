@@ -21,7 +21,8 @@ public abstract record StartSquareConnectResult
 
 public sealed record CompleteSquareConnectInput(
     string? State,
-    string? AuthorizationCode);
+    string? AuthorizationCode,
+    string? OAuthError);
 
 public abstract record CompleteSquareConnectResult
 {

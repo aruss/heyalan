@@ -86,8 +86,10 @@ var webapi = builder.AddProject<Projects.ShelfBuddy_WebApi>("webapi")
     .WithEnvironment("SWAGGER_ENABLED", "true")
     .WithEnvironment("PUBLIC_BASE_URL", publicBaseUrl)
     .WithEnvironment("TELEGRAM_SECRET_TOKEN", telegramSecretToken)
-    .WithEnvironment("GOOGLE_CLIENT_ID", builder.Configuration["GOOGLE_CLIENT_ID"])
-    .WithEnvironment("GOOGLE_CLIENT_SECRET", builder.Configuration["GOOGLE_CLIENT_SECRET"])
+    .WithEnvironment("AUTH_GOOGLE_CLIENT_ID", builder.Configuration["AUTH_GOOGLE_CLIENT_ID"])
+    .WithEnvironment("AUTH_GOOGLE_CLIENT_SECRET", builder.Configuration["AUTH_GOOGLE_CLIENT_SECRET"])
+    .WithEnvironment("AUTH_SQUARE_CLIENT_ID", builder.Configuration["AUTH_SQUARE_CLIENT_ID"])
+    .WithEnvironment("AUTH_SQUARE_CLIENT_SECRET", builder.Configuration["AUTH_SQUARE_CLIENT_SECRET"])
     .WithEnvironment("SQUARE_CLIENT_ID", builder.Configuration["SQUARE_CLIENT_ID"])
     .WithEnvironment("SQUARE_CLIENT_SECRET", builder.Configuration["SQUARE_CLIENT_SECRET"])
     .WithReference(rabbitmq)
@@ -132,7 +134,7 @@ if (!String.IsNullOrEmpty(ngrokDomain))
     .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 */
 
-if (false)
+if (true)
 {
     // if WebApp run is via yarn/npm, use AddExecutable
     var webapp = builder.AddExecutable("webapp", "yarn.cmd", "../ShelfBuddy.WebApp", "dev")

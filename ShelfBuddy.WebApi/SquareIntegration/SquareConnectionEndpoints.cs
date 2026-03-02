@@ -120,11 +120,12 @@ public static class SquareConnectionEndpoints
     private static async Task<RedirectHttpResult> CompleteSquareConnectCallbackAsync(
         [FromQuery] string? code,
         [FromQuery] string? state,
+        [FromQuery(Name = "error")] string? oauthError,
         ISubscriptionSquareConnectionService service,
         CancellationToken cancellationToken)
     {
         CompleteSquareConnectResult result = await service.CompleteConnectAsync(
-            new CompleteSquareConnectInput(state, code),
+            new CompleteSquareConnectInput(state, code, oauthError),
             cancellationToken);
 
         if (result is CompleteSquareConnectResult.Success success)
@@ -217,6 +218,8 @@ public static class SquareConnectionEndpoints
             "square_not_configured" => "Square integration is not configured.",
             "square_oauth_state_invalid" => "The Square connect state is invalid or expired.",
             "square_oauth_code_missing" => "The Square authorization code is missing.",
+            "square_oauth_access_denied" => "Square authorization was denied by the user.",
+            "square_oauth_callback_error" => "Square callback returned an error.",
             "square_token_exchange_failed" => "Square token exchange failed.",
             "square_required_scopes_missing" => "Square did not grant all required scopes.",
             "connection_not_found" => "No Square connection exists for this subscription.",

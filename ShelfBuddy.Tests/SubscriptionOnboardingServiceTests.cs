@@ -28,6 +28,62 @@ public class SubscriptionOnboardingServiceTests
     }
 
     [Fact]
+    public async Task UpdateChannelsAsync_WhenOnlyTelegramProvided_Succeeds()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedSubscriptionMemberAsync(dbContext, subscriptionId, userId);
+        SeedConnectedSquare(dbContext, subscriptionId, userId);
+        await dbContext.SaveChangesAsync();
+
+        SubscriptionOnboardingService service = new(dbContext);
+        CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
+        CreateSubscriptionOnboardingAgentResult.Success createSuccess =
+            Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
+
+        UpdateSubscriptionOnboardingStepResult result = await service.UpdateChannelsAsync(
+            new UpdateSubscriptionOnboardingChannelsInput(
+                createSuccess.AgentId,
+                userId,
+                null,
+                "telegram-token",
+                null));
+
+        UpdateSubscriptionOnboardingStepResult.Success success =
+            Assert.IsType<UpdateSubscriptionOnboardingStepResult.Success>(result);
+        Assert.Contains(success.State.Steps, item => item.Step == "channels" && item.Status == "completed");
+    }
+
+    [Fact]
+    public async Task UpdateChannelsAsync_WhenAllChannelsMissing_ReturnsValidationError()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedSubscriptionMemberAsync(dbContext, subscriptionId, userId);
+        SeedConnectedSquare(dbContext, subscriptionId, userId);
+        await dbContext.SaveChangesAsync();
+
+        SubscriptionOnboardingService service = new(dbContext);
+        CreateSubscriptionOnboardingAgentResult createResult = await service.CreatePrimaryAgentAsync(subscriptionId, userId);
+        CreateSubscriptionOnboardingAgentResult.Success createSuccess =
+            Assert.IsType<CreateSubscriptionOnboardingAgentResult.Success>(createResult);
+
+        UpdateSubscriptionOnboardingStepResult result = await service.UpdateChannelsAsync(
+            new UpdateSubscriptionOnboardingChannelsInput(
+                createSuccess.AgentId,
+                userId,
+                "   ",
+                null,
+                ""));
+
+        UpdateSubscriptionOnboardingStepResult.Failure failure =
+            Assert.IsType<UpdateSubscriptionOnboardingStepResult.Failure>(result);
+        Assert.Equal("channels_at_least_one_required", failure.ErrorCode);
+    }
+
+    [Fact]
     public async Task FinalizeAsync_WhenAllStepsCompleted_ReturnsCompletedState()
     {
         MainDataContext dbContext = CreateContext();
@@ -108,7 +164,7 @@ public class SubscriptionOnboardingServiceTests
     }
 
     [Fact]
-    public async Task RecomputeStateAsync_WhenCompletedDataInvalidated_FallsBackToInProgress()
+    public async Task RecomputeStateAsync_WhenAllChannelsInvalidated_FallsBackToInProgress()
     {
         MainDataContext dbContext = CreateContext();
         Guid subscriptionId = Guid.NewGuid();
@@ -139,7 +195,9 @@ public class SubscriptionOnboardingServiceTests
         await service.FinalizeAsync(subscriptionId, userId);
 
         Agent agent = await dbContext.Agents.SingleAsync(item => item.Id == createSuccess.AgentId);
+        agent.TwilioPhoneNumber = null;
         agent.TelegramBotToken = null;
+        agent.WhatsappNumber = null;
         await dbContext.SaveChangesAsync();
 
         OnboardingStateResult state = await service.RecomputeStateAsync(subscriptionId);

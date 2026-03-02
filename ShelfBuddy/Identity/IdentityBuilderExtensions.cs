@@ -38,13 +38,13 @@ public static class IdentityBuilderExtensions
 
         authBuilder.AddIdentityCookies(); 
 
-        if (!String.IsNullOrWhiteSpace(appOptions.GoogleClientId) &&
-            !String.IsNullOrWhiteSpace(appOptions.GoogleClientSecret))
+        if (!String.IsNullOrWhiteSpace(appOptions.AuthGoogleClientId) &&
+            !String.IsNullOrWhiteSpace(appOptions.AuthGoogleClientSecret))
         {
             authBuilder.AddGoogle("google", "Google", options =>
             {
-                options.ClientId = appOptions.GoogleClientId;
-                options.ClientSecret = appOptions.GoogleClientSecret;
+                options.ClientId = appOptions.AuthGoogleClientId;
+                options.ClientSecret = appOptions.AuthGoogleClientSecret;
                 options.CallbackPath = "/auth/providers/google/callback";
                 options.UserInformationEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo";
                 options.SignInScheme = IdentityConstants.ExternalScheme;
@@ -97,19 +97,19 @@ public static class IdentityBuilderExtensions
             });
         }
 
-        if (!string.IsNullOrWhiteSpace(appOptions.SquareClientId) &&
-            !string.IsNullOrWhiteSpace(appOptions.SquareClientSecret))
+        if (!string.IsNullOrWhiteSpace(appOptions.AuthSquareClientId) &&
+            !string.IsNullOrWhiteSpace(appOptions.AuthSquareClientSecret))
         {
             authBuilder.AddOAuth("square", "Square", options =>
             {
-                bool isSandbox = appOptions.SquareClientId.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase);
+                bool isSandbox = appOptions.AuthSquareClientId.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase);
 
                 string squareBaseUrl = isSandbox
                     ? "https://connect.squareupsandbox.com"
                     : "https://connect.squareup.com";
 
-                options.ClientId = appOptions.SquareClientId;
-                options.ClientSecret = appOptions.SquareClientSecret;
+                options.ClientId = appOptions.AuthSquareClientId;
+                options.ClientSecret = appOptions.AuthSquareClientSecret;
                 options.CallbackPath = "/auth/providers/square/callback";
                 options.SignInScheme = IdentityConstants.ExternalScheme;
 

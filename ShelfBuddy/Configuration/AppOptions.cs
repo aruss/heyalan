@@ -19,16 +19,23 @@ public static class AppOptionsConfigurationExtensions
         AppOptions options = new()
         {
             PublicBaseUrl = endpoint,
-            GoogleClientId = NormalizeOptional(configuration["GOOGLE_CLIENT_ID"]),
-            GoogleClientSecret = NormalizeOptional(configuration["GOOGLE_CLIENT_SECRET"]),
+            AuthGoogleClientId = NormalizeOptional(configuration["AUTH_GOOGLE_CLIENT_ID"]),
+            AuthGoogleClientSecret = NormalizeOptional(configuration["AUTH_GOOGLE_CLIENT_SECRET"]),
+            AuthSquareClientId = NormalizeOptional(configuration["AUTH_SQUARE_CLIENT_ID"]),
+            AuthSquareClientSecret = NormalizeOptional(configuration["AUTH_SQUARE_CLIENT_SECRET"]),
             SquareClientId = NormalizeOptional(configuration["SQUARE_CLIENT_ID"]),
             SquareClientSecret = NormalizeOptional(configuration["SQUARE_CLIENT_SECRET"])
         };
 
         ValidatePair(
-            options.GoogleClientId,
-            options.GoogleClientSecret,
-            "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set or both be missing");
+            options.AuthGoogleClientId,
+            options.AuthGoogleClientSecret,
+            "AUTH_GOOGLE_CLIENT_ID and AUTH_GOOGLE_CLIENT_SECRET must both be set or both be missing");
+
+        ValidatePair(
+            options.AuthSquareClientId,
+            options.AuthSquareClientSecret,
+            "AUTH_SQUARE_CLIENT_ID and AUTH_SQUARE_CLIENT_SECRET must both be set or both be missing");
 
         ValidatePair(
             options.SquareClientId,
@@ -64,9 +71,13 @@ public record AppOptions
 {
     public Uri PublicBaseUrl { get; init; }
 
-    public string? GoogleClientId { get; init; }
+    public string? AuthGoogleClientId { get; init; }
 
-    public string? GoogleClientSecret { get; init; }
+    public string? AuthGoogleClientSecret { get; init; }
+
+    public string? AuthSquareClientId { get; init; }
+
+    public string? AuthSquareClientSecret { get; init; }
 
     public string? SquareClientId { get; init; }
 

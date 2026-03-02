@@ -1,7 +1,11 @@
 "use client";
 
 import type { ChangeEvent, ReactElement } from "react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import {
     MessageCircle,
     Phone,
@@ -16,7 +20,19 @@ import {
     Briefcase,
     MessagesSquare
 } from "lucide-react";
+import {
+    getOnboardingSubscriptionsBySubscriptionIdState,
+    patchOnboardingAgentsByAgentIdChannels,
+    patchOnboardingAgentsByAgentIdProfile,
+    postOnboardingSubscriptionsBySubscriptionIdAgents,
+    postOnboardingSubscriptionsBySubscriptionIdFinalize,
+    postOnboardingSubscriptionsBySubscriptionIdMembersInvitations,
+    postOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorize,
+    type AgentPersonality as ApiAgentPersonality,
+    type GetSubscriptionOnboardingStateResult
+} from "@/lib/api";
 import { PrimaryActionButton, SecondaryActionButton } from "@/components/landing/ui/action-buttons";
+import { useSession } from "@/lib/session-context";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
@@ -38,10 +54,128 @@ type FormState = {
     teamMembers: string[];
 };
 
+type StepMessageKind = "error" | "info";
+
+type StepMessage = {
+    kind: StepMessageKind;
+    text: string;
+};
+
+const E164_LIKE_REGEX = /^\+[1-9]\d{7,14}$/;
+
+const profileSchema = z.object({
+    agentName: z.string().trim().min(1, "Agent name is required."),
+    agentPersonality: z.enum(["casual", "balanced", "business"])
+});
+
+const channelsSchema = z.object({
+    whatsapp: z.string().trim().refine((value) => {
+        return value.length === 0 || E164_LIKE_REGEX.test(value);
+    }, "Use E.164-like format (e.g. +15551234567)."),
+    phone: z.string().trim().refine((value) => {
+        return value.length === 0 || E164_LIKE_REGEX.test(value);
+    }, "Use E.164-like format (e.g. +15551234567)."),
+    telegram: z.string().trim()
+}).superRefine((channels, ctx) => {
+    const hasAnyChannel = channels.telegram.length > 0 ||
+        channels.phone.length > 0 ||
+        channels.whatsapp.length > 0;
+
+    if (!hasAnyChannel) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "At least one channel must be connected.",
+            path: ["telegram"]
+        });
+    }
+});
+
+const teamSchema = z.object({
+    teamMembers: z.array(
+        z.object({
+            email: z.string().trim()
+        })
+    ).superRefine((members, ctx) => {
+        for (let index = 0; index < members.length; index++) {
+            const email = members[index].email;
+            if (!email) {
+                continue;
+            }
+
+            const isValid = z.string().email().safeParse(email).success;
+            if (!isValid) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Use a valid email format.",
+                    path: [index, "email"]
+                });
+            }
+        }
+    })
+});
+
+const mapApiStepToUiStep = (apiStep: string): OnboardingStep => {
+    const normalizedStep = apiStep.toLowerCase();
+    switch (normalizedStep) {
+        case "square_connect":
+            return 1;
+        case "profile":
+            return 2;
+        case "channels":
+            return 3;
+        case "invitations":
+        case "finalize":
+            return 4;
+        default:
+            return 1;
+    }
+};
+
+const resolveApiErrorMessage = (error: unknown, fallback: string): string => {
+    if (error && typeof error === "object") {
+        const errorRecord = error as Record<string, unknown>;
+        const message = errorRecord.message;
+        if (typeof message === "string" && message.trim().length > 0) {
+            return message;
+        }
+
+        const detail = errorRecord.detail;
+        if (typeof detail === "string" && detail.trim().length > 0) {
+            return detail;
+        }
+    }
+
+    return fallback;
+};
+
+const mapPersonalityToApi = (personality: AgentPersonality): ApiAgentPersonality => {
+    switch (personality) {
+        case "casual":
+            return "Casual";
+        case "balanced":
+            return "Balanced";
+        case "business":
+            return "Business";
+    }
+};
+
 const getRandomName = (names = ["Liam", "Olivia", "Noah", "Emma", "Oliver", "Ava", "Elijah", "Alan", "Charlotte", "William", "Sophia"]) => names[Math.floor(Math.random() * names.length)];
 
 const OnboardingPage = (): ReactElement => {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const {
+        currentUser,
+        isLoading: isSessionLoading,
+        errorMessage: sessionErrorMessage
+    } = useSession();
+
     const [step, setStep] = useState<OnboardingStep>(1);
+    const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+    const [onboardingState, setOnboardingState] = useState<GetSubscriptionOnboardingStateResult | null>(null);
+    const [stepMessages, setStepMessages] = useState<Partial<Record<OnboardingStep, StepMessage>>>({});
+    const [isBusy, setIsBusy] = useState<boolean>(false);
+
     const [formData, setFormData] = useState<FormState>({
         squareConnected: false,
         agentName: getRandomName(),
@@ -53,58 +187,364 @@ const OnboardingPage = (): ReactElement => {
         },
         teamMembers: [""]
     });
+    const formDataRef = useRef<FormState>(formData);
+
+    const profileForm = useForm({
+        resolver: zodResolver(profileSchema),
+        defaultValues: {
+            agentName: formData.agentName,
+            agentPersonality: formData.agentPersonality
+        }
+    });
+
+    const channelsForm = useForm({
+        resolver: zodResolver(channelsSchema),
+        defaultValues: {
+            whatsapp: formData.channels.whatsapp,
+            phone: formData.channels.phone,
+            telegram: formData.channels.telegram
+        }
+    });
+
+    const teamForm = useForm({
+        resolver: zodResolver(teamSchema),
+        defaultValues: {
+            teamMembers: formData.teamMembers.map((email) => ({ email }))
+        }
+    });
+
+    const setMessage = (targetStep: OnboardingStep, kind: StepMessageKind, text: string): void => {
+        setStepMessages((prev) => ({
+            ...prev,
+            [targetStep]: { kind, text }
+        }));
+    };
+
+    const clearMessage = (targetStep: OnboardingStep): void => {
+        setStepMessages((prev) => {
+            const next = { ...prev };
+            delete next[targetStep];
+            return next;
+        });
+    };
+
+    const loadOnboardingStateAsync = useCallback(async (id: string): Promise<GetSubscriptionOnboardingStateResult> => {
+        const onboardingResponse = await getOnboardingSubscriptionsBySubscriptionIdState({
+            path: { subscriptionId: id },
+            cache: "no-store",
+            throwOnError: true
+        });
+
+        const state = onboardingResponse.data;
+        setOnboardingState(state);
+
+        const squareConnectStep = state.steps.find((item) => item.step === "square_connect");
+        const squareConnected = squareConnectStep?.status === "completed";
+
+        const formSnapshot = formDataRef.current;
+        const nextFormData: FormState = {
+            squareConnected,
+            agentName: formSnapshot.agentName,
+            agentPersonality: formSnapshot.agentPersonality,
+            channels: {
+                whatsapp: formSnapshot.channels.whatsapp,
+                phone: formSnapshot.channels.phone,
+                telegram: formSnapshot.channels.telegram
+            },
+            teamMembers: [...formSnapshot.teamMembers]
+        };
+
+        setFormData(nextFormData);
+        profileForm.setValue("agentName", nextFormData.agentName, { shouldDirty: false });
+        profileForm.setValue("agentPersonality", nextFormData.agentPersonality, { shouldDirty: false });
+        channelsForm.setValue("whatsapp", nextFormData.channels.whatsapp, { shouldDirty: false });
+        channelsForm.setValue("phone", nextFormData.channels.phone, { shouldDirty: false });
+        channelsForm.setValue("telegram", nextFormData.channels.telegram, { shouldDirty: false });
+        teamForm.setValue("teamMembers", nextFormData.teamMembers.map((email) => ({ email })), { shouldDirty: false });
+        return state;
+    }, [channelsForm, profileForm, teamForm]);
+
+    const refreshOnboardingStateAsync = async (id: string): Promise<GetSubscriptionOnboardingStateResult> => {
+        return loadOnboardingStateAsync(id);
+    };
+
+    const ensurePrimaryAgentIdAsync = async (id: string): Promise<string> => {
+        if (onboardingState?.primaryAgentId) {
+            return onboardingState.primaryAgentId;
+        }
+
+        const createResponse = await postOnboardingSubscriptionsBySubscriptionIdAgents({
+            path: { subscriptionId: id },
+            throwOnError: true
+        });
+
+        setOnboardingState(createResponse.data.state);
+        return createResponse.data.agentId;
+    };
+
+    useEffect(() => {
+        formDataRef.current = formData;
+    }, [formData]);
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        const initializeAsync = async (): Promise<void> => {
+            try {
+                if (isSessionLoading) {
+                    return;
+                }
+
+                setIsBusy(true);
+                const activeSubscriptionId = currentUser?.activeSubscriptionId ?? null;
+
+                if (isCancelled) {
+                    return;
+                }
+
+                if (!activeSubscriptionId) {
+                    setSubscriptionId(null);
+                    const message = sessionErrorMessage ?? "No active subscription membership was found for your account.";
+                    setMessage(1, "error", message);
+                    return;
+                }
+
+                setSubscriptionId(activeSubscriptionId);
+                const state = await loadOnboardingStateAsync(activeSubscriptionId);
+                setStep(mapApiStepToUiStep(state.currentStep));
+
+                const squareConnectStatus = searchParams.get("squareConnect");
+                const squareConnectError = searchParams.get("squareConnectError");
+
+                if (squareConnectStatus === "success") {
+                    setMessage(1, "info", "Square account connected.");
+                }
+
+                if (squareConnectError) {
+                    setMessage(1, "error", `Square connection failed: ${squareConnectError}`);
+                }
+
+                if (squareConnectStatus || squareConnectError) {
+                    router.replace("/onboarding");
+                }
+            } catch (error: unknown) {
+                if (!isCancelled) {
+                    setMessage(1, "error", resolveApiErrorMessage(error, "Unable to load onboarding state."));
+                }
+            } finally {
+                if (!isCancelled) {
+                    setIsBusy(false);
+                }
+            }
+        };
+
+        void initializeAsync();
+        return () => {
+            isCancelled = true;
+        };
+    }, [currentUser?.activeSubscriptionId, isSessionLoading, loadOnboardingStateAsync, router, searchParams, sessionErrorMessage]);
 
     const nextStep = (): void => {
         setStep((prev) => {
             return (prev + 1) as OnboardingStep;
         });
     };
-    const skipStep = (): void => {
-        setStep((prev) => {
-            return (prev + 1) as OnboardingStep;
-        });
+
+    const handleSkipWithWarning = (currentStep: OnboardingStep): void => {
+        nextStep();
+        setMessage(currentStep, "info", "You can continue, but required setup must be completed before finalizing.");
     };
 
-    const handleConnectSquare = (): void => {
-        setFormData({ ...formData, squareConnected: true });
-        nextStep();
+    const handleConnectSquare = async (): Promise<void> => {
+        if (!subscriptionId) {
+            setMessage(1, "error", "Missing subscription context.");
+            return;
+        }
+
+        try {
+            setIsBusy(true);
+            clearMessage(1);
+
+            const response = await postOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorize({
+                path: { subscriptionId },
+                query: { returnUrl: "/onboarding" },
+                throwOnError: true
+            });
+
+            window.location.assign(response.data.authorizeUrl);
+        } catch (error: unknown) {
+            setMessage(1, "error", resolveApiErrorMessage(error, "Unable to start Square connect."));
+        } finally {
+            setIsBusy(false);
+        }
     };
 
     const handleAgentNameChange = (e: ChangeEvent<HTMLInputElement>): void => {
-        setFormData({ ...formData, agentName: e.target.value });
+        const nextValue = e.target.value;
+        setFormData({ ...formData, agentName: nextValue });
+        profileForm.setValue("agentName", nextValue, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     };
 
     const handlePersonalityChange = (type: AgentPersonality): void => {
         setFormData({ ...formData, agentPersonality: type });
+        profileForm.setValue("agentPersonality", type, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     };
 
     const handleMemberChange = (index: number, value: string): void => {
         const newMembers = [...formData.teamMembers];
         newMembers[index] = value;
         setFormData({ ...formData, teamMembers: newMembers });
+        teamForm.setValue(`teamMembers.${index}.email`, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     };
 
     const addMember = (): void => {
-        setFormData({ ...formData, teamMembers: [...formData.teamMembers, ""] });
+        const updatedMembers = [...formData.teamMembers, ""];
+        setFormData({ ...formData, teamMembers: updatedMembers });
+        teamForm.setValue("teamMembers", updatedMembers.map((email) => ({ email })), { shouldDirty: true });
     };
 
     const removeMember = (index: number): void => {
+        if (formData.teamMembers.length <= 1) {
+            return;
+        }
+
         const newMembers = formData.teamMembers.filter((_, i) => i !== index);
         setFormData({ ...formData, teamMembers: newMembers });
+        teamForm.setValue("teamMembers", newMembers.map((email) => ({ email })), { shouldDirty: true });
     };
 
     const handleChannelChange = (channel: ChannelKey, value: string): void => {
-        setFormData({
+        const nextState = {
             ...formData,
             channels: { ...formData.channels, [channel]: value }
-        });
+        };
+        setFormData(nextState);
+        channelsForm.setValue(channel, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    };
+
+    const handleProfileContinue = async (): Promise<void> => {
+        if (!subscriptionId) {
+            setMessage(2, "error", "Missing subscription context.");
+            return;
+        }
+
+        const isValid = await profileForm.trigger();
+        if (!isValid) {
+            setMessage(2, "error", "Please fill all required profile fields.");
+            return;
+        }
+
+        try {
+            setIsBusy(true);
+            clearMessage(2);
+
+            const agentId = await ensurePrimaryAgentIdAsync(subscriptionId);
+            await patchOnboardingAgentsByAgentIdProfile({
+                path: { agentId },
+                body: {
+                    name: formData.agentName,
+                    personality: mapPersonalityToApi(formData.agentPersonality)
+                },
+                throwOnError: true
+            });
+
+            const state = await refreshOnboardingStateAsync(subscriptionId);
+            setStep(mapApiStepToUiStep(state.currentStep));
+        } catch (error: unknown) {
+            setMessage(2, "error", resolveApiErrorMessage(error, "Unable to save agent profile."));
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
+    const handleChannelsContinue = async (): Promise<void> => {
+        if (!subscriptionId) {
+            setMessage(3, "error", "Missing subscription context.");
+            return;
+        }
+
+        const isValid = await channelsForm.trigger();
+        if (!isValid) {
+            setMessage(3, "error", "Please provide valid channel values.");
+            return;
+        }
+
+        try {
+            setIsBusy(true);
+            clearMessage(3);
+
+            const agentId = await ensurePrimaryAgentIdAsync(subscriptionId);
+            await patchOnboardingAgentsByAgentIdChannels({
+                path: { agentId },
+                body: {
+                    twilioPhoneNumber: formData.channels.phone,
+                    telegramBotToken: formData.channels.telegram,
+                    whatsappNumber: formData.channels.whatsapp
+                },
+                throwOnError: true
+            });
+
+            const state = await refreshOnboardingStateAsync(subscriptionId);
+            setStep(mapApiStepToUiStep(state.currentStep));
+        } catch (error: unknown) {
+            setMessage(3, "error", resolveApiErrorMessage(error, "Unable to save channel settings."));
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
+    const runCompleteOnboardingAsync = async (validateTeamInputs: boolean): Promise<void> => {
+        if (!subscriptionId) {
+            setMessage(4, "error", "Missing subscription context.");
+            return;
+        }
+
+        if (validateTeamInputs) {
+            const isValid = await teamForm.trigger();
+            if (!isValid) {
+                setMessage(4, "error", "Please enter valid team email formats.");
+                return;
+            }
+        }
+
+        try {
+            setIsBusy(true);
+            clearMessage(4);
+
+            await postOnboardingSubscriptionsBySubscriptionIdMembersInvitations({
+                path: { subscriptionId },
+                throwOnError: true
+            });
+
+            await refreshOnboardingStateAsync(subscriptionId);
+            await postOnboardingSubscriptionsBySubscriptionIdFinalize({
+                path: { subscriptionId },
+                throwOnError: true
+            });
+
+            await refreshOnboardingStateAsync(subscriptionId);
+            setStep(5);
+        } catch (error: unknown) {
+            setMessage(4, "error", resolveApiErrorMessage(error, "Unable to complete onboarding yet."));
+        } finally {
+            setIsBusy(false);
+        }
     };
 
     const completeOnboarding = (): void => {
-        setStep(5); // Success state
+        void runCompleteOnboardingAsync(true);
     };
 
-    
+    const skipInvites = (): void => {
+        void runCompleteOnboardingAsync(false);
+    };
+
+    const profileNameError = profileForm.formState.errors.agentName?.message;
+    const profilePersonalityError = profileForm.formState.errors.agentPersonality?.message;
+    const whatsappError = channelsForm.formState.errors.whatsapp?.message;
+    const phoneError = channelsForm.formState.errors.phone?.message;
+    const telegramError = channelsForm.formState.errors.telegram?.message;
+    const teamErrors = teamForm.formState.errors.teamMembers;
 
     return (
 
@@ -134,7 +574,8 @@ const OnboardingPage = (): ReactElement => {
 
                         <div className="pt-4 flex flex-col gap-3">
                             <PrimaryActionButton
-                                onClick={handleConnectSquare}
+                                onClick={() => void handleConnectSquare()}
+                                disabled={isBusy}
                                 fullWidth
                                 className="flex items-center justify-center gap-2"
                             >
@@ -145,12 +586,17 @@ const OnboardingPage = (): ReactElement => {
                         </div>
                         <div>
                             <button
-                                onClick={nextStep}
+                                onClick={() => handleSkipWithWarning(1)}
                                 className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-4"
                             >
                                 Skip for now
                             </button>
                             <div className="text-xs pt-4 text-slate-400">Square must be linked for everything to work properly.</div>
+                            {stepMessages[1] ? (
+                                <div className={`text-xs pt-2 ${stepMessages[1]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
+                                    {stepMessages[1]?.text}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 )}
@@ -176,6 +622,9 @@ const OnboardingPage = (): ReactElement => {
                                     className="w-full px-5 py-3.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                                     autoFocus
                                 />
+                                {profileNameError ? (
+                                    <div className="text-xs text-red-500">{profileNameError}</div>
+                                ) : null}
                             </div>
 
                             <div className="space-y-2">
@@ -205,6 +654,9 @@ const OnboardingPage = (): ReactElement => {
                                         <span className="text-sm font-medium text-slate-900">Business</span>
                                     </button>
                                 </div>
+                                {profilePersonalityError ? (
+                                    <div className="text-xs text-red-500">{profilePersonalityError}</div>
+                                ) : null}
                             </div>
                         </div>
 
@@ -215,14 +667,19 @@ const OnboardingPage = (): ReactElement => {
                                 Back
                             </SecondaryActionButton>
                             <PrimaryActionButton
-                                onClick={nextStep}
-                                disabled={!formData.agentName.trim()}
+                                onClick={() => void handleProfileContinue()}
+                                disabled={isBusy || !formData.agentName.trim()}
                                 className="flex flex-1 items-center justify-center gap-2"
                             >
                                 Continue
                                 <ArrowRight size={18} />
                             </PrimaryActionButton>
                         </div>
+                        {stepMessages[2] ? (
+                            <div className={`text-xs ${stepMessages[2]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
+                                {stepMessages[2]?.text}
+                            </div>
+                        ) : null}
                     </div>
                 )}
 
@@ -234,19 +691,22 @@ const OnboardingPage = (): ReactElement => {
                         </div>
 
                         <div className="space-y-4 text-left">
-                            {/* WhatsApp */}
+                            {/* Telegram */}
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 font-semibold text-slate-900">
-                                    <MessageCircle size={18} />
-                                    WhatsApp
+                                    <Send size={18} />
+                                    Telegram
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="Enter WhatsApp Business Number"
-                                    value={formData.channels.whatsapp}
-                                    onChange={(e) => handleChannelChange("whatsapp", e.target.value)}
+                                    placeholder="Enter Telegram Bot Token"
+                                    value={formData.channels.telegram}
+                                    onChange={(e) => handleChannelChange("telegram", e.target.value)}
                                     className="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                                 />
+                                {telegramError ? (
+                                    <div className="text-xs text-red-500">{telegramError}</div>
+                                ) : null}
                             </div>
 
                             {/* Phone */}
@@ -262,21 +722,27 @@ const OnboardingPage = (): ReactElement => {
                                     onChange={(e) => handleChannelChange("phone", e.target.value)}
                                     className="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                                 />
+                                {phoneError ? (
+                                    <div className="text-xs text-red-500">{phoneError}</div>
+                                ) : null}
                             </div>
 
-                            {/* Telegram */}
+                            {/* WhatsApp */}
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 font-semibold text-slate-900">
-                                    <Send size={18} />
-                                    Telegram
+                                    <MessageCircle size={18} />
+                                    WhatsApp
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="Enter Telegram Bot Token"
-                                    value={formData.channels.telegram}
-                                    onChange={(e) => handleChannelChange("telegram", e.target.value)}
+                                    placeholder="Enter WhatsApp Business Number"
+                                    value={formData.channels.whatsapp}
+                                    onChange={(e) => handleChannelChange("whatsapp", e.target.value)}
                                     className="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                                 />
+                                {whatsappError ? (
+                                    <div className="text-xs text-red-500">{whatsappError}</div>
+                                ) : null}
                             </div>
                         </div>
 
@@ -287,7 +753,8 @@ const OnboardingPage = (): ReactElement => {
                                 Back
                             </SecondaryActionButton>
                             <PrimaryActionButton
-                                onClick={nextStep}
+                                onClick={() => void handleChannelsContinue()}
+                                disabled={isBusy}
                                 className="flex-1"
                             >
                                 Continue
@@ -295,12 +762,17 @@ const OnboardingPage = (): ReactElement => {
                         </div>
                         <div>
                             <button
-                                onClick={nextStep}
+                                onClick={() => handleSkipWithWarning(3)}
                                 className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-4"
                             >
                                 Skip for now
                             </button>
                             <div className="text-xs pt-4 text-slate-400">At least one channel must be configured for everything to work properly.</div>
+                            {stepMessages[3] ? (
+                                <div className={`text-xs pt-2 ${stepMessages[3]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
+                                    {stepMessages[3]?.text}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 )}
@@ -324,6 +796,9 @@ const OnboardingPage = (): ReactElement => {
                                             onChange={(e) => handleMemberChange(index, e.target.value)}
                                             className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                                         />
+                                        {teamErrors?.[index]?.email?.message ? (
+                                            <div className="text-xs text-red-500 pt-2">{teamErrors[index]?.email?.message}</div>
+                                        ) : null}
                                     </div>
                                     {formData.teamMembers.length > 1 && (
                                         <button
@@ -353,6 +828,7 @@ const OnboardingPage = (): ReactElement => {
                             </SecondaryActionButton>
                             <PrimaryActionButton
                                 onClick={completeOnboarding}
+                                disabled={isBusy}
                                 className="flex-1"
                             >
                                 Complete Setup
@@ -360,11 +836,16 @@ const OnboardingPage = (): ReactElement => {
                         </div>
                         <div>
                             <button
-                                onClick={completeOnboarding}
+                                onClick={skipInvites}
                                 className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-4"
                             >
                                 Skip invites
                             </button>
+                            {stepMessages[4] ? (
+                                <div className={`text-xs pt-2 ${stepMessages[4]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
+                                    {stepMessages[4]?.text}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 )}
@@ -378,10 +859,6 @@ const OnboardingPage = (): ReactElement => {
                         <p className="text-lg text-slate-500">
                             Welcome aboard. {formData.agentName || "Your AI agent"} is ready.
                         </p>
-                        <div className="pt-6 text-left bg-slate-50 p-5 rounded-2xl border border-slate-200 text-sm font-mono text-slate-600 overflow-hidden shadow-inner">
-                            <p className="text-slate-400 mb-2">{"// Configuration Output"}</p>
-                            <pre>{JSON.stringify(formData, null, 2)}</pre>
-                        </div>
                         <PrimaryActionButton
                             href="/admin"
                             fullWidth

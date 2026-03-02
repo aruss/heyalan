@@ -6,8 +6,12 @@ import { createContext, useContext } from "react";
 import type { CurrentUserResult } from "@/lib/api";
 import { getAuthMeOptions } from "@/lib/api/@tanstack/react-query.gen";
 
+export type SessionCurrentUser = CurrentUserResult & {
+  activeSubscriptionId?: string | null;
+};
+
 type SessionContextValue = {
-  currentUser: CurrentUserResult | null;
+  currentUser: SessionCurrentUser | null;
   isLoading: boolean;
   errorMessage: string | null;
   refresh: () => Promise<void>;
@@ -31,7 +35,7 @@ export const SessionProvider = ({
     await sessionQuery.refetch();
   };
 
-  const currentUser = sessionQuery.data ?? null;
+  const currentUser = (sessionQuery.data as SessionCurrentUser | undefined) ?? null;
 
   const isLoading = sessionQuery.isLoading || sessionQuery.isRefetching;
   const errorMessage = sessionQuery.error == null ? null : DEFAULT_SESSION_ERROR;

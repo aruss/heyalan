@@ -1,4 +1,5 @@
 import "../globals.css";
+import { OnboardingShell } from "./onboarding-shell";
 
 export const metadata = {
   title: 'Next.js',
@@ -18,7 +19,7 @@ export default function RootLayout({
         </header>
         <main className="flex-1 flex flex-col justify-center">
           <div className="max-w-xl mx-auto text-center p-6 w-full ">
-            {children}
+            <OnboardingShell>{children}</OnboardingShell>
           </div>
         </main>
       </body>

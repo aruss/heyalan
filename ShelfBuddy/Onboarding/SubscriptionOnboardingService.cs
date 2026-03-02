@@ -141,19 +141,23 @@ public sealed class SubscriptionOnboardingService : ISubscriptionOnboardingServi
             return new UpdateSubscriptionOnboardingStepResult.Failure("subscription_member_required");
         }
 
-        if (string.IsNullOrWhiteSpace(input.TwilioPhoneNumber) ||
-            string.IsNullOrWhiteSpace(input.TelegramBotToken) ||
-            string.IsNullOrWhiteSpace(input.WhatsappNumber))
+        string? twilioPhoneNumber = NormalizeOptionalChannel(input.TwilioPhoneNumber);
+        string? telegramBotToken = NormalizeOptionalChannel(input.TelegramBotToken);
+        string? whatsappNumber = NormalizeOptionalChannel(input.WhatsappNumber);
+
+        if (string.IsNullOrWhiteSpace(twilioPhoneNumber) &&
+            string.IsNullOrWhiteSpace(telegramBotToken) &&
+            string.IsNullOrWhiteSpace(whatsappNumber))
         {
-            return new UpdateSubscriptionOnboardingStepResult.Failure("channels_all_required");
+            return new UpdateSubscriptionOnboardingStepResult.Failure("channels_at_least_one_required");
         }
 
         SubscriptionOnboardingState onboardingState = await this.GetOrCreateStateAsync(agent.SubscriptionId, cancellationToken);
         onboardingState.PrimaryAgentId = agent.Id;
 
-        agent.TwilioPhoneNumber = input.TwilioPhoneNumber.Trim();
-        agent.TelegramBotToken = input.TelegramBotToken.Trim();
-        agent.WhatsappNumber = input.WhatsappNumber.Trim();
+        agent.TwilioPhoneNumber = twilioPhoneNumber;
+        agent.TelegramBotToken = telegramBotToken;
+        agent.WhatsappNumber = whatsappNumber;
         await this.dbContext.SaveChangesAsync(cancellationToken);
 
         OnboardingStateResult state = await this.RecomputeStateAsync(agent.SubscriptionId, cancellationToken);
@@ -379,9 +383,21 @@ public sealed class SubscriptionOnboardingService : ISubscriptionOnboardingServi
     private static bool IsChannelsComplete(Agent? agent)
     {
         return agent is not null &&
-            !string.IsNullOrWhiteSpace(agent.TwilioPhoneNumber) &&
-            !string.IsNullOrWhiteSpace(agent.TelegramBotToken) &&
-            !string.IsNullOrWhiteSpace(agent.WhatsappNumber);
+            (
+                !string.IsNullOrWhiteSpace(agent.TwilioPhoneNumber) ||
+                !string.IsNullOrWhiteSpace(agent.TelegramBotToken) ||
+                !string.IsNullOrWhiteSpace(agent.WhatsappNumber)
+            );
+    }
+
+    private static string? NormalizeOptionalChannel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Trim();
     }
 
     private static string ResolveEarliestIncompleteStep(

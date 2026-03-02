@@ -75,13 +75,18 @@ The onboarding outcome for M8 is:
 ## Configuration Contract
 
 ### Existing keys used
+- `AUTH_GOOGLE_CLIENT_ID`
+- `AUTH_GOOGLE_CLIENT_SECRET`
+- `AUTH_SQUARE_CLIENT_ID`
+- `AUTH_SQUARE_CLIENT_SECRET`
 - `SQUARE_CLIENT_ID`
 - `SQUARE_CLIENT_SECRET`
 
 ### Validation rules
-- [x] If both Square keys are missing: valid (Square disabled).
-- [x] If one key is present and the other missing: invalid startup configuration.
-- [x] If both keys are present: valid (Square enabled).
+- [x] `AUTH_GOOGLE_CLIENT_ID` and `AUTH_GOOGLE_CLIENT_SECRET` must both be set or both be missing.
+- [x] `AUTH_SQUARE_CLIENT_ID` and `AUTH_SQUARE_CLIENT_SECRET` must both be set or both be missing.
+- [x] `SQUARE_CLIENT_ID` and `SQUARE_CLIENT_SECRET` must both be set or both be missing.
+- [x] Auth-provider keys (`AUTH_*`) and Square-connection keys (`SQUARE_*`) are independent.
 
 ## HTTP Surface
 
@@ -241,6 +246,10 @@ Square-specific behavior:
 - [x] Fix Square callback path to `/auth/providers/square/callback`.
 - [x] Keep `/auth/providers/{provider}/authorize` + `/auth/external-callback` flow unchanged and functional for Square login with minimal scope (`MERCHANT_PROFILE_READ`).
 - [x] Gate A explicitly uses framework OAuth middleware as a documented SDK-policy exception (see Exception Registry).
+- [x] Split auth-provider config from connection config:
+  - [x] Identity providers read only `AUTH_*` keys.
+  - [x] Subscription Square connection services read only `SQUARE_*` keys.
+  - [x] No fallback to legacy key names.
 
 ## Gate B: Subscription-Scoped Persistence Foundation
 - [x] Add `SubscriptionSquareConnection` entity and EF configuration.
@@ -268,6 +277,7 @@ Square-specific behavior:
 - [x] Enforce subscription membership/authorization for connect/disconnect actions.
 - [x] Return deterministic error codes for connect/disconnect failures.
 - [x] Use official Square SDK for OAuth code exchange/revoke and merchant probe operations in connection management flows.
+- [x] Map OAuth callback deny/error outcomes (including `access_denied`) to deterministic `squareConnectError` codes.
 
 ## Gate E: Runtime Token Consumption
 - [x] Backend Square API callers resolve tokens via `ISquareTokenService.GetValidAccessTokenAsync(subscriptionId)`.
@@ -275,6 +285,7 @@ Square-specific behavior:
 - [x] Revoked/invalid refresh states produce deterministic reconnect-required behavior.
 - [x] Avoid duplicate concurrent refresh races (single-flight or transaction-safe update).
 - [x] Live caller path uses SDK-backed Square API clients and SDK-backed token refresh path.
+- [x] Connection callback scope validation uses SDK token status (`RetrieveTokenStatus`) when exchange response scopes are missing.
 
 ## SDK Findings (March 1, 2026)
 - [x] `Square` NuGet package is installed in `ShelfBuddy` (`Square` `43.0.0`).
@@ -329,7 +340,10 @@ Square-specific behavior:
 - [x] Gate C tests: `ISquareTokenService` token store/read, refresh success, refresh token rotation, reconnect-required failures.
 - [ ] Gate D tests: subscription connect/disconnect API authorization and deterministic error paths.
 - [ ] Gate E tests: caller path gets valid subscription token and refreshes transparently.
+- [x] Add `SquareOAuthClient` tests for exchange-scope parsing and token-status scope fallback behavior.
+- [x] Add callback error-path service test for deterministic `access_denied` mapping.
 - [ ] Gate F tests: per-step onboarding endpoints, big onboarding transitions, resumable state, channels persistence, invitation placeholder response, and UX parity checks for existing behavior.
+- [x] Add onboarding service tests for channels step semantics: single-channel success and all-empty validation failure (`channels_at_least_one_required`).
 - [ ] State machine tests: earliest-incomplete-step recomputation, invalidation fallback from `Completed` to `InProgress`, finalize guard behavior, and claim synchronization on finalize/login.
 - [ ] Gate G tests: diagnostics/logging emits expected events and excludes redirect/query token leakage.
 - [ ] Add endpoint-level tests for `SquareConnectionEndpoints` to confirm HTTP-layer authorization/status-code mapping over the existing service-level coverage.
@@ -344,7 +358,7 @@ Square-specific behavior:
 - [ ] Implement `/onboarding` UI flow in `ShelfBuddy.WebApp` using backend onboarding state as source of truth.
 - [ ] Step 1 integrates Square connect start endpoint and handles OAuth callback return.
 - [ ] Step 2 integrates primary agent creation/profile update (`name` + `Personality`).
-- [ ] Step 3 integrates channels update (`TwilioPhoneNumber`, `TelegramBotToken`, `WhatsappNumber`).
+- [x] Step 3 integrates channels update (`TwilioPhoneNumber`, `TelegramBotToken`, `WhatsappNumber`).
 - [ ] Step 4 remains a team/invitations dummy step and calls placeholder endpoint only.
 - [ ] Step 5 finalizes onboarding and routes to post-onboarding app destination.
 - [ ] Use `react-hook-form` + `zod` + `@hookform/resolvers/zod` for form validation.
@@ -352,18 +366,66 @@ Square-specific behavior:
   - [ ] required fields + basic formatting checks
   - [ ] `Agent.Name` required
   - [ ] `Personality` required
-  - [ ] phone values use basic E.164-like validation
-  - [ ] `TelegramBotToken` non-empty validation
+  - [x] phone values use basic E.164-like validation when provided
+  - [x] channels may be empty individually, but at least one of `TwilioPhoneNumber` / `TelegramBotToken` / `WhatsappNumber` is required
+  - [x] channels aggregate "at least one" validation error is shown on Telegram field
+  - [x] channels field order in onboarding UI is `Telegram`, `Phone Number (SMS/Voice)`, `WhatsApp`
   - [ ] team emails (if entered) basic email format validation only
+- [x] Remove onboarding completion JSON/debug configuration output.
 - [ ] Keep skip navigation behavior with warning messaging, but do not allow successful finalize until required steps are complete.
 - [ ] Re-fetch onboarding state after each step mutation and after Square callback to keep UI in sync with backend recomputation.
 - [ ] Render progress and current step from API state contract (`status`, `currentStep`, `steps[]`, `primaryAgentId`, `canFinalize`).
+
+### Gate I Findings (March 1, 2026)
+- [x] Product decision: onboarding UI/UX is approved and MUST remain visually/structurally unchanged.
+- [x] Exact preservation includes:
+  - [x] button placement,
+  - [x] skip buttons and their helper text placement under the actions,
+  - [x] form layout/visual styling,
+  - [x] existing step visuals and flow presentation.
+- [x] Error messaging in onboarding should follow login-style placement and appear below continue/skip actions (no redesigned banner layout).
+- [x] `ShelfBuddy.WebApp/src/lib/api` already contains generated onboarding endpoints; Gate I MUST use generated API client methods.
+- [x] `ShelfBuddy.WebApp/src/lib/onboarding-api.ts` custom wrapper is not required for Gate I and should be removed in corrective pass.
+- [x] `GET /onboarding/subscriptions/active` exists in backend and is the active-subscription resolution endpoint for onboarding UI.
+- [ ] Corrective pass required: rebase `ShelfBuddy.WebApp/src/app/onboarding/page.tsx` on `docs/onboaring_page.tsx` and wire backend behavior without visual changes.
+
+### Gate I UX Findings (March 2, 2026)
+- [x] Channels step validation changed from "all three required" to "at least one channel required".
+- [x] Aggregate channels validation error must be attached to Telegram field path for stable message placement.
+- [x] Channels input order in onboarding Step 3 is `Telegram`, `Phone Number (SMS/Voice)`, `WhatsApp`.
+- [x] Onboarding completion page no longer renders raw JSON/debug configuration output.
+- [x] Backend channels endpoint validation is aligned with UI semantics and now returns `channels_at_least_one_required` when all channel values are empty.
+
+### OAuth Redirect Findings (March 1, 2026)
+- [x] Square OAuth app supports a single redirect URL, which conflicts with dual callback paths (`/auth/providers/square/callback` and `/onboarding/square/connect/callback`) when using one app.
+- [x] Product decision: keep both callback flows and use separate Square app credentials.
+- [x] Config decision:
+  - [x] `AUTH_SQUARE_CLIENT_ID` / `AUTH_SQUARE_CLIENT_SECRET` for external auth provider (`/auth/*` flow).
+  - [x] `SQUARE_CLIENT_ID` / `SQUARE_CLIENT_SECRET` for onboarding/admin subscription connection flow.
+
+### OAuth Token Findings (March 1, 2026)
+Sources reviewed:
+- [x] https://developer.squareup.com/docs/oauth-api/receive-and-manage-tokens
+- [x] https://developer.squareup.com/docs/oauth-api/best-practices
+
+Findings applied to M8:
+- [x] `ObtainToken` response is not a reliable source of granted scopes for onboarding scope-gate checks.
+- [x] M8 connect callback should use `RetrieveTokenStatus` (with the exchanged access token) as authoritative scope source when token exchange scope fields are missing/empty.
+- [x] Callback flow must explicitly handle deny/error query outcomes (for example `error=access_denied`) with deterministic error mapping.
+- [x] Continue strict `state` validation as CSRF protection for all callback outcomes.
+- [x] Authorization code exchange must happen immediately after callback because auth codes are short-lived.
+- [x] Token handling must remain server-side only; no token values in redirects, client payloads, or logs.
+- [x] Storage must remain resilient to long/JWT-format token lengths; token length must never be used as a validity check.
+- [x] Runtime should keep deterministic handling for expired/revoked/unauthorized token states and map reconnect-required outcomes consistently.
+- [ ] Follow-up (post-unblock): evaluate proactive scheduled refresh cadence aligned with Square guidance (<= 7 days) in addition to on-demand refresh.
 
 ## Acceptance Criteria
 - [ ] Square login behaves like Google external auth through `/auth/*` endpoints.
 - [ ] Square callback path is correctly configured and functional.
 - [ ] First-time Square login can complete with minimal identity scope.
 - [ ] Onboarding escalates to the locked full scope set: `ITEMS_READ`, `CUSTOMERS_READ`, `CUSTOMERS_WRITE`, `ORDERS_READ`, `ORDERS_WRITE`, `PAYMENTS_WRITE`.
+- [ ] Onboarding callback validates required scopes from authoritative token status when exchange payload scopes are missing/empty.
+- [ ] OAuth callback deny/error outcomes (including `access_denied`) are mapped to deterministic user-visible error codes.
 - [ ] Big onboarding works end-to-end: connect square -> profile/personality -> channels -> invitations placeholder -> finalize.
 - [ ] Channels step persists `TwilioPhoneNumber`, `TelegramBotToken`, and `WhatsappNumber` on `Agent`.
 - [ ] Invitations step endpoint exists and is intentionally non-functional with deterministic placeholder behavior.
@@ -373,9 +435,13 @@ Square-specific behavior:
 - [ ] Backend can call Square APIs without requiring an active user session.
 - [ ] Token refresh is automatic and resilient.
 - [ ] If refresh is invalid/revoked, system returns deterministic reconnect-required state.
+- [ ] Token storage and handling are robust for long/JWT-format OAuth token values (no token-length assumptions).
 - [ ] All M8 server-to-server Square API interactions use official Square SDK (`43.0.0`) unless explicitly documented in Exception Registry.
 - [ ] `/onboarding` web UI supports end-to-end completion of big onboarding using backend endpoints.
 - [ ] Onboarding forms use `react-hook-form` + `zod` validation with field-level errors.
+- [ ] Channels step allows empty individual fields but blocks continue when all three channel fields are empty.
+- [ ] Channels endpoint returns deterministic `channels_at_least_one_required` when all channel values are empty/whitespace.
+- [ ] Onboarding completion page does not render JSON/debug configuration dump.
 - [ ] Team step is visible in UI but remains intentionally non-functional beyond placeholder endpoint semantics in M8.
 - [ ] Users may navigate/skip with warnings, but onboarding cannot finalize until required steps (`square_connect`, `profile`, `channels`) are complete.
 - [ ] UI resumes deterministically from backend onboarding state (`currentStep`) after reload/callback.
@@ -386,10 +452,11 @@ Square-specific behavior:
 ## Implementation Notes / Handoff Rule
 - [ ] After Gate B schema changes are implemented, stop and hand off for migration creation/run from `ShelfBuddy.Initializer` per repository rule:
   - `dotnet ef migrations add Init --context MainDataContext -o .\\Migrations`
-- [ ] Rework existing `ShelfBuddy.WebApp/src/app/onboarding/page.tsx` from local-only wizard state to backend-driven onboarding state + mutation flow.
+- [ ] Rework existing `ShelfBuddy.WebApp/src/app/onboarding/page.tsx` from local-only wizard state to backend-driven onboarding state + mutation flow while preserving the approved UI exactly (`docs/onboaring_page.tsx` as visual source of truth).
 
 ## Open Follow-Ups
 - [x] Decide final full-scope list for onboarding connect (orders, inventory, customers, etc.) per concrete feature matrix.
 - [x] Define disconnect behavior: Admin Settings supports create/remove connection; backend removes `SubscriptionSquareConnection` and invalidates runtime token availability for that subscription.
 - [ ] Define small onboarding contract for additional agents in settings flow (outside M8 implementation scope).
 - [ ] Implement Square team-member fetch and invitation workflow (deferred; invitations endpoint is placeholder in M8).
+- [ ] Evaluate and design proactive Square token refresh scheduling (<= 7 days cadence) while preserving current deterministic reconnect-required behavior.

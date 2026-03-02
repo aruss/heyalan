@@ -4,6 +4,8 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:5000/' | (string & {});
 };
 
+export type AgentPersonality = 'Casual' | 'Balanced' | 'Business';
+
 export type AppInfo = {
     appName: string;
     appVersion: string;
@@ -31,16 +33,30 @@ export type ConversationMessageItem = {
     readAt: null | string;
 };
 
+export type CreateSubscriptionOnboardingAgentResult = {
+    agentId: string;
+    state: GetSubscriptionOnboardingStateResult;
+};
+
 export type CurrentUserResult = {
     id: string;
     email: string;
     displayName: string;
     roles: Array<string>;
+    activeSubscriptionId: null | string;
+};
+
+export type DeleteSubscriptionSquareConnectionResult = {
+    disconnected: boolean;
 };
 
 export type ExternalLoginProviderItem = {
     name: string;
     displayName: string;
+};
+
+export type GetActiveSubscriptionResult = {
+    subscriptionId: string;
 };
 
 export type GetAgentConversationsResult = {
@@ -59,6 +75,21 @@ export type GetConversationMessagesResult = {
 
 export type GetExternalLoginProvidersResult = {
     providers: Array<ExternalLoginProviderItem>;
+};
+
+export type GetSubscriptionOnboardingStateResult = {
+    status: string;
+    currentStep: string;
+    steps: Array<OnboardingStepState>;
+    primaryAgentId: null | string;
+    canFinalize: boolean;
+};
+
+export type GetSubscriptionSquareConnectionProbeResult = {
+    isConnected: boolean;
+    merchantId: string;
+    accessTokenExpiresAtUtc: string;
+    scopes: Array<string>;
 };
 
 export type IngestTelegramMessageInput = {
@@ -104,12 +135,42 @@ export type MessageChannel = 'WhatsApp' | 'Telegram' | 'SMS';
 
 export type MessageRole = 'Customer' | 'Agent' | 'Operator';
 
+export type OnboardingErrorResult = {
+    errorCode: string;
+    message: string;
+};
+
+export type OnboardingStepState = {
+    step: string;
+    status: string;
+};
+
+export type PatchOnboardingAgentChannelsInput = {
+    twilioPhoneNumber: null | string;
+    telegramBotToken: null | string;
+    whatsappNumber: null | string;
+};
+
+export type PatchOnboardingAgentProfileInput = {
+    name: null | string;
+    personality: null | AgentPersonality;
+};
+
 export type ProblemDetails = {
     type?: null | string;
     title?: null | string;
     status?: number;
     detail?: null | string;
     instance?: null | string;
+};
+
+export type SquareConnectionErrorResult = {
+    errorCode: string;
+    message: string;
+};
+
+export type StartSubscriptionSquareConnectAuthorizeResult = {
+    authorizeUrl: string;
 };
 
 export type TelegramMessageInput = {
@@ -169,6 +230,24 @@ export type PostWebhooksTelegramByBotTokenErrors = {
 export type PostWebhooksTelegramByBotTokenError = PostWebhooksTelegramByBotTokenErrors[keyof PostWebhooksTelegramByBotTokenErrors];
 
 export type PostWebhooksTelegramByBotTokenResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetOnboardingSquareConnectCallbackData = {
+    body?: never;
+    path?: never;
+    query?: {
+        code?: string;
+        state?: string;
+        error?: string;
+    };
+    url: '/onboarding/square/connect/callback';
+};
+
+export type GetOnboardingSquareConnectCallbackResponses = {
     /**
      * OK
      */
@@ -491,3 +570,410 @@ export type PatchAgentsByAgentIdConversationsByConversationIdReadResponses = {
 };
 
 export type PatchAgentsByAgentIdConversationsByConversationIdReadResponse = PatchAgentsByAgentIdConversationsByConversationIdReadResponses[keyof PatchAgentsByAgentIdConversationsByConversationIdReadResponses];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: {
+        returnUrl?: string;
+    };
+    url: '/onboarding/subscriptions/{subscriptionId}/square/connect/authorize';
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeErrors = {
+    /**
+     * Bad Request
+     */
+    400: SquareConnectionErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: SquareConnectionErrorResult;
+    /**
+     * Forbidden
+     */
+    403: SquareConnectionErrorResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeError = PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeErrors[keyof PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeErrors];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponses = {
+    /**
+     * OK
+     */
+    200: StartSubscriptionSquareConnectAuthorizeResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponse = PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponses[keyof PostOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponses];
+
+export type PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: {
+        returnUrl?: string;
+    };
+    url: '/subscriptions/{subscriptionId}/square/connect/authorize';
+};
+
+export type PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeErrors = {
+    /**
+     * Bad Request
+     */
+    400: SquareConnectionErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: SquareConnectionErrorResult;
+    /**
+     * Forbidden
+     */
+    403: SquareConnectionErrorResult;
+};
+
+export type PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeError = PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeErrors[keyof PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeErrors];
+
+export type PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponses = {
+    /**
+     * OK
+     */
+    200: StartSubscriptionSquareConnectAuthorizeResult;
+};
+
+export type PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponse = PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponses[keyof PostSubscriptionsBySubscriptionIdSquareConnectAuthorizeResponses];
+
+export type DeleteSubscriptionsBySubscriptionIdSquareConnectionData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: never;
+    url: '/subscriptions/{subscriptionId}/square/connection';
+};
+
+export type DeleteSubscriptionsBySubscriptionIdSquareConnectionErrors = {
+    /**
+     * Bad Request
+     */
+    400: SquareConnectionErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: SquareConnectionErrorResult;
+    /**
+     * Forbidden
+     */
+    403: SquareConnectionErrorResult;
+    /**
+     * Not Found
+     */
+    404: SquareConnectionErrorResult;
+};
+
+export type DeleteSubscriptionsBySubscriptionIdSquareConnectionError = DeleteSubscriptionsBySubscriptionIdSquareConnectionErrors[keyof DeleteSubscriptionsBySubscriptionIdSquareConnectionErrors];
+
+export type DeleteSubscriptionsBySubscriptionIdSquareConnectionResponses = {
+    /**
+     * OK
+     */
+    200: DeleteSubscriptionSquareConnectionResult;
+};
+
+export type DeleteSubscriptionsBySubscriptionIdSquareConnectionResponse = DeleteSubscriptionsBySubscriptionIdSquareConnectionResponses[keyof DeleteSubscriptionsBySubscriptionIdSquareConnectionResponses];
+
+export type GetSubscriptionsBySubscriptionIdSquareConnectionProbeData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: never;
+    url: '/subscriptions/{subscriptionId}/square/connection/probe';
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareConnectionProbeErrors = {
+    /**
+     * Bad Request
+     */
+    400: SquareConnectionErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: SquareConnectionErrorResult;
+    /**
+     * Forbidden
+     */
+    403: SquareConnectionErrorResult;
+    /**
+     * Not Found
+     */
+    404: SquareConnectionErrorResult;
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareConnectionProbeError = GetSubscriptionsBySubscriptionIdSquareConnectionProbeErrors[keyof GetSubscriptionsBySubscriptionIdSquareConnectionProbeErrors];
+
+export type GetSubscriptionsBySubscriptionIdSquareConnectionProbeResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionSquareConnectionProbeResult;
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareConnectionProbeResponse = GetSubscriptionsBySubscriptionIdSquareConnectionProbeResponses[keyof GetSubscriptionsBySubscriptionIdSquareConnectionProbeResponses];
+
+export type GetOnboardingSubscriptionsActiveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/onboarding/subscriptions/active';
+};
+
+export type GetOnboardingSubscriptionsActiveErrors = {
+    /**
+     * Unauthorized
+     */
+    401: OnboardingErrorResult;
+    /**
+     * Not Found
+     */
+    404: OnboardingErrorResult;
+};
+
+export type GetOnboardingSubscriptionsActiveError = GetOnboardingSubscriptionsActiveErrors[keyof GetOnboardingSubscriptionsActiveErrors];
+
+export type GetOnboardingSubscriptionsActiveResponses = {
+    /**
+     * OK
+     */
+    200: GetActiveSubscriptionResult;
+};
+
+export type GetOnboardingSubscriptionsActiveResponse = GetOnboardingSubscriptionsActiveResponses[keyof GetOnboardingSubscriptionsActiveResponses];
+
+export type GetOnboardingSubscriptionsBySubscriptionIdStateData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: never;
+    url: '/onboarding/subscriptions/{subscriptionId}/state';
+};
+
+export type GetOnboardingSubscriptionsBySubscriptionIdStateErrors = {
+    /**
+     * Unauthorized
+     */
+    401: OnboardingErrorResult;
+    /**
+     * Forbidden
+     */
+    403: OnboardingErrorResult;
+    /**
+     * Not Found
+     */
+    404: OnboardingErrorResult;
+};
+
+export type GetOnboardingSubscriptionsBySubscriptionIdStateError = GetOnboardingSubscriptionsBySubscriptionIdStateErrors[keyof GetOnboardingSubscriptionsBySubscriptionIdStateErrors];
+
+export type GetOnboardingSubscriptionsBySubscriptionIdStateResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionOnboardingStateResult;
+};
+
+export type GetOnboardingSubscriptionsBySubscriptionIdStateResponse = GetOnboardingSubscriptionsBySubscriptionIdStateResponses[keyof GetOnboardingSubscriptionsBySubscriptionIdStateResponses];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdAgentsData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: never;
+    url: '/onboarding/subscriptions/{subscriptionId}/agents';
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdAgentsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: OnboardingErrorResult;
+    /**
+     * Forbidden
+     */
+    403: OnboardingErrorResult;
+    /**
+     * Not Found
+     */
+    404: OnboardingErrorResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdAgentsError = PostOnboardingSubscriptionsBySubscriptionIdAgentsErrors[keyof PostOnboardingSubscriptionsBySubscriptionIdAgentsErrors];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdAgentsResponses = {
+    /**
+     * OK
+     */
+    200: CreateSubscriptionOnboardingAgentResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdAgentsResponse = PostOnboardingSubscriptionsBySubscriptionIdAgentsResponses[keyof PostOnboardingSubscriptionsBySubscriptionIdAgentsResponses];
+
+export type PatchOnboardingAgentsByAgentIdProfileData = {
+    body: PatchOnboardingAgentProfileInput;
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/onboarding/agents/{agentId}/profile';
+};
+
+export type PatchOnboardingAgentsByAgentIdProfileErrors = {
+    /**
+     * Bad Request
+     */
+    400: OnboardingErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: OnboardingErrorResult;
+    /**
+     * Forbidden
+     */
+    403: OnboardingErrorResult;
+    /**
+     * Not Found
+     */
+    404: OnboardingErrorResult;
+};
+
+export type PatchOnboardingAgentsByAgentIdProfileError = PatchOnboardingAgentsByAgentIdProfileErrors[keyof PatchOnboardingAgentsByAgentIdProfileErrors];
+
+export type PatchOnboardingAgentsByAgentIdProfileResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionOnboardingStateResult;
+};
+
+export type PatchOnboardingAgentsByAgentIdProfileResponse = PatchOnboardingAgentsByAgentIdProfileResponses[keyof PatchOnboardingAgentsByAgentIdProfileResponses];
+
+export type PatchOnboardingAgentsByAgentIdChannelsData = {
+    body: PatchOnboardingAgentChannelsInput;
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/onboarding/agents/{agentId}/channels';
+};
+
+export type PatchOnboardingAgentsByAgentIdChannelsErrors = {
+    /**
+     * Bad Request
+     */
+    400: OnboardingErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: OnboardingErrorResult;
+    /**
+     * Forbidden
+     */
+    403: OnboardingErrorResult;
+    /**
+     * Not Found
+     */
+    404: OnboardingErrorResult;
+};
+
+export type PatchOnboardingAgentsByAgentIdChannelsError = PatchOnboardingAgentsByAgentIdChannelsErrors[keyof PatchOnboardingAgentsByAgentIdChannelsErrors];
+
+export type PatchOnboardingAgentsByAgentIdChannelsResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionOnboardingStateResult;
+};
+
+export type PatchOnboardingAgentsByAgentIdChannelsResponse = PatchOnboardingAgentsByAgentIdChannelsResponses[keyof PatchOnboardingAgentsByAgentIdChannelsResponses];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: never;
+    url: '/onboarding/subscriptions/{subscriptionId}/members/invitations';
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsErrors = {
+    /**
+     * Bad Request
+     */
+    400: OnboardingErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: OnboardingErrorResult;
+    /**
+     * Forbidden
+     */
+    403: OnboardingErrorResult;
+    /**
+     * Not Found
+     */
+    404: OnboardingErrorResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsError = PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsErrors[keyof PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsErrors];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionOnboardingStateResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsResponse = PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsResponses[keyof PostOnboardingSubscriptionsBySubscriptionIdMembersInvitationsResponses];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdFinalizeData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: never;
+    url: '/onboarding/subscriptions/{subscriptionId}/finalize';
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdFinalizeErrors = {
+    /**
+     * Bad Request
+     */
+    400: OnboardingErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: OnboardingErrorResult;
+    /**
+     * Forbidden
+     */
+    403: OnboardingErrorResult;
+    /**
+     * Not Found
+     */
+    404: OnboardingErrorResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdFinalizeError = PostOnboardingSubscriptionsBySubscriptionIdFinalizeErrors[keyof PostOnboardingSubscriptionsBySubscriptionIdFinalizeErrors];
+
+export type PostOnboardingSubscriptionsBySubscriptionIdFinalizeResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionOnboardingStateResult;
+};
+
+export type PostOnboardingSubscriptionsBySubscriptionIdFinalizeResponse = PostOnboardingSubscriptionsBySubscriptionIdFinalizeResponses[keyof PostOnboardingSubscriptionsBySubscriptionIdFinalizeResponses];

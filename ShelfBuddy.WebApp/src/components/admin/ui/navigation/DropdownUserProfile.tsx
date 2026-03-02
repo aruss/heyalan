@@ -25,6 +25,8 @@ export type DropdownUserProfileProps = {
   emailLabel?: string | null
 }
 
+const FALLBACK_EMAIL_LABEL = "Account"
+
 export function DropdownUserProfile({
   children,
   align = "start",
@@ -48,7 +50,7 @@ export function DropdownUserProfile({
           align={align}
           className="sm:!min-w-[calc(var(--radix-dropdown-menu-trigger-width))]"
         >
-          <DropdownMenuLabel>{emailLabel ?? "Signed in"}</DropdownMenuLabel>
+          <DropdownMenuLabel>{emailLabel ?? FALLBACK_EMAIL_LABEL}</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuSubMenu>
               <DropdownMenuSubMenuTrigger>Theme</DropdownMenuSubMenuTrigger>

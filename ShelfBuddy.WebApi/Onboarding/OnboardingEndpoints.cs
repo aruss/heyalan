@@ -2,6 +2,8 @@ namespace ShelfBuddy.WebApi.Onboarding;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ShelfBuddy.Data;
 using ShelfBuddy.Data.Entities;
 using ShelfBuddy.Onboarding;
 using System.Security.Claims;
@@ -16,6 +18,14 @@ public static class OnboardingEndpoints
             .MapGroup("/onboarding")
             .WithTags("Onboarding")
             .RequireAuthorization();
+
+        onboardingGroup
+            .MapGet(
+                "/subscriptions/active",
+                GetActiveSubscriptionAsync)
+            .Produces<GetActiveSubscriptionResult>(StatusCodes.Status200OK)
+            .Produces<OnboardingErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<OnboardingErrorResult>(StatusCodes.Status404NotFound);
 
         onboardingGroup
             .MapGet(
@@ -76,6 +86,35 @@ public static class OnboardingEndpoints
             .Produces<OnboardingErrorResult>(StatusCodes.Status404NotFound);
 
         return routeBuilder;
+    }
+
+    private static async Task<IResult> GetActiveSubscriptionAsync(
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        Guid? userId = user.GetUserId();
+        if (userId is null)
+        {
+            return UnauthorizedError("unauthenticated");
+        }
+
+        Guid? subscriptionId = await dbContext.SubscriptionUsers
+            .Where(membership => membership.UserId == userId.Value)
+            .OrderBy(membership => membership.Role)
+            .ThenBy(membership => membership.CreatedAt)
+            .Select(membership => (Guid?)membership.SubscriptionId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!subscriptionId.HasValue)
+        {
+            OnboardingErrorResult payload = new(
+                "subscription_membership_not_found",
+                "No subscription membership exists for the current user.");
+            return TypedResults.Json(payload, statusCode: StatusCodes.Status404NotFound);
+        }
+
+        return TypedResults.Ok(new GetActiveSubscriptionResult(subscriptionId.Value));
     }
 
     private static async Task<IResult> GetSubscriptionOnboardingStateAsync(
@@ -289,7 +328,7 @@ public static class OnboardingEndpoints
             "agent_not_found" => "The requested agent was not found.",
             "agent_name_required" => "Agent name is required.",
             "agent_personality_required" => "Agent personality is required.",
-            "channels_all_required" => "Twilio phone number, Telegram bot token, and WhatsApp number are required.",
+            "channels_at_least_one_required" => "At least one channel must be configured.",
             "onboarding_invitations_blocked" => "Complete square connection, profile, and channels before invitations.",
             "onboarding_finalize_incomplete" => "All required onboarding steps must be completed before finalize.",
             _ => "Onboarding request failed."

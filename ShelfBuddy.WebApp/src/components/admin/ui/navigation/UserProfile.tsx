@@ -8,7 +8,6 @@ import { ChevronsUpDown } from "lucide-react"
 import { DropdownUserProfile } from "./DropdownUserProfile"
 
 const EMPTY_INITIALS = "??"
-const LOADING_INITIALS = ".."
 const LOADING_LABEL = "Loading..."
 const FALLBACK_LABEL = "Account"
 
@@ -68,7 +67,7 @@ export function UserProfile() {
     : currentUser
       ? resolveDisplayLabel(currentUser.email, currentUser.displayName)
       : FALLBACK_LABEL
-  const initials = isLoading ? LOADING_INITIALS : resolveInitials(profileLabel)
+  const initials = resolveInitials(profileLabel)
   const emailLabel = currentUser?.email ?? null
 
   return (
@@ -83,12 +82,28 @@ export function UserProfile() {
       >
         <span className="flex items-center gap-3">
           <span
-            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white text-xs text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+            className={cx(
+              "flex size-8 shrink-0 items-center justify-center rounded-full border text-xs",
+              isLoading
+                ? "animate-pulse border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800"
+                : "border-gray-300 bg-white text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300",
+            )}
             aria-hidden="true"
           >
-            {initials}
+            {isLoading ? (
+              <span className="h-2.5 w-4 rounded-sm bg-gray-300 dark:bg-gray-700" />
+            ) : (
+              initials
+            )}
           </span>
-          <span>{profileLabel}</span>
+          <span
+            className={cx(
+              isLoading &&
+                "inline-block h-4 w-24 animate-pulse rounded bg-gray-200 text-transparent dark:bg-gray-800",
+            )}
+          >
+            {profileLabel}
+          </span>
         </span>
         <ChevronsUpDown
           className="size-4 shrink-0 text-gray-500 group-hover:text-gray-700 group-hover:dark:text-gray-400"

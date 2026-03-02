@@ -36,6 +36,7 @@ All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, S
 
 ## Milestones, Gates, and Scratchpads
 - We usually work in milestones (M1, M2, M2.5, M3, ...) with gates (Gate A, Gate B, ...) that include tickable checklists (`[ ]`) by default in `docs/milestones/*.md`.
+- A milestone contains gates, each gate is self contained feature and gates are sorted so they can build on another.
 - A milestone MAY have its own scratchpad for notes and decisions, e.g. `docs/milestones/M1-identity-scratchpad.md`.
 - Default work mode: when the developer explicitly requests work without referring to a milestone, you MUST proceed without creating or updating milestone artifacts unless asked. In this mode, you MUST tick off tasks you completed in existing milestones without waiting for additional confirmation from the developer.
 - Working mode: creating/refining milestones. When the developer asks for a new milestone (or refers to this mode), you MUST act as a sparring partner to refine the feature before drafting the milestone file. You SHOULD propose a draft, ask clarifying questions, and iterate on scope until the developer is satisfied. Once approved, you MUST flesh out the milestone (gates with `[ ]` checklists) and initialize an empty scratchpad.
@@ -49,6 +50,7 @@ All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, S
 - You MUST NOT use `package.json` scripts such as `build`, `dev`, etc.
 - You MUST NOT start `docker-compose` files.
 - After changing the database schema, you MUST stop and hand off so the developer can create migrations and run `dotnet ef migrations add Init --context MainDataContext -o .\Migrations` from `ShelfBuddy.Initializer`. Resume only after explicit confirmation.
+- After chaning the WebAPI interface, which results in updated openapi spec, hand of to the developer so he can auto generate the webapp client `yarn openapi-ts`
 - You MUST NOT create git commits. You MAY use git to review history.
 - `swagger.json` files are auto-generated and derived from API annotations in the NestJS backend. You MUST NOT edit them manually.
 - You MUST NOT touch `.gen.ts` files as they are auto-generated.
