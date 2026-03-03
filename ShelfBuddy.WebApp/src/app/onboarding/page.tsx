@@ -711,7 +711,7 @@ const OnboardingPage = (): ReactElement => {
                             >
                                 Skip for now
                             </button>
-                            <div className="text-xs pt-4 text-slate-400">You can skip now to explore. Connect Square to activate ShelfBuddy.</div>
+                            <div className="text-xs pt-4 text-slate-400">Square must be linked for everything to work properly.</div>
                             {stepMessages[1] ? (
                                 <div className={`text-xs pt-2 ${stepMessages[1]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
                                     {stepMessages[1]?.text}
