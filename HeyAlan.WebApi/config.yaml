@@ -1,0 +1,24 @@
+# Framework config
+Logging:
+  LogLevel:
+    Default: Debug
+    Microsoft.AspNetCore: Debug
+    Microsoft.AspNetCore.Authentication: Debug
+    Microsoft.AspNetCore.Identity: Debug
+
+AllowedHosts: "*"
+
+ConnectionStrings:
+   heyalan: "..."
+
+
+# Infra defaults
+MINIO_ENDPOINT: http://localhost:9000
+MINIO_BUCKET: heyalan
+MINIO_ACCESS_KEY: minioadmin
+MINIO_SECRET_KEY: minioadmin
+
+LITELLM_ENDPOINT: http://localhost:8080
+LITELLM_API_KEY: sk-1234
+
+# Application config

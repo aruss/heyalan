@@ -4,10 +4,10 @@
 Prevent already-onboarded users from accessing onboarding pages (including browser back navigation), expose onboarding state via `CurrentUserResult.isOnboarded`, and surface a clear admin sidebar reminder for users who still need to complete onboarding.
 
 ## Scope
-- **Backend (`ShelfBuddy.WebApi`)**
+- **Backend (`HeyAlan.WebApi`)**
   - Extend `/auth/me` payload with `isOnboarded`.
   - Compute onboarding completion from current onboarding state.
-- **Frontend (`ShelfBuddy.WebApp`)**
+- **Frontend (`HeyAlan.WebApp`)**
   - Guard `/onboarding` in proxy routing.
   - Redirect onboarded users from onboarding to `/admin`.
   - Show `Proceed onboarding` callout above user profile in admin sidebar when not onboarded.

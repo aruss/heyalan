@@ -1,10 +1,10 @@
 # Configuration Reference
 
-ShelfBuddy uses explicit configuration access and validation to keep runtime behavior predictable.
+HeyAlan uses explicit configuration access and validation to keep runtime behavior predictable.
 
 ## Configuration Approach
 
-ShelfBuddy favors explicit `IConfiguration` extension methods over implicit options binding for infrastructure-critical settings.
+HeyAlan favors explicit `IConfiguration` extension methods over implicit options binding for infrastructure-critical settings.
 
 This model provides:
 

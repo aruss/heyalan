@@ -4,13 +4,13 @@
 Refactor the Telegram communication path so multiple bots/subscriptions work reliably by enforcing unique bot tokens, making webhook registration mission-critical during onboarding, surfacing actionable onboarding errors, and routing outgoing replies to Telegram `chat.id` instead of sender user id.
 
 ## Scope
-- **Backend (`ShelfBuddy.WebApi`, `ShelfBuddy`)**
+- **Backend (`HeyAlan.WebApi`, `HeyAlan`)**
   - Enforce uniqueness for `Agent.TelegramBotToken`.
   - Register Telegram webhook during onboarding channels step and fail onboarding if registration fails.
   - Add retry policy for transient webhook registration failures.
   - Improve Telegram ingress diagnostics (`401/404/publish success`).
   - Use Telegram `message.chat.id` as outgoing reply target.
-- **Frontend (`ShelfBuddy.WebApp`)**
+- **Frontend (`HeyAlan.WebApp`)**
   - Reuse existing onboarding channels error rendering to display Telegram-specific actionable messages.
 
 ## Non-Goals (Out of Scope)
@@ -30,33 +30,33 @@ Refactor the Telegram communication path so multiple bots/subscriptions work rel
 
 ### Confirmed functional gap: token save without webhook registration
 - [x] Onboarding channels update persists `agent.TelegramBotToken` but does not call `ITelegramService.RegisterWebhookAsync`.
-  - `ShelfBuddy/Onboarding/SubscriptionOnboardingService.cs`
+  - `HeyAlan/Onboarding/SubscriptionOnboardingService.cs`
 - [x] Existing webhook registration callsite exists only in commented initializer seed block.
-  - `ShelfBuddy.Initializer/Program.cs`
+  - `HeyAlan.Initializer/Program.cs`
 
 ### Webhook ingress strictness explains empty queues
 - [x] Ingress endpoint requires matching secret token header and returns `401` when invalid.
-  - `ShelfBuddy.WebApi/TelegramIntegration/TelegramSecretTokenFilter.cs`
+  - `HeyAlan.WebApi/TelegramIntegration/TelegramSecretTokenFilter.cs`
 - [x] Ingress endpoint resolves agent by exact bot token and returns `404` when no match.
-  - `ShelfBuddy.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs`
+  - `HeyAlan.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs`
 - [x] Bot token lookup is exact string match; stored token vs webhook route token mismatch (including subtle formatting differences) can produce `404` and prevent queue publish.
 - [x] If ingress fails before publish, RabbitMQ incoming/outgoing queues remain empty.
 
 ### Data-model risk: duplicate tokens not prevented
 - [x] `Agent.TelegramBotToken` currently has non-unique filtered index.
-  - `ShelfBuddy/Data/MainDataContext.cs`
+  - `HeyAlan/Data/MainDataContext.cs`
 - [x] Webhook lookup uses `SingleOrDefaultAsync`; duplicates can cause runtime exceptions.
-  - `ShelfBuddy.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs`
+  - `HeyAlan.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs`
 
 ### Routing gap: outgoing recipient source
 - [x] Telegram ingress currently maps `IncomingMessage.From` from `message.from.id` (sender user id).
 - [x] Outgoing consumer expects `OutgoingTelegramMessage.To` to be parseable chat id (`long`).
-  - `ShelfBuddy/Messaging/OutgoingTelegramMessageConsumer.cs`
+  - `HeyAlan/Messaging/OutgoingTelegramMessageConsumer.cs`
 - [x] Correct Telegram delivery target should be `message.chat.id`.
 
 ### Onboarding UX readiness
 - [x] Onboarding channels step already shows backend-provided error text (`resolveApiErrorMessage` + step message state).
-  - `ShelfBuddy.WebApp/src/app/onboarding/page.tsx`
+  - `HeyAlan.WebApp/src/app/onboarding/page.tsx`
 
 ## Architecture Decisions (Locked)
 - [x] Telegram webhook registration executes synchronously in onboarding channels update flow.

@@ -1,11 +1,11 @@
 # Getting Started
 
-This guide describes the fastest local path to run ShelfBuddy and access the core services.
+This guide describes the fastest local path to run HeyAlan and access the core services.
 
 ## Prerequisites
 
 - .NET SDK (matching the solution target)
-- Node.js and Yarn (for `ShelfBuddy.WebApp`)
+- Node.js and Yarn (for `HeyAlan.WebApp`)
 - Docker Desktop (for local infrastructure containers)
 
 ## setup git
@@ -30,7 +30,7 @@ This guide describes the fastest local path to run ShelfBuddy and access the cor
 From the repository root:
 
 ```powershell
-dotnet watch run --project .\ShelfBuddy.AppHost\ShelfBuddy.AppHost.csproj
+dotnet watch run --project .\HeyAlan.AppHost\HeyAlan.AppHost.csproj
 ```
 
 This starts the Aspire host and orchestrates local services.

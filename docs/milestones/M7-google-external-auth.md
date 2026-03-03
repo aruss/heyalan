@@ -1,18 +1,18 @@
 # Milestone M7: Google External Auth Endpoints (Custom `/auth` Flow)
 
 ## Goal
-Add custom 3rd-party identity endpoints for Google login in `ShelfBuddy.WebApi` without using `MapIdentityApi<T>`, while preserving the project's cookie-based authentication model behind the frontend proxy.
+Add custom 3rd-party identity endpoints for Google login in `HeyAlan.WebApi` without using `MapIdentityApi<T>`, while preserving the project's cookie-based authentication model behind the frontend proxy.
 
 All auth-related callbacks MUST be under `/auth/*`.
 
 ## Scope
-- **Backend (`ShelfBuddy.WebApi`)**
+- **Backend (`HeyAlan.WebApi`)**
   - Register Google external auth conditionally from `AppOptions`.
   - Add provider discovery endpoint for frontend login button rendering.
   - Add external login start endpoint.
   - Add external callback completion endpoint.
   - Keep final user authentication cookie-based via ASP.NET Core Identity.
-- **Shared (`ShelfBuddy`)**
+- **Shared (`HeyAlan`)**
   - Extend `AppOptions` for Google credentials.
   - Extend options validation so Google credentials are optional as a pair.
 - **Frontend interaction contract**
@@ -109,24 +109,24 @@ Flow:
 ## Implementation Plan by Gate
 
 ## Gate A: AppOptions + Validation
-- [x] Extend `ShelfBuddy/Configuration/AppOptions.cs` with nullable Google credential properties.
+- [x] Extend `HeyAlan/Configuration/AppOptions.cs` with nullable Google credential properties.
 - [x] Extend `TryGetAppOptions()` to read and trim `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 - [x] Add explicit pair validation logic for Google credentials.
 - [x] Preserve existing `PUBLIC_BASE_URL` validation behavior.
 
 ## Gate B: Identity Registration
-- [x] Update `ShelfBuddy/Identity/IdentityBuilderExtensions.cs` to conditionally register Google auth only when both credentials exist.
+- [x] Update `HeyAlan/Identity/IdentityBuilderExtensions.cs` to conditionally register Google auth only when both credentials exist.
 - [x] Configure callback path to `/auth/google/callback`.
 - [x] Ensure Identity external sign-in temp cookie flow remains compatible with `SignInManager`.
 
 ## Gate C: Custom Identity Endpoints
-- [x] Update `ShelfBuddy.WebApi/Identity/IdentityEndpoints.cs` to add:
+- [x] Update `HeyAlan.WebApi/Identity/IdentityEndpoints.cs` to add:
   - [x] `GET /auth/providers`
   - [x] `GET /auth/providers/{provider}/start`
   - [x] `GET /auth/external-callback`
 - [x] Keep existing `/auth/me` and `/auth/logout`.
 - [x] Add returnUrl sanitization helper and `/admin` fallback.
-- [x] Add operation-centric DTOs in `ShelfBuddy.WebApi/Identity`:
+- [x] Add operation-centric DTOs in `HeyAlan.WebApi/Identity`:
   - [x] `GetExternalLoginProvidersResult`
   - [x] `ExternalLoginProviderItem`
 
@@ -211,10 +211,10 @@ Flow:
 
 
 ## Gate I: Google UserInfo Verification Claim Normalization
-  - [x] Update Google auth registration in `ShelfBuddy/Identity/IdentityBuilderExtensions.cs` to explicitly source verification data from
+  - [x] Update Google auth registration in `HeyAlan/Identity/IdentityBuilderExtensions.cs` to explicitly source verification data from
   Google UserInfo endpoint.
     - [x] Configure/confirm `GoogleOptions.UserInformationEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo"`.
-    - [x] Update `WithError(...)` logic in `ShelfBuddy.WebApi/Identity/IdentityEndpoints.cs` to replace existing `authError` rather than
+    - [x] Update `WithError(...)` logic in `HeyAlan.WebApi/Identity/IdentityEndpoints.cs` to replace existing `authError` rather than
   append duplicates.
     - [x] Missing/false verification still rejects deterministically.
     - [x] `authError` deduplication emits a single value in redirect URL.

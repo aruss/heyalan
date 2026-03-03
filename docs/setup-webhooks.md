@@ -1,10 +1,10 @@
 # Setup Webhooks
 
-Use this guide to expose local `ShelfBuddy.WebApi` endpoints for Telegram and Twilio webhook testing.
+Use this guide to expose local `HeyAlan.WebApi` endpoints for Telegram and Twilio webhook testing.
 
 ## Local Tunnel via ngrok
 
-ShelfBuddy AppHost supports ngrok-driven local webhook exposure.
+HeyAlan AppHost supports ngrok-driven local webhook exposure.
 
 Set these values in your local `.env`:
 
@@ -23,7 +23,7 @@ Example:
 Run AppHost from the solution root:
 
 ```powershell
-dotnet watch run --project .\ShelfBuddy.AppHost\ShelfBuddy.AppHost.csproj
+dotnet watch run --project .\HeyAlan.AppHost\HeyAlan.AppHost.csproj
 ```
 
 When enabled, AppHost passes `PUBLIC_BASE_URL` to services that need callback/webhook URLs and starts ngrok with the configured reserved domain.

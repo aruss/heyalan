@@ -7,7 +7,7 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/ShelfBuddy.sln",
+        "${workspaceFolder}/HeyAlan.sln",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary"
       ],
@@ -21,7 +21,7 @@
       "args": [
         "run",
         "--project",
-        "${workspaceFolder}/ShelfBuddy.AppHost/ShelfBuddy.AppHost.csproj",
+        "${workspaceFolder}/HeyAlan.AppHost/HeyAlan.AppHost.csproj",
         "--launch-profile",
         "https" // Or "http" depending on your preference
       ],

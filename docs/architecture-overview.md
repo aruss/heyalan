@@ -1,10 +1,10 @@
 # Architecture Overview
 
-This document describes how ShelfBuddy operates at a high level.
+This document describes how HeyAlan operates at a high level.
 
 ## Operating Model
 
-ShelfBuddy is a multi-tenant platform. Each subscription acts as a tenant boundary for:
+HeyAlan is a multi-tenant platform. Each subscription acts as a tenant boundary for:
 
 - users and team membership
 - agents

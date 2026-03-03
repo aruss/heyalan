@@ -1,7 +1,7 @@
 # Milestone M12: Buffered Incoming Processing with Cancel/Restart Semantics
 
 ## Goal
-Convert `ShelfBuddy/Messaging/IncomingMessageConsumer.cs` from per-message immediate handling to durable, per-conversation buffered processing that:
+Convert `HeyAlan/Messaging/IncomingMessageConsumer.cs` from per-message immediate handling to durable, per-conversation buffered processing that:
 - waits for a configurable quiet window (constant for now, 5 seconds),
 - executes business logic on a batch (not individual messages),
 - cancels in-flight long-running work when a new message for the same conversation arrives,
@@ -10,7 +10,7 @@ Convert `ShelfBuddy/Messaging/IncomingMessageConsumer.cs` from per-message immed
 - limits each processing run to a max of 100 messages (constant in the same file).
 
 ## Scope
-- **Primary target:** `ShelfBuddy/Messaging/IncomingMessageConsumer.cs`
+- **Primary target:** `HeyAlan/Messaging/IncomingMessageConsumer.cs`
 - **Behavior scope:** all `IncomingMessage` channels for buffering/long-running logic.
 - **Outgoing scope:** channel-specific reply routing remains separate from channel-agnostic buffering.
 - **Durability rule:** broker message ack must happen only after successful batch processing.
@@ -34,7 +34,7 @@ Convert `ShelfBuddy/Messaging/IncomingMessageConsumer.cs` from per-message immed
 ## Findings from Repository Analysis
 
 ### Current consumer behavior and location
-- [x] `ShelfBuddy/Messaging/IncomingMessageConsumer.cs` previously processed each message immediately:
+- [x] `HeyAlan/Messaging/IncomingMessageConsumer.cs` previously processed each message immediately:
   - logged message,
   - persisted one incoming message via `IConversationStore.UpsertIncomingMessageAsync`,
   - for Telegram published one `OutgoingTelegramMessage` with placeholder text.
@@ -42,14 +42,14 @@ Convert `ShelfBuddy/Messaging/IncomingMessageConsumer.cs` from per-message immed
 
 ### Relevant messaging wiring
 - [x] MassTransit consumer registration is in:
-  - `ShelfBuddy.WebApi/Infrastructure/MassTransitBuilderExtensions.cs`
+  - `HeyAlan.WebApi/Infrastructure/MassTransitBuilderExtensions.cs`
 - [x] `IncomingMessageConsumer` and `OutgoingTelegramMessageConsumer` are auto-configured endpoints via `cfg.ConfigureEndpoints(context)`.
 
 ### Channel ingress shape
 - [x] Telegram webhook publishes `IncomingMessage` with resolved `AgentId`, `SubscriptionId`, `Channel=Telegram`.
-  - `ShelfBuddy.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs`
+  - `HeyAlan.WebApi/TelegramIntegration/TelegramWebhookEndpoints.cs`
 - [x] Twilio webhook publishes placeholder-routed `IncomingMessage` for SMS.
-  - `ShelfBuddy.WebApi/TwilioIntegration/TwilioWebhookEndpoints.cs`
+  - `HeyAlan.WebApi/TwilioIntegration/TwilioWebhookEndpoints.cs`
 
 ### Critical lifetime/architecture constraint
 - [x] MassTransit consumers are scoped; storing in-memory buffer in consumer instance fields is not safe for cross-message state.

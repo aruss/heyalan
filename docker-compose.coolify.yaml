@@ -1,9 +1,9 @@
 services:
   initializer:
-    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-initializer:${IMAGE_TAG:-latest}'
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/heyalan-initializer:${IMAGE_TAG:-latest}'
     restart: 'no'
     environment:
-      - 'ConnectionStrings__shelfbuddy=${DATABASE_URL}'
+      - 'ConnectionStrings__heyalan=${DATABASE_URL}'
       - 'ConnectionStrings__rabbitmq=${RABBITMQ_URL}'
       - 'PUBLIC_BASE_URL=${PUBLIC_BASE_URL}'
       - 'TELEGRAM_SECRET_TOKEN=${TELEGRAM_SECRET_TOKEN}'
@@ -15,9 +15,9 @@ services:
       - coolify
       - default
   webapi:
-    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapi:${IMAGE_TAG:-latest}'
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/heyalan-webapi:${IMAGE_TAG:-latest}'
     environment:
-      - 'ConnectionStrings__shelfbuddy=${DATABASE_URL}'
+      - 'ConnectionStrings__heyalan=${DATABASE_URL}'
       - 'ConnectionStrings__rabbitmq=${RABBITMQ_URL}'
       - 'SWAGGER_ENABLED=${SWAGGER_ENABLED}'
       - 'PUBLIC_BASE_URL=${PUBLIC_BASE_URL}'
@@ -41,7 +41,7 @@ services:
       - coolify
       - default
   webapp:
-    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapp:${IMAGE_TAG:-latest}'
+    image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/heyalan-webapp:${IMAGE_TAG:-latest}'
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
       - KEEP_ALIVE_TIMEOUT=70000
@@ -63,7 +63,7 @@ services:
       - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.scheme=http
       - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.passhostheader=true
       - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.responseforwarding.flushinterval=100ms
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.rule=Host(`shelfbuddy.dev.econduct.de`)
+      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.rule=Host(`heyalan.dev.econduct.de`)
       - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.entrypoints=https
       - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.tls.certresolver=letsencrypt
       - traefik.docker.network=coolify

@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Tests/">
+    <Project Path="HeyAlan.Tests/HeyAlan.Tests.csproj" />
+  </Folder>
+  <Project Path="HeyAlan.AppHost/HeyAlan.AppHost.csproj" />
+  <Project Path="HeyAlan.Initializer/HeyAlan.Initializer.csproj" Id="e3d6f173-bda4-44ce-b23a-07cd5afef5e5" />
+  <Project Path="HeyAlan/HeyAlan.csproj" />
+  <Project Path="HeyAlan.WebApi/HeyAlan.WebApi.csproj" />
+</Solution>

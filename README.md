@@ -1,14 +1,14 @@
-# ShelfBuddy
+# HeyAlan
 
-ShelfBuddy is an AI teammate for merchants that handles customer conversations across SMS, WhatsApp, and Telegram.
+HeyAlan is an AI teammate for merchants that handles customer conversations across SMS, WhatsApp, and Telegram.
 It helps teams respond faster, guide buyers, support orders, and keep sales conversations moving without requiring constant manual effort.
 
 ## Product Overview
 
-ShelfBuddy is built for operators, support teams, and store owners who need reliable customer communication across channels.
+HeyAlan is built for operators, support teams, and store owners who need reliable customer communication across channels.
 It combines channel messaging, merchant context, and workflow automation so teams can manage more conversations with less operational overhead.
 
-### What ShelfBuddy Helps With
+### What HeyAlan Helps With
 - Responding to customer messages across supported channels.
 - Keeping conversation history and status available for follow-up.
 - Supporting sales and service journeys with AI-assisted responses.
@@ -33,7 +33,7 @@ It combines channel messaging, merchant context, and workflow automation so team
 
 ## Technical Principles
 
-ShelfBuddy follows a subscription-first operating model:
+HeyAlan follows a subscription-first operating model:
 
 - Each subscription represents a tenant boundary for users, agents, and integrations.
 - Messaging flows are event-driven, with channel ingestion, processing, and delivery stages.

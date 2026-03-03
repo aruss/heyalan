@@ -4,7 +4,7 @@
 Display the current authenticated user in the admin sidebar profile menu using the generated API client (`/auth/me`), with session state provided through a mounted session context in the admin route group.
 
 ## Scope
-- **Frontend (`ShelfBuddy.WebApp`)**
+- **Frontend (`HeyAlan.WebApp`)**
   - Mount query/session providers for `/admin`.
   - Load authenticated user from generated `getAuthMeOptions()`.
   - Bind sidebar user profile button/dropdown to session user data.
@@ -31,23 +31,23 @@ Display the current authenticated user in the admin sidebar profile menu using t
 
 ### Existing implementation bits already present
 - [x] `SessionProvider` exists and already uses generated `getAuthMeOptions()`:
-  - `ShelfBuddy.WebApp/src/lib/session-context.tsx`
+  - `HeyAlan.WebApp/src/lib/session-context.tsx`
 - [x] `ReactQueryProvider` exists:
-  - `ShelfBuddy.WebApp/src/lib/react-query-provider.tsx`
+  - `HeyAlan.WebApp/src/lib/react-query-provider.tsx`
 - [x] Generated auth query options and endpoint client exist:
-  - `ShelfBuddy.WebApp/src/lib/api/@tanstack/react-query.gen.ts`
-  - `ShelfBuddy.WebApp/src/lib/api/types.gen.ts`
-  - `ShelfBuddy.WebApp/src/lib/api/sdk.gen.ts`
+  - `HeyAlan.WebApp/src/lib/api/@tanstack/react-query.gen.ts`
+  - `HeyAlan.WebApp/src/lib/api/types.gen.ts`
+  - `HeyAlan.WebApp/src/lib/api/sdk.gen.ts`
 - [x] Backend `/auth/me` exists and returns `CurrentUserResult`:
-  - `ShelfBuddy.WebApi/Identity/IdentityEndpoints.cs`
-  - `ShelfBuddy.WebApi/Identity/CurrentUserResult.cs`
+  - `HeyAlan.WebApi/Identity/IdentityEndpoints.cs`
+  - `HeyAlan.WebApi/Identity/CurrentUserResult.cs`
 
 ### Gaps identified
 - [x] `SessionProvider` is **not mounted** anywhere.
 - [x] `ReactQueryProvider` is **not mounted** anywhere.
 - [x] Sidebar profile UI is hardcoded with static user values:
-  - `ShelfBuddy.WebApp/src/components/admin/ui/navigation/UserProfile.tsx`
-  - `ShelfBuddy.WebApp/src/components/admin/ui/navigation/DropdownUserProfile.tsx`
+  - `HeyAlan.WebApp/src/components/admin/ui/navigation/UserProfile.tsx`
+  - `HeyAlan.WebApp/src/components/admin/ui/navigation/DropdownUserProfile.tsx`
 
 ### Current auth/session routing context
 - [x] Admin route gating is handled in `proxy.ts` with cookie + `/auth/me` check before allowing `/admin`.
@@ -89,7 +89,7 @@ Display the current authenticated user in the admin sidebar profile menu using t
 ## Implementation Plan by Gate
 
 ## Gate A: Session Context Type Alignment
-- [x] Update `ShelfBuddy.WebApp/src/lib/session-context.tsx`:
+- [x] Update `HeyAlan.WebApp/src/lib/session-context.tsx`:
   - [x] Replace local `SessionUser` with generated `CurrentUserResult` import from `@/lib/api`.
   - [x] Keep existing query pattern using `getAuthMeOptions()` and `retry: false`.
   - [x] Keep `refresh()`, `isLoading`, and `errorMessage` contract.
@@ -97,22 +97,22 @@ Display the current authenticated user in the admin sidebar profile menu using t
 
 ## Gate B: Admin Provider Mounting
 - [x] Add client component (new file) for admin provider composition, e.g.:
-  - [x] `ShelfBuddy.WebApp/src/app/admin/admin-shell.tsx`
+  - [x] `HeyAlan.WebApp/src/app/admin/admin-shell.tsx`
 - [x] Move client-only provider tree and sidebar/inset rendering into admin shell.
 - [x] Keep `defaultOpen` as prop from server layout.
-- [x] Update `ShelfBuddy.WebApp/src/app/admin/layout.tsx`:
+- [x] Update `HeyAlan.WebApp/src/app/admin/layout.tsx`:
   - [x] Keep server-side cookies read.
   - [x] Render admin shell with `defaultOpen`.
   - [x] Preserve existing font/html/body attributes.
 
 ## Gate C: Sidebar Profile Data Binding
-- [x] Update `ShelfBuddy.WebApp/src/components/admin/ui/navigation/UserProfile.tsx`:
+- [x] Update `HeyAlan.WebApp/src/components/admin/ui/navigation/UserProfile.tsx`:
   - [x] Consume `useSession()`.
   - [x] Replace hardcoded initials/name with resolved session-driven values.
   - [x] Implement deterministic display-label and initials helpers.
   - [x] Render loading placeholder state.
   - [x] Render neutral fallback when no session user.
-- [x] Update `ShelfBuddy.WebApp/src/components/admin/ui/navigation/DropdownUserProfile.tsx`:
+- [x] Update `HeyAlan.WebApp/src/components/admin/ui/navigation/DropdownUserProfile.tsx`:
   - [x] Accept `emailLabel?: string | null` prop.
   - [x] Replace hardcoded email label with prop/fallback text.
   - [x] Keep existing theme submenu and sign-out behavior unchanged.

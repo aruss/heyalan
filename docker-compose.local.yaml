@@ -2,9 +2,9 @@ services:
   # ---------------------------------------------------------------------------
   # Infrastructure: Postgres
   # ---------------------------------------------------------------------------
-  shelfbuddy-postgres:
+  heyalan-postgres:
     image: postgres:16-alpine
-    container_name: shelfbuddy-postgres
+    container_name: heyalan-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -24,39 +24,39 @@ services:
   # ---------------------------------------------------------------------------
   # Infrastructure: Creates postgres databases
   # ---------------------------------------------------------------------------
-  shelfbuddy-db-init:
+  heyalan-db-init:
     image: postgres:16-alpine
-    container_name: shelfbuddy-db-init
+    container_name: heyalan-db-init
     depends_on:
-      shelfbuddy-postgres:
+      heyalan-postgres:
         condition: service_healthy
     environment:
-      PGHOST: shelfbuddy-postgres
+      PGHOST: heyalan-postgres
       PGUSER: postgres
       PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
     command: >
       sh -c "
         echo 'Checking for databases...';
-        psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'shelfbuddydb'\" | grep -q 1 || createdb shelfbuddydb;
+        psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'heyalandb'\" | grep -q 1 || createdb heyalandb;
         psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'litellmdb'\" | grep -q 1 || createdb litellmdb;
         echo 'Initialization complete.'
       "
 
-  shelfbuddy-pgadmin:
+  heyalan-pgadmin:
     image: dpage/pgadmin4
-    container_name: shelfbuddy-pgadmin
+    container_name: heyalan-pgadmin
     restart: unless-stopped
     ports:
       - "5050:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@shelfbuddy.ai}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@heyalan.ai}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-Passwort123!}
     depends_on:
-      - shelfbuddy-postgres
+      - heyalan-postgres
 
-  shelfbuddy-minio:
+  heyalan-minio:
     image: quay.io/minio/minio
-    container_name: shelfbuddy-minio
+    container_name: heyalan-minio
     command: server /data --console-address :9001
     ports:
       - "9000:9000" # API
@@ -72,67 +72,67 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      shelfbuddy-postgres:
+      heyalan-postgres:
         condition: service_healthy
-      shelfbuddy-db-init:
+      heyalan-db-init:
         condition: service_completed_successfully
 
   # ---------------------------------------------------------------------------
   # Application: Initializer (Migrations & Bucket Setup)
   # ---------------------------------------------------------------------------
-  shelfbuddy-initializer:
-    image: europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-initializer:latest
-    container_name: shelfbuddy-initializer
+  heyalan-initializer:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/heyalan-initializer:latest
+    container_name: heyalan-initializer
     environment:
-      # Connects to default 'postgres' DB or creates 'shelfbuddydb' on fly depending on logic
-      ConnectionStrings__shelfbuddydb: Host=shelfbuddy-postgres;Port=5432;Database=shelfbuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
-      MINIO_ENDPOINT: http://shelfbuddy-minio:9000
+      # Connects to default 'postgres' DB or creates 'heyalandb' on fly depending on logic
+      ConnectionStrings__heyalandb: Host=heyalan-postgres;Port=5432;Database=heyalandb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      MINIO_ENDPOINT: http://heyalan-minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-parent@shelfbuddy.ai}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-parent@heyalan.ai}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Passwort123!}
     depends_on:
-      shelfbuddy-postgres:
+      heyalan-postgres:
         condition: service_healthy
-      shelfbuddy-minio:
+      heyalan-minio:
         condition: service_healthy
-      shelfbuddy-db-init:
+      heyalan-db-init:
         condition: service_completed_successfully
    
 
   # ---------------------------------------------------------------------------
   # AI Gateway: LiteLLM
   # ---------------------------------------------------------------------------
-  shelfbuddy-litellm:
+  heyalan-litellm:
     image: ghcr.io/berriai/litellm:litellm_stable_release_branch-v1.77.5-stable
-    container_name: shelfbuddy-litellm
+    container_name: heyalan-litellm
     ports:
       - "4000:4000"
     volumes:
-      - ./ShelfBuddy.AppHost/LiteLLM/config.yaml:/app/config.yaml
+      - ./HeyAlan.AppHost/LiteLLM/config.yaml:/app/config.yaml
     environment:
       # Connects to 'litellmdb' which must be created by Initializer first
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@shelfbuddy-postgres:5432/litellmdb?schema=litellm
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@heyalan-postgres:5432/litellmdb?schema=litellm
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
     command: --config /app/config.yaml
     depends_on:
       # Wait for initializer to create the DB structure
-      shelfbuddy-initializer:
+      heyalan-initializer:
         condition: service_completed_successfully
 
   # ---------------------------------------------------------------------------
   # Application: Web API
   # ---------------------------------------------------------------------------
-  shelfbuddy-webapi:
-    image: europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapi:latest
-    container_name: shelfbuddy-webapi
+  heyalan-webapi:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/heyalan-webapi:latest
+    container_name: heyalan-webapi
     environment:
-      ConnectionStrings__shelfbuddydb: Host=shelfbuddy-postgres;Port=5432;Database=shelfbuddydb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__heyalandb: Host=heyalan-postgres;Port=5432;Database=heyalandb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
       Logging__LogLevel__Default: Debug
-      LITELLM_ENDPOINT: http://shelfbuddy-litellm:4000
+      LITELLM_ENDPOINT: http://heyalan-litellm:4000
       LITELLM_API_KEY: ${LITELLM_MASTER_KEY}
-      MINIO_ENDPOINT: http://shelfbuddy-minio:9000
+      MINIO_ENDPOINT: http://heyalan-minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -145,27 +145,27 @@ services:
       retries: 5
       start_period: 5s
     depends_on:
-      shelfbuddy-initializer:
+      heyalan-initializer:
         condition: service_completed_successfully
-      shelfbuddy-postgres:
+      heyalan-postgres:
         condition: service_healthy
-      shelfbuddy-litellm:
+      heyalan-litellm:
         condition: service_started
-      shelfbuddy-minio:
+      heyalan-minio:
         condition: service_healthy
 
 
   # ---------------------------------------------------------------------------
   # Application: Web API
   # ---------------------------------------------------------------------------
-  shelfbuddy-webapp:
-    image: europe-west10-docker.pkg.dev/econduct/dev-docker/shelfbuddy-webapp:latest
-    container_name: shelfbuddy-webapp
+  heyalan-webapp:
+    image: europe-west10-docker.pkg.dev/econduct/dev-docker/heyalan-webapp:latest
+    container_name: heyalan-webapp
     ports:
       - "5010:5010"
     environment:
       NODE_ENV: production
-      WEBAPI_ENDPOINT: http://shelfbuddy-webapi:5000
+      WEBAPI_ENDPOINT: http://heyalan-webapi:5000
       NODE_OPTIONS: --dns-result-order=ipv4first
     healthcheck:
       test: 'wget --no-verbose --tries=1 --spider http://localhost:5010/health || exit 1'
@@ -174,7 +174,7 @@ services:
       retries: 5
       start_period: 5s
     depends_on:
-      shelfbuddy-webapi:
+      heyalan-webapi:
         condition: service_started
 
 volumes:

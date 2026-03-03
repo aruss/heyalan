@@ -1,12 +1,12 @@
 # M4 - Telegram Webhook Registration Service
 
 ## Summary
-Add a dedicated Telegram application service in `ShelfBuddy.WebApi` that can register a webhook per bot token using `Telegram.Bot`.
+Add a dedicated Telegram application service in `HeyAlan.WebApi` that can register a webhook per bot token using `Telegram.Bot`.
 
 This milestone is service-only: no onboarding/admin/agent-save caller integration yet.
 
 ## Gate A - Service Contract and Implementation
-- [ ] Add `ITelegramService` in `ShelfBuddy.WebApi/Telegram`.
+- [ ] Add `ITelegramService` in `HeyAlan.WebApi/Telegram`.
 - [ ] Add `TelegramService` implementation with `RegisterWebhookAsync(string botToken, CancellationToken ct = default)`.
 - [ ] Validate `botToken` (required, trimmed, non-whitespace).
 - [ ] Build webhook URL using `AppOptions.PublicBaseUrl` + `/webhooks/telegram/{botToken}`.
@@ -16,10 +16,10 @@ This milestone is service-only: no onboarding/admin/agent-save caller integratio
 - [ ] Fail fast by bubbling Telegram/API exceptions to caller.
 
 ## Gate B - DI and Startup Wiring
-- [ ] Keep `AppOptions` sourced from DI singleton registered in `ShelfBuddy.WebApi/Core/CoreBuilderExtensions.cs`.
+- [ ] Keep `AppOptions` sourced from DI singleton registered in `HeyAlan.WebApi/Core/CoreBuilderExtensions.cs`.
 - [ ] Do not re-register `AppOptions` in Telegram registrations.
 - [ ] Register `TelegramOptions`, `TelegramClientFactory`, and `ITelegramService` in Telegram builder extensions.
-- [ ] Ensure `builder.AddTelegram()` is called in `ShelfBuddy.WebApi/Program.cs`.
+- [ ] Ensure `builder.AddTelegram()` is called in `HeyAlan.WebApi/Program.cs`.
 
 ## Gate C - Security and Logging
 - [ ] Ensure no logs expose raw Telegram bot tokens.

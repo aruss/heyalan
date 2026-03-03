@@ -1,10 +1,10 @@
 # Square App Setup
 
-ShelfBuddy uses two separate Square app credential pairs because Square apps support a single redirect URL per app.
+HeyAlan uses two separate Square app credential pairs because Square apps support a single redirect URL per app.
 
 ## Why Two Square Apps
 
-ShelfBuddy has two distinct OAuth flows:
+HeyAlan has two distinct OAuth flows:
 
 1. External sign-in flow (`/auth/*`)
 2. Subscription connection flow (onboarding/admin)

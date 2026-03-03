@@ -8,19 +8,19 @@ The onboarding outcome for M8 is:
 - a configured primary `Agent` (name, `Personality`, `TwilioPhoneNumber`, `TelegramBotToken`, `WhatsappNumber`).
 
 ## Scope
-- **Backend (`ShelfBuddy.WebApi`)**
+- **Backend (`HeyAlan.WebApi`)**
   - Keep external auth endpoint surface under `/auth/*`.
   - Support Square external login parity with Google flow.
   - Persist and use Square OAuth tokens for backend/subscription operations.
   - Implement onboarding step endpoints for big onboarding (first login) and small onboarding (future additional agent flow).
-- **Shared (`ShelfBuddy`)**
+- **Shared (`HeyAlan`)**
   - Add `SquareIntegration` module with `ISquareTokenService` and implementation.
   - Centralize Square token lifecycle (get valid token, refresh, rotate, typed failures).
-- **Data (`ShelfBuddy.Data`)**
+- **Data (`HeyAlan.Data`)**
   - Introduce subscription-scoped Square connection persistence (`SubscriptionSquareConnection`).
   - Introduce persisted onboarding state at subscription scope.
   - Extend `Agent` with onboarding/profile fields, including `Personality`.
-- **Frontend (`ShelfBuddy.WebApp`)**
+- **Frontend (`HeyAlan.WebApp`)**
   - Implement `/onboarding` as a backend-driven multi-step flow for big onboarding.
   - Integrate each step with onboarding APIs (`/onboarding/*`) and Square connect callback handling.
   - Keep team step present as a dummy/placeholder step in M8 (no invitation side effects).
@@ -224,8 +224,8 @@ Square-specific behavior:
 ## Service Design
 
 ### New module
-- [x] Create `ShelfBuddy/SquareIntegration` folder.
-- [x] Add `ISquareTokenService` + implementation in `ShelfBuddy` project.
+- [x] Create `HeyAlan/SquareIntegration` folder.
+- [x] Add `ISquareTokenService` + implementation in `HeyAlan` project.
 
 ### `ISquareTokenService` responsibilities
 - [x] Store tokens from successful Square connect/login callback.
@@ -258,10 +258,10 @@ Square-specific behavior:
 - [x] Add constraints/indexes and audit behavior.
 - [x] Extend `Agent` with `Personality` and channel fields (`TwilioPhoneNumber`, `TelegramBotToken`, `WhatsappNumber`).
 - [x] Update initializer assumptions/documentation for new schema object.
-- [ ] Stop and hand off for migration creation/run from `ShelfBuddy.Initializer` per repository rule.
+- [ ] Stop and hand off for migration creation/run from `HeyAlan.Initializer` per repository rule.
 
 ## Gate C: Shared Square Token Lifecycle Service
-- [x] Add `ShelfBuddy/SquareIntegration/ISquareTokenService.cs`.
+- [x] Add `HeyAlan/SquareIntegration/ISquareTokenService.cs`.
 - [x] Add implementation and supporting models/errors.
 - [x] Implement token storage/read/update against `SubscriptionSquareConnection`.
 - [x] Add Square OAuth token refresh client logic (`/oauth2/token`).
@@ -288,7 +288,7 @@ Square-specific behavior:
 - [x] Connection callback scope validation uses SDK token status (`RetrieveTokenStatus`) when exchange response scopes are missing.
 
 ## SDK Findings (March 1, 2026)
-- [x] `Square` NuGet package is installed in `ShelfBuddy` (`Square` `43.0.0`).
+- [x] `Square` NuGet package is installed in `HeyAlan` (`Square` `43.0.0`).
 - [x] M8 Gate D/E implementation now uses official SDK clients for OAuth and merchant probe flows:
   - [x] `client.OAuth.ObtainTokenAsync(...)`
   - [x] `client.OAuth.RevokeTokenAsync(...)`
@@ -355,7 +355,7 @@ Square-specific behavior:
 - [ ] Gate I e2e skip path: skip required setup with warnings and verify finalize remains blocked until backend-required steps are completed.
 
 ## Gate I: Web Onboarding UI (End-to-End)
-- [ ] Implement `/onboarding` UI flow in `ShelfBuddy.WebApp` using backend onboarding state as source of truth.
+- [ ] Implement `/onboarding` UI flow in `HeyAlan.WebApp` using backend onboarding state as source of truth.
 - [ ] Step 1 integrates Square connect start endpoint and handles OAuth callback return.
 - [ ] Step 2 integrates primary agent creation/profile update (`name` + `Personality`).
 - [x] Step 3 integrates channels update (`TwilioPhoneNumber`, `TelegramBotToken`, `WhatsappNumber`).
@@ -384,10 +384,10 @@ Square-specific behavior:
   - [x] form layout/visual styling,
   - [x] existing step visuals and flow presentation.
 - [x] Error messaging in onboarding should follow login-style placement and appear below continue/skip actions (no redesigned banner layout).
-- [x] `ShelfBuddy.WebApp/src/lib/api` already contains generated onboarding endpoints; Gate I MUST use generated API client methods.
-- [x] `ShelfBuddy.WebApp/src/lib/onboarding-api.ts` custom wrapper is not required for Gate I and should be removed in corrective pass.
+- [x] `HeyAlan.WebApp/src/lib/api` already contains generated onboarding endpoints; Gate I MUST use generated API client methods.
+- [x] `HeyAlan.WebApp/src/lib/onboarding-api.ts` custom wrapper is not required for Gate I and should be removed in corrective pass.
 - [x] `GET /onboarding/subscriptions/active` exists in backend and is the active-subscription resolution endpoint for onboarding UI.
-- [ ] Corrective pass required: rebase `ShelfBuddy.WebApp/src/app/onboarding/page.tsx` on `docs/onboaring_page.tsx` and wire backend behavior without visual changes.
+- [ ] Corrective pass required: rebase `HeyAlan.WebApp/src/app/onboarding/page.tsx` on `docs/onboaring_page.tsx` and wire backend behavior without visual changes.
 
 ### Gate I UX Findings (March 2, 2026)
 - [x] Channels step validation changed from "all three required" to "at least one channel required".
@@ -450,9 +450,9 @@ Findings applied to M8:
   - [ ] persisted configured primary agent profile + channels.
 
 ## Implementation Notes / Handoff Rule
-- [ ] After Gate B schema changes are implemented, stop and hand off for migration creation/run from `ShelfBuddy.Initializer` per repository rule:
+- [ ] After Gate B schema changes are implemented, stop and hand off for migration creation/run from `HeyAlan.Initializer` per repository rule:
   - `dotnet ef migrations add Init --context MainDataContext -o .\\Migrations`
-- [ ] Rework existing `ShelfBuddy.WebApp/src/app/onboarding/page.tsx` from local-only wizard state to backend-driven onboarding state + mutation flow while preserving the approved UI exactly (`docs/onboaring_page.tsx` as visual source of truth).
+- [ ] Rework existing `HeyAlan.WebApp/src/app/onboarding/page.tsx` from local-only wizard state to backend-driven onboarding state + mutation flow while preserving the approved UI exactly (`docs/onboaring_page.tsx` as visual source of truth).
 
 ## Open Follow-Ups
 - [x] Decide final full-scope list for onboarding connect (orders, inventory, customers, etc.) per concrete feature matrix.
