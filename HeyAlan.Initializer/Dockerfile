@@ -9,7 +9,6 @@ ENV PATH="$PATH:/root/.dotnet/tools"
 
 # 2. Restore (Relative paths are preserved in temp folder)
 COPY ["HeyAlan/HeyAlan.csproj", "HeyAlan/"]
-COPY ["HeyAlan.Data/HeyAlan.Data.csproj", "HeyAlan.Data/"]
 COPY ["HeyAlan.Initializer/HeyAlan.Initializer.csproj", "HeyAlan.Initializer/"]
 
 RUN dotnet restore "HeyAlan.Initializer/HeyAlan.Initializer.csproj" -r linux-musl-x64

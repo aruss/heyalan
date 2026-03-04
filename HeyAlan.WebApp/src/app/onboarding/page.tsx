@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent, ReactElement } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -254,7 +254,7 @@ const writeProfileDraft = (subscriptionId: string, draft: OnboardingProfileDraft
     window.localStorage.setItem(getProfileDraftStorageKey(subscriptionId), JSON.stringify(draft));
 };
 
-const OnboardingPage = (): ReactElement => {
+const OnboardingPageContent = (): ReactElement => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const {
@@ -1062,6 +1062,18 @@ const OnboardingPage = (): ReactElement => {
                 )}
             </div>
         </div>
+    );
+};
+
+const OnboardingFallback = (): ReactElement => {
+    return <div className="min-h-[480px]" aria-hidden="true" />;
+};
+
+const OnboardingPage = (): ReactElement => {
+    return (
+        <Suspense fallback={<OnboardingFallback />}>
+            <OnboardingPageContent />
+        </Suspense>
     );
 };
 

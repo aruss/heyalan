@@ -20,8 +20,8 @@ $AppVersion = (Get-Content -Path $VersionFilePath -Raw).Trim()
 
 
 # Build 
-# & ".\docker-build-initializer.ps1"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-# & ".\docker-build-webapi.ps1"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& ".\docker-build-initializer.ps1"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& ".\docker-build-webapi.ps1"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & ".\docker-build-webapp.ps1"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # Push to registry 
@@ -33,11 +33,11 @@ if ($env:DOCKER_REGISTRY) {
     docker push "$($env:DOCKER_REGISTRY)heyalan-webapp:$AppVersion"
     docker push "$($env:DOCKER_REGISTRY)heyalan-webapp:latest"
 
-   # docker push "$($env:DOCKER_REGISTRY)heyalan-webapi:$AppVersion"
-   # docker push "$($env:DOCKER_REGISTRY)heyalan-webapi:latest"
+    docker push "$($env:DOCKER_REGISTRY)heyalan-webapi:$AppVersion"
+    docker push "$($env:DOCKER_REGISTRY)heyalan-webapi:latest"
 
-   # docker push "$($env:DOCKER_REGISTRY)heyalan-initializer:$AppVersion"
-   # docker push "$($env:DOCKER_REGISTRY)heyalan-initializer:latest"
+    docker push "$($env:DOCKER_REGISTRY)heyalan-initializer:$AppVersion"
+    docker push "$($env:DOCKER_REGISTRY)heyalan-initializer:latest"
 
 } else {
     Write-Host "Skipping push (DOCKER_REGISTRY not defined)." -ForegroundColor Yellow

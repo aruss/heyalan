@@ -17,7 +17,6 @@ WORKDIR /src
 
 # Cache .NET dependencies
 COPY ["HeyAlan/HeyAlan.csproj", "HeyAlan/"]
-COPY ["HeyAlan.Data/HeyAlan.Data.csproj", "HeyAlan.Data/"]
 COPY ["HeyAlan.WebApi/HeyAlan.WebApi.csproj", "HeyAlan.WebApi/"]
 
 # Restore for the specific target RID to ensure native dependencies are correct
