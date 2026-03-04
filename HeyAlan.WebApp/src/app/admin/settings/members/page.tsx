@@ -1,5 +1,5 @@
 "use client"
 
 export default function SettingsMembersPage() {
-  return <div className="p-4">Members settings here</div>;
+  return <div className="pt-6 max-w-5xl">Members settings here</div>;
 }

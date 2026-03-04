@@ -26,7 +26,7 @@ public class Program
     // private static readonly Guid AgentId = Guid.Parse("b4099979-fceb-41e1-bfb6-135f3ccb1701");
     // private static readonly string TelegramBotToken = "7592736264:AAGpsXEe03dUe3O5WWCjDYtemWmpwvCoFVE";
     private const int DatabaseMaxRetryAttempts = 10;
-    private const int RabbitMaxRetryAttempts = 8;
+    private const int RabbitMaxRetryAttempts = 1;
     private static readonly TimeSpan DatabaseRetryDelay = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan RabbitRetryDelay = TimeSpan.FromSeconds(1);
 
@@ -108,14 +108,16 @@ public class Program
 
         #region RabbitMQ
 
+        string? rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
+        if (string.IsNullOrWhiteSpace(rabbitConnectionString))
+        {
+            throw new InvalidOperationException("RabbitMQ connection string 'rabbitmq' is missing.");
+        }
+
+        RabbitMqStartupGuard.EnsureReachable(rabbitConnectionString, TimeSpan.FromSeconds(3));
+
         builder.UseWolverine(options =>
         {
-            string? rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
-            if (string.IsNullOrWhiteSpace(rabbitConnectionString))
-            {
-                throw new InvalidOperationException("RabbitMQ connection string 'rabbitmq' is missing.");
-            }
-
             options.UseRabbitMq(rabbitConnectionString).AutoProvision();
 
             options.ListenToRabbitQueue("incoming-message");
@@ -215,8 +217,8 @@ public class Program
             await db.Database.MigrateAsync(token);
             Console.WriteLine("[DB] Migrations complete.");
 
-            string adminEmail = configuration["ADMIN_EMAIL"] ?? "admin@heyalan.ai";
-            string adminPassword = configuration["ADMIN_PASSWORD"] ?? "admin@heyalan.ai";
+            //string adminEmail = configuration["ADMIN_EMAIL"] ?? "admin@heyalan.ai";
+            //string adminPassword = configuration["ADMIN_PASSWORD"] ?? "admin@heyalan.ai";
 
             //Console.WriteLine("[DB] Seeding admin user...");
             //await SeedAdminUserAsync(services, adminEmail, adminPassword, token);
@@ -332,7 +334,7 @@ public class Program
             IServiceProvider services = host.Services;
             var configuration = services.GetRequiredService<IConfiguration>();
 
-            var managementUrl = configuration["RABBITMQ_MANAGEMENTURL"];
+            var managementUrl = configuration["RABBITMQ_MANAGEMENT_URL"];
             var rabbitUser = configuration["RABBITMQ_USER"];
             var rabbitPass = configuration["RABBITMQ_PASS"];
             var vhostName = configuration["RABBITMQ_VHOST"] ?? "heyalan"; // Fallback just in case

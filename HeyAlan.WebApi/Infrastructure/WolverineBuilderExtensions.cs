@@ -22,6 +22,7 @@ public static class WolverineBuilderExtensions
                 throw new InvalidOperationException("RabbitMQ connection string 'rabbitmq' is missing.");
             }
 
+            RabbitMqStartupGuard.EnsureReachable(rabbitConnectionString, TimeSpan.FromSeconds(3));
             options.UseRabbitMq(rabbitConnectionString);
 
             options.ListenToRabbitQueue("incoming-message");

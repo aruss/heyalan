@@ -7,7 +7,7 @@ export const LandingNavigation = (): ReactElement => {
         <nav className="fixed top-0 z-50 w-full border-b border-zinc-100 bg-white/80 backdrop-blur-md">
             <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
                 <Link href="/" className="text-xl font-bold tracking-tight">
-                    Hey<span className="text-zinc-500">Alan</span>
+                    <span className="text-zinc-500">Hey</span>Alan
                 </Link>
                 <div className="hidden space-x-8 text-sm font-medium md:flex">
                     <Link href="#features" className="transition-colors hover:text-zinc-500">

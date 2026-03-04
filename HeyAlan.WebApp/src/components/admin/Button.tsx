@@ -7,6 +7,11 @@ import { tv, type VariantProps } from "tailwind-variants"
 
 import { cx, focusRing } from "@/lib/utils"
 
+
+
+
+
+
 const buttonVariants = tv({
   base: [
     // base
@@ -22,11 +27,11 @@ const buttonVariants = tv({
         // border
         "border-transparent",
         // text color
-        "text-white dark:text-white",
+        "text-white dark:text-gray-900",
         // background color
-        "bg-gray-500 dark:bg-gray-500",
+        "bg-zinc-900 dark:bg-gray-100",
         // hover color
-        "hover:bg-gray-600 dark:hover:bg-gray-600",
+        "hover:bg-zinc-700 dark:hover:bg-gray-300",
         // disabled
         "disabled:bg-gray-300 disabled:text-white",
         "disabled:dark:bg-gray-800 disabled:dark:text-gray-400",

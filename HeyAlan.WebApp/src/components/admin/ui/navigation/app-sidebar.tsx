@@ -55,11 +55,6 @@ const navigation: NavigationItem[] = [
         active: true,
       },
       {
-        name: "Channels",
-        href: "/admin/settings/channels",
-        active: false,
-      },
-      {
         name: "Inventory",
         href: "/admin/settings/inventory",
         active: false,
@@ -185,7 +180,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           </span>
           <div>
             <span className="block text-sm font-semibold text-gray-900 dark:text-gray-50">
-              <Link href="/admin" className="text-xl font-bold tracking-tight">Hey<span className="text-zinc-500">Alan</span></Link>
+              <Link href="/admin" className="text-xl font-bold tracking-tight"><span className="text-zinc-500">Hey</span>Alan</Link>
             </span>
 
           </div>

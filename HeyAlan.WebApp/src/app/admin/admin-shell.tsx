@@ -45,7 +45,7 @@ export function AdminShell({
   }
 
   return (
-    <ThemeProvider
+    <ThemeProvider  
       defaultTheme="light"
       disableTransitionOnChange
       attribute="class"

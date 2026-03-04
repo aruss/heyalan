@@ -59,7 +59,7 @@ var initializer = builder.AddProject<Projects.HeyAlan_Initializer>("initializer"
     .WithEnvironment("DOTNET_ENVIRONMENT", "Development")
     .WithEnvironment("PUBLIC_BASE_URL", publicBaseUrl)
     .WithEnvironment("TELEGRAM_SECRET_TOKEN", telegramSecretToken)
-    .WithEnvironment("RABBITMQ_MANAGEMENTURL", rabbitmq.GetEndpoint("management"))
+    .WithEnvironment("RABBITMQ_MANAGEMENT_URL", rabbitmq.GetEndpoint("management"))
     .WithEnvironment("RABBITMQ_USER", rabbitUser)
     .WithEnvironment("RABBITMQ_PASS", rabbitPass)
     .WithEnvironment("RABBITMQ_VHOST", "heyalan") // The vhost name you want to use
@@ -127,7 +127,7 @@ if (!String.IsNullOrEmpty(ngrokDomain))
     .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 */
 
-if (true)
+if (false)
 {
     // if WebApp run is via yarn/npm, use AddExecutable
     var webapp = builder.AddExecutable("webapp", "yarn.cmd", "../HeyAlan.WebApp", "dev")

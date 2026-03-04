@@ -902,12 +902,13 @@ const OnboardingPageContent = (): ReactElement => {
                             </div>
 
                             {/* Phone */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 opacity-50">
                                 <div className="flex items-center gap-2 font-semibold text-slate-900">
                                     <Phone size={18} />
                                     Phone Number (SMS/Voice)
                                 </div>
                                 <input
+                                    disabled   
                                     type="text"
                                     placeholder="Enter Support Phone Number"
                                     value={formData.channels.phone}
@@ -920,12 +921,13 @@ const OnboardingPageContent = (): ReactElement => {
                             </div>
 
                             {/* WhatsApp */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 opacity-50">
                                 <div className="flex items-center gap-2 font-semibold text-slate-900">
                                     <MessageCircle size={18} />
                                     WhatsApp
                                 </div>
                                 <input
+                                    disabled
                                     type="text"
                                     placeholder="Enter WhatsApp Business Number"
                                     value={formData.channels.whatsapp}
@@ -971,17 +973,18 @@ const OnboardingPageContent = (): ReactElement => {
 
                 {step === 4 && isSquareConnected && (
                     <div className="space-y-8 text-center">
-                        <div className="space-y-4">
+                        <div className="space-y-4 opacity-50">
                             <h2 className="text-3xl font-extrabold tracking-tight">Invite Team.</h2>
                             <p className="text-slate-500">Add team members to handle escalations and monitor chats.</p>
                         </div>
 
-                        <div className="space-y-4 text-left">
+                        <div className="space-y-4 text-left opacity-50">
                             {formData.teamMembers.map((email, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <div className="relative flex-1">
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                         <input
+                                            disabled
                                             type="email"
                                             placeholder="colleague@company.com"
                                             value={email}
@@ -1004,7 +1007,7 @@ const OnboardingPageContent = (): ReactElement => {
                             ))}
 
                             <button
-                                onClick={addMember}
+                                onClick={() => false /*addMember*/}
                                 className="flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-slate-700 transition-colors ml-1"
                             >
                                 <Plus size={16} />
