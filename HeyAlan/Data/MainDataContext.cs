@@ -4,12 +4,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Wolverine.EntityFrameworkCore;
 using HeyAlan.Data.Entities;
 using HeyAlan;
 
 public class MainDataContext :
     IdentityDbContext<ApplicationUser, ApplicationRole, Guid>, IDataProtectionKeyContext
 {
+    private const string WolverineSchema = "wolverine";
+
     public MainDataContext(DbContextOptions<MainDataContext> options) : base(options)
     {
 
@@ -36,6 +39,12 @@ public class MainDataContext :
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        #region Wolverine
+
+        builder.MapWolverineEnvelopeStorage(WolverineSchema);
+
+        #endregion
 
         #region Data Protection Keys
 
@@ -266,6 +275,11 @@ public class MainDataContext :
 
         foreach (var entity in builder.Model.GetEntityTypes())
         {
+            if (string.Equals(entity.GetSchema(), WolverineSchema, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             // Prefix Table Name
             var currentTableName = entity.GetTableName();
             entity.SetTableName($"{prefix}_{currentTableName?.ToSnakeCase()}");

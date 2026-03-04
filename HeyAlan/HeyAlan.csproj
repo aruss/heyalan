@@ -30,7 +30,10 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
 
     <!-- MQ -->
-    <PackageReference Include="MassTransit.RabbitMQ" Version="9.0.1" />
+    <PackageReference Include="WolverineFx" Version="5.17.0" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" Version="5.17.0" />
+    <PackageReference Include="WolverineFx.Postgresql" Version="5.17.0" />
+    <PackageReference Include="WolverineFx.RabbitMQ" Version="5.17.0" />
     
     <!-- Integrations -->
     <PackageReference Include="Square" Version="43.0.0" />

@@ -1,4 +1,3 @@
-﻿using MassTransit;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +17,8 @@ using HeyAlan.TelegramIntegration;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-
+using Wolverine;
+using Wolverine.RabbitMQ;
 public class Program
 {
     //private static readonly Guid AdminUserId = Guid.Parse("52299db7-d2bc-4ab3-9dc5-d9dadd40c37d");
@@ -108,25 +108,21 @@ public class Program
 
         #region RabbitMQ
 
-        builder.Services.AddMassTransit(x =>
+        builder.UseWolverine(options =>
         {
-            x.SetKebabCaseEndpointNameFormatter();
-
-            // 1. Register the EXACT same consumers here as you do in your Web API.
-            // This allows MassTransit to calculate the required queues and exchanges.
-            x.AddConsumer<IncomingMessageConsumer>();
-            x.AddConsumer<OutgoingTelegramMessageConsumer>();
-
-            x.UsingRabbitMq((context, cfg) =>
+            string? rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
+            if (string.IsNullOrWhiteSpace(rabbitConnectionString))
             {
-                var rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
-                cfg.Host(rabbitConnectionString);
+                throw new InvalidOperationException("RabbitMQ connection string 'rabbitmq' is missing.");
+            }
 
-                // 2. The magic flag: Tells MassTransit NOT to start consuming messages
-                cfg.DeployTopologyOnly = true;
+            options.UseRabbitMq(rabbitConnectionString).AutoProvision();
 
-                cfg.ConfigureEndpoints(context);
-            });
+            options.ListenToRabbitQueue("incoming-message");
+            options.ListenToRabbitQueue("telegram-outgoing-messages");
+
+            options.PublishMessage<IncomingMessage>().ToRabbitQueue("incoming-message");
+            options.PublishMessage<OutgoingTelegramMessage>().ToRabbitQueue("telegram-outgoing-messages");
         });
 
         #endregion
@@ -147,7 +143,7 @@ public class Program
             startupCts.Token);
 
         Task rabbitLaneTask = ExecuteRabbitLaneAsync(
-            host.Services,
+            host,
             rabbitTopologyPipeline,
             startupCts.Token);
 
@@ -233,17 +229,14 @@ public class Program
     }
 
     private static async Task ExecuteRabbitLaneAsync(
-        IServiceProvider rootServices,
+        IHost host,
         ResiliencePipeline pipeline,
         CancellationToken cancellationToken)
     {
         await pipeline.ExecuteAsync(async token =>
         {
-            using IServiceScope scope = rootServices.CreateScope();
-            IServiceProvider services = scope.ServiceProvider;
-
             Console.WriteLine("[Rabbit] Starting topology lane.");
-            await DeployRabbitMqTopologyAsync(services, token);
+            await DeployRabbitMqTopologyAsync(host, token);
             Console.WriteLine("[Rabbit] Topology lane complete.");
         }, cancellationToken);
     }
@@ -332,10 +325,11 @@ public class Program
     }
 
     private static async Task DeployRabbitMqTopologyAsync(
-        IServiceProvider services, CancellationToken cancellationToken)
+        IHost host, CancellationToken cancellationToken)
     {
         try
         {
+            IServiceProvider services = host.Services;
             var configuration = services.GetRequiredService<IConfiguration>();
 
             var managementUrl = configuration["RABBITMQ_MANAGEMENTURL"];
@@ -343,7 +337,7 @@ public class Program
             var rabbitPass = configuration["RABBITMQ_PASS"];
             var vhostName = configuration["RABBITMQ_VHOST"] ?? "heyalan"; // Fallback just in case
 
-            // 2. Ensure the Virtual Host exists BEFORE MassTransit connects
+            // 2. Ensure the Virtual Host exists BEFORE Wolverine connects
             if (!string.IsNullOrEmpty(managementUrl) && !string.IsNullOrEmpty(rabbitUser) && !string.IsNullOrEmpty(rabbitPass))
             {
                 Console.WriteLine($"[Rabbit] Ensuring virtual host '{vhostName}' exists via Management API...");
@@ -355,11 +349,9 @@ public class Program
                 Console.WriteLine("[Rabbit] Warning: Management API configuration missing. Skipping VHost creation.");
             }
 
-            Console.WriteLine("[Rabbit] Deploying MassTransit topology...");
-
-            IBusControl busControl = services.GetRequiredService<IBusControl>();
-
-            await busControl.DeployAsync(cancellationToken);
+            Console.WriteLine("[Rabbit] Deploying Wolverine resources...");
+            await host.StartAsync(cancellationToken);
+            await host.StopAsync(cancellationToken);
             Console.WriteLine("[Rabbit] Topology successfully deployed.");
         }
         catch (Exception ex)
@@ -442,4 +434,5 @@ public class Program
     }
     */
 }
+
 

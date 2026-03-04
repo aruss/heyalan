@@ -1,13 +1,13 @@
 namespace HeyAlan.Messaging;
 
-using MassTransit;
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Wolverine;
 using HeyAlan.Data;
 using HeyAlan.Data.Entities;
 
-public class IncomingMessageConsumer : IConsumer<IncomingMessage>
+public class IncomingMessageConsumer
 {
     private static readonly TimeSpan BufferQuietWindow = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan FakeBusinessLogicDuration = TimeSpan.FromSeconds(4);
@@ -16,25 +16,24 @@ public class IncomingMessageConsumer : IConsumer<IncomingMessage>
     private static readonly ConcurrentDictionary<ConversationKey, ConversationBufferState> BufferStates = new();
 
     private readonly ILogger<IncomingMessageConsumer> logger;
-    private readonly IPublishEndpoint publishEndpoint;
+    private readonly IMessageBus messageBus;
     private readonly IConversationStore conversationStore;
     private readonly MainDataContext dbContext;
 
     public IncomingMessageConsumer(
         ILogger<IncomingMessageConsumer> logger,
-        IPublishEndpoint publishEndpoint,
+        IMessageBus messageBus,
         IConversationStore conversationStore,
         MainDataContext dbContext)
     {
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        this.publishEndpoint = publishEndpoint ?? throw new ArgumentNullException(nameof(publishEndpoint));
+        this.messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
         this.conversationStore = conversationStore ?? throw new ArgumentNullException(nameof(conversationStore));
         this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     }
 
-    public async Task Consume(ConsumeContext<IncomingMessage> context)
+    public async Task Consume(IncomingMessage message, CancellationToken ct)
     {
-        IncomingMessage message = context.Message;
         ConversationKey key = new(message.AgentId, message.Channel, message.From);
         ConversationBufferState state = BufferStates.GetOrAdd(key, static _ => new ConversationBufferState());
         BufferedEnvelope envelope = new(message);
@@ -64,10 +63,10 @@ public class IncomingMessageConsumer : IConsumer<IncomingMessage>
 
         if (runCoordinator)
         {
-            await this.RunCoordinatorAsync(key, state, context.CancellationToken);
+            await this.RunCoordinatorAsync(key, state, ct);
         }
 
-        await envelope.Completion.Task.WaitAsync(context.CancellationToken);
+        await envelope.Completion.Task.WaitAsync(ct);
     }
 
     private async Task RunCoordinatorAsync(
@@ -286,7 +285,7 @@ public class IncomingMessageConsumer : IConsumer<IncomingMessage>
                 To = result.To
             };
 
-            await this.publishEndpoint.Publish(telegramMessage, ct);
+            await this.messageBus.PublishAsync(telegramMessage);
             return;
         }
 

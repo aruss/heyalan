@@ -1,10 +1,10 @@
 namespace HeyAlan.TelegramIntegration;
 
-using MassTransit;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine;
 using Microsoft.EntityFrameworkCore;
 using HeyAlan;
 using HeyAlan.Data;
@@ -32,7 +32,7 @@ public static class TelegramWebhookEndpoints
     private static async Task<Results<Ok, NotFound, UnauthorizedHttpResult, ProblemHttpResult>> IngestTelegramMessage(
         [FromRoute] string botToken,
         [FromBody] IngestTelegramMessageInput input,
-        IPublishEndpoint publishEndpoint,
+        IMessageBus messageBus,
         MainDataContext dbContext,
         ILoggerFactory loggerFactory,
         CancellationToken ct)
@@ -83,7 +83,8 @@ public static class TelegramWebhookEndpoints
             ReceivedAt = receivedAt
         };
 
-        await publishEndpoint.Publish(message, ct);
+        await messageBus.PublishAsync(message);
+
         logger.LogInformation(
             "Published Telegram incoming message for Subscription {SubscriptionId}, Agent {AgentId}, ChatId {ChatId}.",
             agent.SubscriptionId,

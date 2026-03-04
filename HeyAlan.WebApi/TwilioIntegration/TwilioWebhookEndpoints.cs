@@ -1,8 +1,8 @@
 namespace HeyAlan.WebApi.TwilioIntegration;
 
-using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine;
 using HeyAlan.Messaging;
 
 public static class TwilioWebhookEndpoints
@@ -28,7 +28,7 @@ public static class TwilioWebhookEndpoints
 
     private static async Task<Results<Ok, NotFound, UnauthorizedHttpResult, ProblemHttpResult>> IngestTwilioText(
         [FromBody] IngestTwilioTextInput input,
-        IPublishEndpoint publishEndpoint,
+        IMessageBus messageBus,
         CancellationToken ct)
     {
         // TODO: look for the agent by phone number, check if associated subscription credits left to handle it.
@@ -47,7 +47,7 @@ public static class TwilioWebhookEndpoints
             ReceivedAt = DateTimeOffset.UtcNow
         };
 
-        await publishEndpoint.Publish(message, ct);
+        await messageBus.PublishAsync(message);
 
         return TypedResults.Ok();
     }

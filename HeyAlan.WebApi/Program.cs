@@ -22,7 +22,7 @@ builder.AddAiServices();
 builder.AddDatabaseServices();
 builder.AddIdentityServices();
 builder.AddMinioServices();
-builder.AddMassTransitServices(); 
+builder.AddWolverineServices();
 builder.AddCoreServices();
 
 builder.Services.AddProblemDetails();

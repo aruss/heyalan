@@ -1,13 +1,12 @@
 namespace HeyAlan.Messaging;
 
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using HeyAlan.Data;
 using HeyAlan.Data.Entities;
 using HeyAlan.TelegramIntegration;
 
-public class OutgoingTelegramMessageConsumer : IConsumer<OutgoingTelegramMessage>
+public class OutgoingTelegramMessageConsumer
 {
     private readonly ILogger<OutgoingTelegramMessageConsumer> logger;
     private readonly MainDataContext dbContext;
@@ -26,17 +25,15 @@ public class OutgoingTelegramMessageConsumer : IConsumer<OutgoingTelegramMessage
         this.conversationStore = conversationStore ?? throw new ArgumentNullException(nameof(conversationStore));
     }
 
-    public async Task Consume(ConsumeContext<OutgoingTelegramMessage> context)
+    public async Task Consume(OutgoingTelegramMessage message, CancellationToken ct)
     {
-        OutgoingTelegramMessage message = context.Message;
-
         this.logger.LogInformation(
             "Sending Telegram outbound message for Subscription {SubscriptionId}, Agent {AgentId}",
             message.SubscriptionId,
             message.AgentId);
 
         Agent? agent = await this.dbContext.Agents
-            .SingleOrDefaultAsync(a => a.Id == message.AgentId, context.CancellationToken);
+            .SingleOrDefaultAsync(a => a.Id == message.AgentId, ct);
 
         if (agent is null)
         {
@@ -60,11 +57,11 @@ public class OutgoingTelegramMessageConsumer : IConsumer<OutgoingTelegramMessage
             agent.TelegramBotToken,
             chatId,
             message.Content,
-            context.CancellationToken);
+            ct);
 
         await this.conversationStore.AppendOutgoingTelegramMessageAsync(
             message,
             DateTimeOffset.UtcNow,
-            context.CancellationToken);
+            ct);
     }
 }
