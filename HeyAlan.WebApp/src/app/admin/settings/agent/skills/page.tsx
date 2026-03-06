@@ -19,7 +19,6 @@ export default function SettingsAgentSettingsPage() {
             </div>
             <div className="md:col-span-2">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
-                
                 <Alert title="Feature Under Development" className="col-span-full">
                   This feature is not yet implemented. Our team is currently working to deliver it in an upcoming release.
                 </Alert>
