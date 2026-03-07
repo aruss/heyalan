@@ -5,7 +5,9 @@ using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
 using HeyAlan.Configuration;
+using System.Net;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
 
 public sealed class TelegramService : ITelegramService
@@ -85,6 +87,44 @@ public sealed class TelegramService : ITelegramService
         }, ct);
     }
 
+    public async Task<TelegramTokenRegistrationResult> RegisterWebhookIfTokenChangedAsync(
+        string? previousBotToken,
+        string? nextBotToken,
+        CancellationToken ct = default)
+    {
+        string? normalizedPreviousBotToken = NormalizeOptionalToken(previousBotToken);
+        string? normalizedNextBotToken = NormalizeOptionalToken(nextBotToken);
+
+        if (String.IsNullOrWhiteSpace(normalizedNextBotToken) ||
+            String.Equals(normalizedNextBotToken, normalizedPreviousBotToken, StringComparison.Ordinal))
+        {
+            return new TelegramTokenRegistrationResult(
+                WasAttempted: false,
+                ErrorCode: null);
+        }
+
+        try
+        {
+            await this.TryRegisterWebhookAsync(normalizedNextBotToken, ct);
+
+            return new TelegramTokenRegistrationResult(
+                WasAttempted: true,
+                ErrorCode: null);
+        }
+        catch (ApiRequestException exception)
+        {
+            return new TelegramTokenRegistrationResult(
+                WasAttempted: true,
+                ErrorCode: ResolveWebhookRegistrationErrorCode(exception));
+        }
+        catch (Exception)
+        {
+            return new TelegramTokenRegistrationResult(
+                WasAttempted: true,
+                ErrorCode: "telegram_webhook_registration_failed");
+        }
+    }
+
     public async Task SendMessageAsync(string botToken, long chatId, string text, CancellationToken ct = default)
     {
         if (String.IsNullOrWhiteSpace(botToken))
@@ -111,6 +151,26 @@ public sealed class TelegramService : ITelegramService
                 chatId: chatId,
                 text: trimmedText,
                 cancellationToken: ct);
+    }
+
+    private static string? NormalizeOptionalToken(string? value)
+    {
+        if (String.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Trim();
+    }
+
+    private static string ResolveWebhookRegistrationErrorCode(ApiRequestException exception)
+    {
+        if (exception.ErrorCode == (int)HttpStatusCode.Unauthorized)
+        {
+            return "telegram_bot_token_invalid";
+        }
+
+        return "telegram_webhook_registration_failed";
     }
 
     private static string ExtractBotId(string botToken)

@@ -6,5 +6,10 @@ public interface ITelegramService
 
     Task TryRegisterWebhookAsync(string botToken, CancellationToken ct = default);
 
+    Task<TelegramTokenRegistrationResult> RegisterWebhookIfTokenChangedAsync(
+        string? previousBotToken,
+        string? nextBotToken,
+        CancellationToken ct = default);
+
     Task SendMessageAsync(string botToken, long chatId, string text, CancellationToken ct = default);
 }

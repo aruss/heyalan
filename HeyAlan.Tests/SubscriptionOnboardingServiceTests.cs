@@ -562,6 +562,40 @@ public class SubscriptionOnboardingServiceTests
             throw new HttpRequestException("Transient transport failure.");
         }
 
+        public async Task<TelegramTokenRegistrationResult> RegisterWebhookIfTokenChangedAsync(
+            string? previousBotToken,
+            string? nextBotToken,
+            CancellationToken ct = default)
+        {
+            if (String.IsNullOrWhiteSpace(nextBotToken) ||
+                String.Equals(previousBotToken, nextBotToken, StringComparison.Ordinal))
+            {
+                return new TelegramTokenRegistrationResult(
+                    WasAttempted: false,
+                    ErrorCode: null);
+            }
+
+            try
+            {
+                await this.TryRegisterWebhookAsync(nextBotToken, ct);
+                return new TelegramTokenRegistrationResult(
+                    WasAttempted: true,
+                    ErrorCode: null);
+            }
+            catch (ApiRequestException exception) when (exception.ErrorCode == 401)
+            {
+                return new TelegramTokenRegistrationResult(
+                    WasAttempted: true,
+                    ErrorCode: "telegram_bot_token_invalid");
+            }
+            catch (Exception)
+            {
+                return new TelegramTokenRegistrationResult(
+                    WasAttempted: true,
+                    ErrorCode: "telegram_webhook_registration_failed");
+            }
+        }
+
         public Task SendMessageAsync(string botToken, long chatId, string text, CancellationToken ct = default)
         {
             return Task.CompletedTask;

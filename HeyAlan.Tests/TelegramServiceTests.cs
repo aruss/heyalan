@@ -160,6 +160,86 @@ public class TelegramServiceTests
         await Assert.ThrowsAsync<RequestException>(() => service.SendMessageAsync("12345:token-value", 1234L, "hello"));
     }
 
+    [Fact]
+    public async Task RegisterWebhookIfTokenChangedAsync_WhenTokenUnchanged_DoesNotAttemptRegistration()
+    {
+        RecordingHandler handler = new((HttpRequestMessage _) =>
+        {
+            return CreateTelegramSuccessResponse();
+        });
+
+        TelegramService service = CreateService(handler, new Uri("https://heyalan.test"));
+
+        TelegramTokenRegistrationResult result = await service.RegisterWebhookIfTokenChangedAsync(
+            "12345:token-value",
+            "12345:token-value");
+
+        Assert.False(result.WasAttempted);
+        Assert.Null(result.ErrorCode);
+        Assert.Null(handler.LastRequestContent);
+    }
+
+    [Fact]
+    public async Task RegisterWebhookIfTokenChangedAsync_WhenTokenChangesAndRegistrationSucceeds_ReturnsSuccess()
+    {
+        RecordingHandler handler = new((HttpRequestMessage _) =>
+        {
+            return CreateTelegramSuccessResponse();
+        });
+
+        TelegramService service = CreateService(handler, new Uri("https://heyalan.test"));
+
+        TelegramTokenRegistrationResult result = await service.RegisterWebhookIfTokenChangedAsync(
+            "old-token",
+            "12345:token-value");
+
+        Assert.True(result.WasAttempted);
+        Assert.Null(result.ErrorCode);
+        Assert.NotNull(handler.LastRequestContent);
+    }
+
+    [Fact]
+    public async Task RegisterWebhookIfTokenChangedAsync_WhenTokenChangesAndTelegramReturnsUnauthorized_ReturnsInvalidTokenCode()
+    {
+        RecordingHandler handler = new((HttpRequestMessage _) =>
+        {
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            {
+                Content = new StringContent(
+                    "{\"ok\":false,\"error_code\":401,\"description\":\"Unauthorized\"}",
+                    Encoding.UTF8,
+                    "application/json")
+            };
+        });
+
+        TelegramService service = CreateService(handler, new Uri("https://heyalan.test"));
+
+        TelegramTokenRegistrationResult result = await service.RegisterWebhookIfTokenChangedAsync(
+            "old-token",
+            "12345:token-value");
+
+        Assert.True(result.WasAttempted);
+        Assert.Equal("telegram_bot_token_invalid", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task RegisterWebhookIfTokenChangedAsync_WhenTokenChangesAndTransportFails_ReturnsWebhookFailureCode()
+    {
+        RecordingHandler handler = new((HttpRequestMessage _) =>
+        {
+            throw new HttpRequestException("Network error.");
+        });
+
+        TelegramService service = CreateService(handler, new Uri("https://heyalan.test"));
+
+        TelegramTokenRegistrationResult result = await service.RegisterWebhookIfTokenChangedAsync(
+            "old-token",
+            "12345:token-value");
+
+        Assert.True(result.WasAttempted);
+        Assert.Equal("telegram_webhook_registration_failed", result.ErrorCode);
+    }
+
     private static TelegramService CreateService(RecordingHandler handler, Uri baseUrl)
     {
         FakeHttpClientFactory clientFactory = new(handler);

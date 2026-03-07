@@ -6,8 +6,6 @@ using Npgsql;
 using HeyAlan.Data;
 using HeyAlan.Data.Entities;
 using HeyAlan.TelegramIntegration;
-using System.Net;
-using Telegram.Bot.Exceptions;
 
 public sealed class SubscriptionAgentService : ISubscriptionAgentService
 {
@@ -160,42 +158,27 @@ public sealed class SubscriptionAgentService : ISubscriptionAgentService
             return new UpdateAgentResult.Failure("telegram_bot_token_already_in_use");
         }
 
-        bool telegramTokenChanged =
-            !String.IsNullOrWhiteSpace(normalizedTelegramBotToken) &&
-            !String.Equals(normalizedTelegramBotToken, originalTelegramBotToken, StringComparison.Ordinal);
+        TelegramTokenRegistrationResult registrationResult = await this.telegramService
+            .RegisterWebhookIfTokenChangedAsync(
+                originalTelegramBotToken,
+                normalizedTelegramBotToken,
+                cancellationToken);
 
-        if (telegramTokenChanged)
+        if (!String.IsNullOrWhiteSpace(registrationResult.ErrorCode))
         {
-            string? webhookRegistrationErrorCode = null;
-            try
-            {
-                await this.telegramService.TryRegisterWebhookAsync(normalizedTelegramBotToken!, cancellationToken);
-            }
-            catch (ApiRequestException exception)
-            {
-                webhookRegistrationErrorCode = ResolveNonTransientTelegramErrorCode(exception);
-            }
-            catch (Exception)
-            {
-                webhookRegistrationErrorCode = "telegram_webhook_registration_failed";
-            }
+            this.logger.LogWarning(
+                "Rolling back agent settings channel update because Telegram webhook registration failed for Subscription {SubscriptionId}, Agent {AgentId}. ErrorCode {ErrorCode}.",
+                agent.SubscriptionId,
+                agent.Id,
+                registrationResult.ErrorCode);
 
-            if (!String.IsNullOrWhiteSpace(webhookRegistrationErrorCode))
-            {
-                this.logger.LogWarning(
-                    "Rolling back agent settings channel update because Telegram webhook registration failed for Subscription {SubscriptionId}, Agent {AgentId}. ErrorCode {ErrorCode}.",
-                    agent.SubscriptionId,
-                    agent.Id,
-                    webhookRegistrationErrorCode);
+            agent.TwilioPhoneNumber = originalTwilioPhoneNumber;
+            agent.WhatsappNumber = originalWhatsappNumber;
+            agent.TelegramBotToken = originalTelegramBotToken;
 
-                agent.TwilioPhoneNumber = originalTwilioPhoneNumber;
-                agent.WhatsappNumber = originalWhatsappNumber;
-                agent.TelegramBotToken = originalTelegramBotToken;
+            await this.dbContext.SaveChangesAsync(cancellationToken);
 
-                await this.dbContext.SaveChangesAsync(cancellationToken);
-
-                return new UpdateAgentResult.Failure(webhookRegistrationErrorCode);
-            }
+            return new UpdateAgentResult.Failure(registrationResult.ErrorCode);
         }
 
         return new UpdateAgentResult.Success(ToAgentDetailsResult(agent));
@@ -263,16 +246,6 @@ public sealed class SubscriptionAgentService : ISubscriptionAgentService
         return String.Equals(postgresException.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal) &&
             !String.IsNullOrWhiteSpace(postgresException.ConstraintName) &&
             postgresException.ConstraintName.Contains("telegram_bot_token", StringComparison.Ordinal);
-    }
-
-    private static string ResolveNonTransientTelegramErrorCode(ApiRequestException exception)
-    {
-        if (exception.ErrorCode == (int)HttpStatusCode.Unauthorized)
-        {
-            return "telegram_bot_token_invalid";
-        }
-
-        return "telegram_webhook_registration_failed";
     }
 
     private static AgentDetailsResult ToAgentDetailsResult(Agent agent)
