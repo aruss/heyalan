@@ -10,15 +10,8 @@ public static class SquareBuilderExtensions
         where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHttpClient("SquareOAuthClient");
-        builder.Services.AddHttpClient("SquareApiClient");
-
-        builder.Services.AddScoped<ISquareTokenService, SquareTokenService>();
         builder.Services.AddScoped<IOAuthStateProtector, OAuthStateProtector>();
-        builder.Services.AddScoped<ISquareOAuthClient, SquareOAuthClient>();
-
-        builder.Services.AddScoped<
-            ISubscriptionSquareConnectionService,
-            SubscriptionSquareConnectionService>();
+        builder.Services.AddScoped<ISquareService, SquareService>();
 
         return builder;
     }

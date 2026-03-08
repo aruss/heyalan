@@ -8,9 +8,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using HeyAlan.Configuration;
 using HeyAlan.Data;
 using HeyAlan.Data.Entities;
+using HeyAlan.Onboarding;
 using HeyAlan.SquareIntegration;
 
-public class SquareTokenServiceTests
+public class SquareServiceTokenTests
 {
     [Fact]
     public async Task StoreConnectionAsync_ThenGetValidAccessTokenAsync_ReturnsStoredTokenWithoutRefresh()
@@ -21,7 +22,7 @@ public class SquareTokenServiceTests
             throw new InvalidOperationException("Refresh endpoint should not be called for valid tokens.");
         });
 
-        SquareTokenService service = CreateService(dbContext, handler);
+        SquareService service = CreateService(dbContext, handler);
         Guid subscriptionId = Guid.NewGuid();
 
         await service.StoreConnectionAsync(new SquareTokenStoreInput(
@@ -66,7 +67,7 @@ public class SquareTokenServiceTests
             };
         });
 
-        SquareTokenService service = CreateService(dbContext, handler);
+        SquareService service = CreateService(dbContext, handler);
         Guid subscriptionId = Guid.NewGuid();
 
         await service.StoreConnectionAsync(new SquareTokenStoreInput(
@@ -113,7 +114,7 @@ public class SquareTokenServiceTests
             };
         });
 
-        SquareTokenService service = CreateService(dbContext, handler);
+        SquareService service = CreateService(dbContext, handler);
         Guid subscriptionId = Guid.NewGuid();
 
         await service.StoreConnectionAsync(new SquareTokenStoreInput(
@@ -141,7 +142,7 @@ public class SquareTokenServiceTests
     {
         MainDataContext dbContext = CreateContext();
         RecordingHandler handler = new(static _ => new HttpResponseMessage(HttpStatusCode.OK));
-        SquareTokenService service = CreateService(dbContext, handler);
+        SquareService service = CreateService(dbContext, handler);
 
         SquareTokenResolution resolution = await service.GetValidAccessTokenAsync(Guid.NewGuid());
 
@@ -158,7 +159,7 @@ public class SquareTokenServiceTests
         return new MainDataContext(options);
     }
 
-    private static SquareTokenService CreateService(MainDataContext dbContext, HttpMessageHandler handler)
+    private static SquareService CreateService(MainDataContext dbContext, HttpMessageHandler handler)
     {
         AppOptions appOptions = new()
         {
@@ -170,12 +171,14 @@ public class SquareTokenServiceTests
         FakeHttpClientFactory httpClientFactory = new(handler);
         FakeDataProtectionProvider dataProtectionProvider = new();
 
-        return new SquareTokenService(
+        return new SquareService(
             dbContext,
             httpClientFactory,
             appOptions,
             dataProtectionProvider,
-            NullLogger<SquareTokenService>.Instance);
+            new PassThroughStateProtector(),
+            new StubSubscriptionOnboardingService(),
+            NullLogger<SquareService>.Instance);
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory
@@ -229,6 +232,70 @@ public class SquareTokenServiceTests
             string wrapped = Encoding.UTF8.GetString(protectedData);
             string raw = this.Unprotect(wrapped);
             return Convert.FromBase64String(raw);
+        }
+    }
+
+    private sealed class PassThroughStateProtector : IOAuthStateProtector
+    {
+        public string Protect(SquareConnectStatePayload payload)
+        {
+            return "state";
+        }
+
+        public bool TryUnprotect(string protectedState, out SquareConnectStatePayload? payload)
+        {
+            payload = null;
+            return false;
+        }
+    }
+
+    private sealed class StubSubscriptionOnboardingService : ISubscriptionOnboardingService
+    {
+        public Task<GetSubscriptionOnboardingStateResult> GetStateAsync(Guid subscriptionId, Guid userId, bool resumeMode = false, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<CreateSubscriptionOnboardingAgentResult> CreatePrimaryAgentAsync(Guid subscriptionId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> UpdateProfileAsync(UpdateSubscriptionOnboardingProfileInput input, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> UpdateChannelsAsync(UpdateSubscriptionOnboardingChannelsInput input, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> CompleteInvitationsAsync(Guid subscriptionId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> FinalizeAsync(Guid subscriptionId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> SkipStepAsync(Guid subscriptionId, Guid userId, string step, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<OnboardingStateResult> RecomputeStateAsync(Guid subscriptionId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new OnboardingStateResult(
+                "Draft",
+                "square_connect",
+                [new OnboardingStepState("square_connect", "in_progress", true, [])],
+                null,
+                false,
+                new OnboardingProfilePrefill(null, null),
+                new OnboardingChannelsPrefill(null, null, false)));
         }
     }
 

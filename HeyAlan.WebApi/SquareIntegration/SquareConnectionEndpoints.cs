@@ -45,7 +45,7 @@ public static class SquareConnectionEndpoints
         [FromRoute] Guid subscriptionId,
         [AsParameters] StartSubscriptionSquareConnectAuthorizeInput input,
         ClaimsPrincipal user,
-        ISubscriptionSquareConnectionService service,
+        ISquareService service,
         CancellationToken cancellationToken)
     {
         Guid? userId = user.GetUserId();
@@ -71,7 +71,7 @@ public static class SquareConnectionEndpoints
         [FromQuery] string? code,
         [FromQuery] string? state,
         [FromQuery(Name = "error")] string? oauthError,
-        ISubscriptionSquareConnectionService service,
+        ISquareService service,
         CancellationToken cancellationToken)
     {
         CompleteSquareConnectResult result = await service.CompleteConnectAsync(
@@ -90,7 +90,7 @@ public static class SquareConnectionEndpoints
     private static async Task<IResult> DisconnectSquareConnectionAsync(
         [FromRoute] Guid subscriptionId,
         ClaimsPrincipal user,
-        ISubscriptionSquareConnectionService service,
+        ISquareService service,
         CancellationToken cancellationToken)
     {
         Guid? userId = user.GetUserId();

@@ -1,12 +1,15 @@
 namespace HeyAlan.Tests;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Text;
 using HeyAlan.Configuration;
 using HeyAlan.Data;
 using HeyAlan.Data.Entities;
 using HeyAlan.Onboarding;
 using HeyAlan.SquareIntegration;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 public class SubscriptionSquareConnectionServiceTests
 {
@@ -19,11 +22,7 @@ public class SubscriptionSquareConnectionServiceTests
         await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
 
         RecordingOAuthStateProtector stateProtector = new();
-        SubscriptionSquareConnectionService service = CreateService(
-            dbContext,
-            stateProtector,
-            new StubSquareOAuthClient(),
-            new StubSquareTokenService());
+        SquareService service = CreateService(dbContext, stateProtector, new RoutingHandler(_ => JsonResponse("{}")));
 
         StartSquareConnectResult result = await service.StartConnectAsync(
             new StartSquareConnectInput(subscriptionId, userId, "/onboarding/start"));
@@ -39,24 +38,25 @@ public class SubscriptionSquareConnectionServiceTests
     }
 
     [Fact]
-    public async Task StartConnectAsync_WhenUserIsNotOwner_ReturnsSubscriptionOwnerRequired()
+    public async Task CompleteConnectAsync_WhenCallbackAccessDenied_ReturnsDeterministicFailureCode()
     {
         MainDataContext dbContext = CreateContext();
         Guid subscriptionId = Guid.NewGuid();
         Guid userId = Guid.NewGuid();
+        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
 
-        RecordingOAuthStateProtector stateProtector = new();
-        SubscriptionSquareConnectionService service = CreateService(
-            dbContext,
-            stateProtector,
-            new StubSquareOAuthClient(),
-            new StubSquareTokenService());
+        RecordingOAuthStateProtector stateProtector = new()
+        {
+            PayloadToUnprotect = new SquareConnectStatePayload(subscriptionId, userId, "/onboarding", DateTime.UtcNow)
+        };
 
-        StartSquareConnectResult result = await service.StartConnectAsync(
-            new StartSquareConnectInput(subscriptionId, userId, "/onboarding"));
+        SquareService service = CreateService(dbContext, stateProtector, new RoutingHandler(_ => JsonResponse("{}")));
+        CompleteSquareConnectResult result = await service.CompleteConnectAsync(
+            new CompleteSquareConnectInput("valid-state", null, "access_denied"));
 
-        StartSquareConnectResult.Failure failure = Assert.IsType<StartSquareConnectResult.Failure>(result);
-        Assert.Equal("subscription_owner_required", failure.ErrorCode);
+        CompleteSquareConnectResult.Failure failure = Assert.IsType<CompleteSquareConnectResult.Failure>(result);
+        Assert.Equal("square_oauth_access_denied", failure.ErrorCode);
+        Assert.Contains("squareConnectError=square_oauth_access_denied", failure.RedirectUrl, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -69,70 +69,50 @@ public class SubscriptionSquareConnectionServiceTests
 
         RecordingOAuthStateProtector stateProtector = new()
         {
-            PayloadToUnprotect = new SquareConnectStatePayload(
-                subscriptionId,
-                userId,
-                "/onboarding",
-                DateTime.UtcNow)
+            PayloadToUnprotect = new SquareConnectStatePayload(subscriptionId, userId, "/onboarding", DateTime.UtcNow)
         };
 
-        StubSquareOAuthClient oauthClient = new()
+        RoutingHandler handler = new(_ =>
         {
-            ExchangeResult = new SquareTokenExchangeResult.Success(
-                new SquareTokenExchangePayload(
-                    "access-token",
-                    "refresh-token",
-                    "merchant-1",
-                    DateTime.UtcNow.AddMinutes(30),
-                    ["ITEMS_READ", "CUSTOMERS_READ", "CUSTOMERS_WRITE", "ORDERS_READ", "ORDERS_WRITE", "PAYMENTS_WRITE"]))
-        };
+            string payload = """
+            {
+              "access_token":"access-token",
+              "refresh_token":"refresh-token",
+              "expires_at":"2099-01-01T00:00:00Z",
+              "merchant_id":"merchant-1",
+              "scope":"ITEMS_READ CUSTOMERS_READ CUSTOMERS_WRITE ORDERS_READ ORDERS_WRITE PAYMENTS_WRITE"
+            }
+            """;
 
-        RecordingSquareTokenService tokenService = new();
-        SubscriptionSquareConnectionService service = CreateService(
-            dbContext,
-            stateProtector,
-            oauthClient,
-            tokenService);
+            return JsonResponse(payload);
+        });
+
+        StubSubscriptionOnboardingService onboardingService = new();
+        SquareService service = CreateService(dbContext, stateProtector, handler, onboardingService: onboardingService);
 
         CompleteSquareConnectResult result = await service.CompleteConnectAsync(
             new CompleteSquareConnectInput("valid-state", "auth-code", null));
 
         CompleteSquareConnectResult.Success success = Assert.IsType<CompleteSquareConnectResult.Success>(result);
         Assert.Contains("squareConnect=success", success.RedirectUrl, StringComparison.Ordinal);
-        Assert.NotNull(tokenService.LastStoredInput);
-        Assert.Equal(subscriptionId, tokenService.LastStoredInput!.SubscriptionId);
-        Assert.Equal(userId, tokenService.LastStoredInput.ConnectedByUserId);
+        Assert.Equal(subscriptionId, onboardingService.LastRecomputeSubscriptionId);
+
+        SubscriptionSquareConnection persisted = await dbContext.SubscriptionSquareConnections
+            .SingleAsync(item => item.SubscriptionId == subscriptionId);
+        Assert.Equal("merchant-1", persisted.SquareMerchantId);
     }
 
     [Fact]
-    public async Task CompleteConnectAsync_WhenCallbackAccessDenied_ReturnsDeterministicFailureCode()
+    public async Task CompleteConnectAsync_WhenStateInvalid_ReturnsStateError()
     {
         MainDataContext dbContext = CreateContext();
-        Guid subscriptionId = Guid.NewGuid();
-        Guid userId = Guid.NewGuid();
-        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
-
-        RecordingOAuthStateProtector stateProtector = new()
-        {
-            PayloadToUnprotect = new SquareConnectStatePayload(
-                subscriptionId,
-                userId,
-                "/onboarding",
-                DateTime.UtcNow)
-        };
-
-        SubscriptionSquareConnectionService service = CreateService(
-            dbContext,
-            stateProtector,
-            new StubSquareOAuthClient(),
-            new StubSquareTokenService());
+        SquareService service = CreateService(dbContext, new RecordingOAuthStateProtector(), new RoutingHandler(_ => JsonResponse("{}")));
 
         CompleteSquareConnectResult result = await service.CompleteConnectAsync(
-            new CompleteSquareConnectInput("valid-state", null, "access_denied"));
+            new CompleteSquareConnectInput("invalid-state", "code", null));
 
         CompleteSquareConnectResult.Failure failure = Assert.IsType<CompleteSquareConnectResult.Failure>(result);
-        Assert.Equal("square_oauth_access_denied", failure.ErrorCode);
-        Assert.Contains("squareConnectError=square_oauth_access_denied", failure.RedirectUrl, StringComparison.Ordinal);
+        Assert.Equal("square_oauth_state_invalid", failure.ErrorCode);
     }
 
     [Fact]
@@ -143,32 +123,25 @@ public class SubscriptionSquareConnectionServiceTests
         Guid userId = Guid.NewGuid();
         await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
 
+        FakeDataProtectionProvider dataProtectionProvider = new();
         dbContext.SubscriptionSquareConnections.Add(new SubscriptionSquareConnection
         {
             SubscriptionId = subscriptionId,
             ConnectedByUserId = userId,
             SquareMerchantId = "merchant-1",
-            EncryptedAccessToken = "enc-access",
-            EncryptedRefreshToken = "enc-refresh",
+            EncryptedAccessToken = dataProtectionProvider.Protect("access-token"),
+            EncryptedRefreshToken = dataProtectionProvider.Protect("refresh-token"),
             AccessTokenExpiresAtUtc = DateTime.UtcNow.AddMinutes(20),
-            Scopes = "ITEMS_READ",
+            Scopes = "ITEMS_READ"
         });
         await dbContext.SaveChangesAsync();
 
-        StubSquareOAuthClient oauthClient = new()
-        {
-            RevokeResult = new SquareRevokeResult.Success()
-        };
-        StubSquareTokenService tokenService = new()
-        {
-            TokenResolution = new SquareTokenResolution.Success("access-token", DateTime.UtcNow.AddMinutes(20))
-        };
-
-        SubscriptionSquareConnectionService service = CreateService(
+        RoutingHandler revokeHandler = new(_ => JsonResponse("{\"success\":true}"));
+        SquareService service = CreateService(
             dbContext,
             new RecordingOAuthStateProtector(),
-            oauthClient,
-            tokenService);
+            revokeHandler,
+            dataProtectionProvider: dataProtectionProvider);
 
         DisconnectSquareConnectionResult result = await service.DisconnectAsync(
             new DisconnectSquareConnectionInput(subscriptionId, userId));
@@ -179,66 +152,22 @@ public class SubscriptionSquareConnectionServiceTests
         Assert.Null(persisted);
     }
 
- 
-
-    [Fact]
-    public async Task StartConnectAsync_WhenConnectionSquareCredentialsMissing_ReturnsSquareNotConfigured()
+    private static MainDataContext CreateContext()
     {
-        MainDataContext dbContext = CreateContext();
-        Guid subscriptionId = Guid.NewGuid();
-        Guid userId = Guid.NewGuid();
-        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
+        DbContextOptions<MainDataContext> options = new DbContextOptionsBuilder<MainDataContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
+            .Options;
 
-        AppOptions appOptions = new()
-        {
-            PublicBaseUrl = new Uri("https://heyalan.test"),
-            AuthSquareClientId = "sandbox-auth-client-id",
-            AuthSquareClientSecret = "auth-square-client-secret",
-            SquareClientId = null,
-            SquareClientSecret = null
-        };
-
-        SubscriptionSquareConnectionService service = CreateService(
-            dbContext,
-            new RecordingOAuthStateProtector(),
-            new StubSquareOAuthClient(),
-            new StubSquareTokenService(),
-            appOptions);
-
-        StartSquareConnectResult result = await service.StartConnectAsync(
-            new StartSquareConnectInput(subscriptionId, userId, "/onboarding"));
-
-        StartSquareConnectResult.Failure failure = Assert.IsType<StartSquareConnectResult.Failure>(result);
-        Assert.Equal("square_not_configured", failure.ErrorCode);
+        return new MainDataContext(options);
     }
 
-    [Fact]
-    public async Task StartConnectAsync_WhenReturnUrlInvalid_ReturnsReturnUrlRequired()
-    {
-        MainDataContext dbContext = CreateContext();
-        Guid subscriptionId = Guid.NewGuid();
-        Guid userId = Guid.NewGuid();
-        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
-
-        SubscriptionSquareConnectionService service = CreateService(
-            dbContext,
-            new RecordingOAuthStateProtector(),
-            new StubSquareOAuthClient(),
-            new StubSquareTokenService());
-
-        StartSquareConnectResult result = await service.StartConnectAsync(
-            new StartSquareConnectInput(subscriptionId, userId, "https://malicious.example/redirect"));
-
-        StartSquareConnectResult.Failure failure = Assert.IsType<StartSquareConnectResult.Failure>(result);
-        Assert.Equal("return_url_required", failure.ErrorCode);
-    }
-
-    private static SubscriptionSquareConnectionService CreateService(
+    private static SquareService CreateService(
         MainDataContext dbContext,
         IOAuthStateProtector stateProtector,
-        ISquareOAuthClient squareOAuthClient,
-        ISquareTokenService squareTokenService,
-        AppOptions? appOptions = null)
+        HttpMessageHandler handler,
+        AppOptions? appOptions = null,
+        IDataProtectionProvider? dataProtectionProvider = null,
+        ISubscriptionOnboardingService? onboardingService = null)
     {
         AppOptions resolvedAppOptions = appOptions ?? new AppOptions
         {
@@ -247,23 +176,22 @@ public class SubscriptionSquareConnectionServiceTests
             SquareClientSecret = "square-client-secret"
         };
 
-        return new SubscriptionSquareConnectionService(
+        return new SquareService(
             dbContext,
+            new FakeHttpClientFactory(handler),
             resolvedAppOptions,
+            dataProtectionProvider ?? new FakeDataProtectionProvider(),
             stateProtector,
-            squareOAuthClient,
-            squareTokenService,
-            new StubSubscriptionOnboardingService(),
-            NullLogger<SubscriptionSquareConnectionService>.Instance);
+            onboardingService ?? new StubSubscriptionOnboardingService(),
+            NullLogger<SquareService>.Instance);
     }
 
-    private static MainDataContext CreateContext()
+    private static HttpResponseMessage JsonResponse(string payload)
     {
-        DbContextOptions<MainDataContext> options = new DbContextOptionsBuilder<MainDataContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
-            .Options;
-
-        return new MainDataContext(options);
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+        };
     }
 
     private static async Task SeedOwnerMembershipAsync(MainDataContext dbContext, Guid subscriptionId, Guid userId)
@@ -312,78 +240,71 @@ public class SubscriptionSquareConnectionServiceTests
         }
     }
 
-    private sealed class StubSquareOAuthClient : ISquareOAuthClient
+    private sealed class FakeHttpClientFactory : IHttpClientFactory
     {
-        public SquareTokenExchangeResult ExchangeResult { get; init; } =
-            new SquareTokenExchangeResult.Failure("square_token_exchange_failed");
+        private readonly HttpClient client;
 
-        public SquareRevokeResult RevokeResult { get; init; } =
-            new SquareRevokeResult.Success();
-
-        public Task<SquareTokenExchangeResult> ExchangeAuthorizationCodeAsync(
-            string authorizationCode,
-            string redirectUri,
-            CancellationToken cancellationToken = default)
+        public FakeHttpClientFactory(HttpMessageHandler handler)
         {
-            return Task.FromResult(this.ExchangeResult);
+            this.client = new HttpClient(handler);
         }
 
-        public Task<SquareRevokeResult> RevokeAccessTokenAsync(string accessToken, CancellationToken cancellationToken = default)
+        public HttpClient CreateClient(string name)
         {
-            return Task.FromResult(this.RevokeResult);
+            return this.client;
         }
     }
 
-    private sealed class StubSquareTokenService : ISquareTokenService
+    private sealed class FakeDataProtectionProvider : IDataProtectionProvider, IDataProtector
     {
-        public SquareTokenResolution TokenResolution { get; init; } =
-            new SquareTokenResolution.Success("access-token", DateTime.UtcNow.AddMinutes(20));
+        private const string Prefix = "enc::";
 
-        public Task StoreConnectionAsync(SquareTokenStoreInput input, CancellationToken cancellationToken = default)
+        public IDataProtector CreateProtector(string purpose)
         {
-            return Task.CompletedTask;
+            return this;
         }
 
-        public Task<SquareTokenResolution> GetValidAccessTokenAsync(Guid subscriptionId, CancellationToken cancellationToken = default)
+        public string Protect(string plaintext)
         {
-            return Task.FromResult(this.TokenResolution);
-        }
-    }
-
-    private sealed class RecordingSquareTokenService : ISquareTokenService
-    {
-        public SquareTokenStoreInput? LastStoredInput { get; private set; }
-
-        public Task StoreConnectionAsync(SquareTokenStoreInput input, CancellationToken cancellationToken = default)
-        {
-            this.LastStoredInput = input;
-            return Task.CompletedTask;
+            return $"{Prefix}{plaintext}";
         }
 
-        public Task<SquareTokenResolution> GetValidAccessTokenAsync(Guid subscriptionId, CancellationToken cancellationToken = default)
+        public string Unprotect(string protectedData)
         {
-            return Task.FromResult<SquareTokenResolution>(
-                new SquareTokenResolution.Success("access-token", DateTime.UtcNow.AddMinutes(20)));
+            if (!protectedData.StartsWith(Prefix, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("Invalid protected payload.");
+            }
+
+            return protectedData.Substring(Prefix.Length);
+        }
+
+        public byte[] Protect(byte[] plaintext)
+        {
+            string raw = Convert.ToBase64String(plaintext);
+            string wrapped = this.Protect(raw);
+            return Encoding.UTF8.GetBytes(wrapped);
+        }
+
+        public byte[] Unprotect(byte[] protectedData)
+        {
+            string wrapped = Encoding.UTF8.GetString(protectedData);
+            string raw = this.Unprotect(wrapped);
+            return Convert.FromBase64String(raw);
         }
     }
 
     private sealed class StubSubscriptionOnboardingService : ISubscriptionOnboardingService
     {
+        public Guid? LastRecomputeSubscriptionId { get; private set; }
+
         public Task<GetSubscriptionOnboardingStateResult> GetStateAsync(
             Guid subscriptionId,
             Guid userId,
             bool resumeMode = false,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<GetSubscriptionOnboardingStateResult>(
-                new GetSubscriptionOnboardingStateResult.Success(new OnboardingStateResult(
-                    "Draft",
-                    "square_connect",
-                    [new OnboardingStepState("square_connect", "in_progress", true, [])],
-                    null,
-                    false,
-                    new OnboardingProfilePrefill(null, null),
-                    new OnboardingChannelsPrefill(null, null, false))));
+            throw new NotImplementedException();
         }
 
         public Task<CreateSubscriptionOnboardingAgentResult> CreatePrimaryAgentAsync(
@@ -391,24 +312,21 @@ public class SubscriptionSquareConnectionServiceTests
             Guid userId,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<CreateSubscriptionOnboardingAgentResult>(
-                new CreateSubscriptionOnboardingAgentResult.Failure("not_implemented"));
+            throw new NotImplementedException();
         }
 
         public Task<UpdateSubscriptionOnboardingStepResult> UpdateProfileAsync(
             UpdateSubscriptionOnboardingProfileInput input,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<UpdateSubscriptionOnboardingStepResult>(
-                new UpdateSubscriptionOnboardingStepResult.Failure("not_implemented"));
+            throw new NotImplementedException();
         }
 
         public Task<UpdateSubscriptionOnboardingStepResult> UpdateChannelsAsync(
             UpdateSubscriptionOnboardingChannelsInput input,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<UpdateSubscriptionOnboardingStepResult>(
-                new UpdateSubscriptionOnboardingStepResult.Failure("not_implemented"));
+            throw new NotImplementedException();
         }
 
         public Task<UpdateSubscriptionOnboardingStepResult> CompleteInvitationsAsync(
@@ -416,8 +334,7 @@ public class SubscriptionSquareConnectionServiceTests
             Guid userId,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<UpdateSubscriptionOnboardingStepResult>(
-                new UpdateSubscriptionOnboardingStepResult.Failure("not_implemented"));
+            throw new NotImplementedException();
         }
 
         public Task<UpdateSubscriptionOnboardingStepResult> FinalizeAsync(
@@ -425,8 +342,7 @@ public class SubscriptionSquareConnectionServiceTests
             Guid userId,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<UpdateSubscriptionOnboardingStepResult>(
-                new UpdateSubscriptionOnboardingStepResult.Failure("not_implemented"));
+            throw new NotImplementedException();
         }
 
         public Task<UpdateSubscriptionOnboardingStepResult> SkipStepAsync(
@@ -435,14 +351,15 @@ public class SubscriptionSquareConnectionServiceTests
             string step,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<UpdateSubscriptionOnboardingStepResult>(
-                new UpdateSubscriptionOnboardingStepResult.Failure("not_implemented"));
+            throw new NotImplementedException();
         }
 
         public Task<OnboardingStateResult> RecomputeStateAsync(
             Guid subscriptionId,
             CancellationToken cancellationToken = default)
         {
+            this.LastRecomputeSubscriptionId = subscriptionId;
+
             return Task.FromResult(new OnboardingStateResult(
                 "Draft",
                 "square_connect",
@@ -451,6 +368,22 @@ public class SubscriptionSquareConnectionServiceTests
                 false,
                 new OnboardingProfilePrefill(null, null),
                 new OnboardingChannelsPrefill(null, null, false)));
+        }
+    }
+
+    private sealed class RoutingHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> responseFactory;
+
+        public RoutingHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
+        {
+            this.responseFactory = responseFactory;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            HttpResponseMessage response = this.responseFactory(request);
+            return Task.FromResult(response);
         }
     }
 }

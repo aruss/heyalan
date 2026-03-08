@@ -3,7 +3,12 @@ namespace HeyAlan.Tests;
 using System.Net;
 using System.Text;
 using HeyAlan.Configuration;
+using HeyAlan.Data;
+using HeyAlan.Onboarding;
 using HeyAlan.SquareIntegration;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 public class SquareOAuthClientTests
 {
@@ -38,9 +43,8 @@ public class SquareOAuthClientTests
             return JsonResponse(exchangePayload);
         });
 
-        SquareOAuthClient client = CreateClient(handler);
-
-        SquareTokenExchangeResult result = await client.ExchangeAuthorizationCodeAsync(
+        SquareService service = CreateService(handler);
+        SquareTokenExchangeResult result = await service.ExchangeAuthorizationCodeAsync(
             "auth-code",
             "https://heyalan.test/subscriptions/square/callback");
 
@@ -68,9 +72,8 @@ public class SquareOAuthClientTests
             return JsonResponse(exchangePayload);
         });
 
-        SquareOAuthClient client = CreateClient(handler);
-
-        SquareTokenExchangeResult result = await client.ExchangeAuthorizationCodeAsync(
+        SquareService service = CreateService(handler);
+        SquareTokenExchangeResult result = await service.ExchangeAuthorizationCodeAsync(
             "auth-code",
             "https://heyalan.test/subscriptions/square/callback");
 
@@ -104,9 +107,8 @@ public class SquareOAuthClientTests
             return JsonResponse(exchangePayload);
         });
 
-        SquareOAuthClient client = CreateClient(handler);
-
-        SquareTokenExchangeResult result = await client.ExchangeAuthorizationCodeAsync(
+        SquareService service = CreateService(handler);
+        SquareTokenExchangeResult result = await service.ExchangeAuthorizationCodeAsync(
             "auth-code",
             "https://heyalan.test/subscriptions/square/callback");
 
@@ -115,8 +117,13 @@ public class SquareOAuthClientTests
         Assert.Equal(2, handler.CallCount);
     }
 
-    private static SquareOAuthClient CreateClient(HttpMessageHandler handler)
+    private static SquareService CreateService(HttpMessageHandler handler)
     {
+        DbContextOptions<MainDataContext> options = new DbContextOptionsBuilder<MainDataContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
+            .Options;
+
+        MainDataContext dbContext = new(options);
         AppOptions appOptions = new()
         {
             PublicBaseUrl = new Uri("https://heyalan.test"),
@@ -124,8 +131,14 @@ public class SquareOAuthClientTests
             SquareClientSecret = "square-client-secret"
         };
 
-        FakeHttpClientFactory httpClientFactory = new(handler);
-        return new SquareOAuthClient(httpClientFactory, appOptions);
+        return new SquareService(
+            dbContext,
+            new FakeHttpClientFactory(handler),
+            appOptions,
+            new PassThroughDataProtectionProvider(),
+            new PassThroughStateProtector(),
+            new StubSubscriptionOnboardingService(),
+            NullLogger<SquareService>.Instance);
     }
 
     private static HttpResponseMessage JsonResponse(string payload)
@@ -154,6 +167,98 @@ public class SquareOAuthClientTests
         public HttpClient CreateClient(string name)
         {
             return this.client;
+        }
+    }
+
+    private sealed class PassThroughDataProtectionProvider : IDataProtectionProvider, IDataProtector
+    {
+        public IDataProtector CreateProtector(string purpose)
+        {
+            return this;
+        }
+
+        public string Protect(string plaintext)
+        {
+            return plaintext;
+        }
+
+        public string Unprotect(string protectedData)
+        {
+            return protectedData;
+        }
+
+        public byte[] Protect(byte[] plaintext)
+        {
+            return plaintext;
+        }
+
+        public byte[] Unprotect(byte[] protectedData)
+        {
+            return protectedData;
+        }
+    }
+
+    private sealed class PassThroughStateProtector : IOAuthStateProtector
+    {
+        public string Protect(SquareConnectStatePayload payload)
+        {
+            return "state";
+        }
+
+        public bool TryUnprotect(string protectedState, out SquareConnectStatePayload? payload)
+        {
+            payload = null;
+            return false;
+        }
+    }
+
+    private sealed class StubSubscriptionOnboardingService : ISubscriptionOnboardingService
+    {
+        public Task<GetSubscriptionOnboardingStateResult> GetStateAsync(Guid subscriptionId, Guid userId, bool resumeMode = false, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<CreateSubscriptionOnboardingAgentResult> CreatePrimaryAgentAsync(Guid subscriptionId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> UpdateProfileAsync(UpdateSubscriptionOnboardingProfileInput input, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> UpdateChannelsAsync(UpdateSubscriptionOnboardingChannelsInput input, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> CompleteInvitationsAsync(Guid subscriptionId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> FinalizeAsync(Guid subscriptionId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpdateSubscriptionOnboardingStepResult> SkipStepAsync(Guid subscriptionId, Guid userId, string step, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<OnboardingStateResult> RecomputeStateAsync(Guid subscriptionId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new OnboardingStateResult(
+                "Draft",
+                "square_connect",
+                [new OnboardingStepState("square_connect", "in_progress", true, [])],
+                null,
+                false,
+                new OnboardingProfilePrefill(null, null),
+                new OnboardingChannelsPrefill(null, null, false)));
         }
     }
 

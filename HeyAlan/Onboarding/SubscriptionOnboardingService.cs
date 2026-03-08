@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using HeyAlan.Data;
 using HeyAlan.Data.Entities;
+using HeyAlan.SquareIntegration;
 using HeyAlan.TelegramIntegration;
 
 public sealed class SubscriptionOnboardingService : ISubscriptionOnboardingService
@@ -16,16 +17,6 @@ public sealed class SubscriptionOnboardingService : ISubscriptionOnboardingServi
         new("channels", true, []),
         new("invitations", true, ["square_connect"]),
         new("finalize", false, [])
-    ];
-
-    private static readonly string[] RequiredSquareScopes =
-    [
-        "ITEMS_READ",
-        "CUSTOMERS_READ",
-        "CUSTOMERS_WRITE",
-        "ORDERS_READ",
-        "ORDERS_WRITE",
-        "PAYMENTS_WRITE"
     ];
 
     private const string StepStatusNotStarted = "not_started";
@@ -635,11 +626,8 @@ public sealed class SubscriptionOnboardingService : ISubscriptionOnboardingServi
             return false;
         }
 
-        HashSet<string> grantedScopes = connection.Scopes
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToHashSet(StringComparer.Ordinal);
-
-        return RequiredSquareScopes.All(grantedScopes.Contains);
+        string[] grantedScopes = SquareIntegrationRules.ParseStoredScopes(connection.Scopes);
+        return SquareIntegrationRules.HasRequiredScopes(grantedScopes);
     }
 
     private static bool IsProfileComplete(Agent? agent)

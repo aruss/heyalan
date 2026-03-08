@@ -27,7 +27,7 @@ import {
     postOnboardingSubscriptionsBySubscriptionIdAgents,
     postOnboardingSubscriptionsBySubscriptionIdFinalize,
     postOnboardingSubscriptionsBySubscriptionIdMembersInvitations,
-    postOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorize,
+    postSubscriptionsBySubscriptionIdSquareAuthorize,
     type AgentPersonality as ApiAgentPersonality,
     type GetSubscriptionOnboardingStateResult
 } from "@/lib/api";
@@ -268,6 +268,7 @@ const OnboardingPageContent = (): ReactElement => {
     const [onboardingState, setOnboardingState] = useState<GetSubscriptionOnboardingStateResult | null>(null);
     const [stepMessages, setStepMessages] = useState<Partial<Record<OnboardingStep, StepMessage>>>({});
     const [isBusy, setIsBusy] = useState<boolean>(false);
+    const [hasResolvedSubscriptionContext, setHasResolvedSubscriptionContext] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<FormState>({
         squareConnected: false,
@@ -419,6 +420,7 @@ const OnboardingPageContent = (): ReactElement => {
     }, [formData]);
 
     const isSquareConnected = isSquareConnectedFromState(onboardingState, formData.squareConnected);
+    const isSubscriptionContextLoading = isSessionLoading || (!hasResolvedSubscriptionContext && !subscriptionId);
 
     useEffect(() => {
         let isCancelled = false;
@@ -430,10 +432,12 @@ const OnboardingPageContent = (): ReactElement => {
                 }
 
                 if (currentUser?.isOnboarded === true) {
+                    setHasResolvedSubscriptionContext(true);
                     router.replace("/admin");
                     return;
                 }
 
+                setHasResolvedSubscriptionContext(false);
                 setIsBusy(true);
                 const activeSubscriptionId = currentUser?.activeSubscriptionId ?? null;
 
@@ -445,6 +449,7 @@ const OnboardingPageContent = (): ReactElement => {
                     setSubscriptionId(null);
                     const message = sessionErrorMessage ?? "No active subscription membership was found for your account.";
                     setMessage(1, "error", message);
+                    setHasResolvedSubscriptionContext(true);
                     return;
                 }
 
@@ -473,9 +478,11 @@ const OnboardingPageContent = (): ReactElement => {
                 if (squareConnectStatus || squareConnectError) {
                     router.replace("/onboarding");
                 }
+                setHasResolvedSubscriptionContext(true);
             } catch (error: unknown) {
                 if (!isCancelled) {
                     setMessage(1, "error", resolveApiErrorMessage(error, "Unable to load onboarding state."));
+                    setHasResolvedSubscriptionContext(true);
                 }
             } finally {
                 if (!isCancelled) {
@@ -511,6 +518,11 @@ const OnboardingPageContent = (): ReactElement => {
 
     const handleConnectSquare = async (): Promise<void> => {
         if (!subscriptionId) {
+            if (isSubscriptionContextLoading) {
+                setMessage(1, "info", "Loading subscription context. Please try again in a moment.");
+                return;
+            }
+
             setMessage(1, "error", "Missing subscription context.");
             return;
         }
@@ -519,7 +531,7 @@ const OnboardingPageContent = (): ReactElement => {
             setIsBusy(true);
             clearMessage(1);
 
-            const response = await postOnboardingSubscriptionsBySubscriptionIdSquareConnectAuthorize({
+            const response = await postSubscriptionsBySubscriptionIdSquareAuthorize({
                 path: { subscriptionId },
                 query: { returnUrl: "/onboarding" },
                 throwOnError: true
@@ -762,7 +774,7 @@ const OnboardingPageContent = (): ReactElement => {
                         <div className="pt-4 flex flex-col gap-3">
                             <PrimaryActionButton
                                 onClick={() => void handleConnectSquare()}
-                                disabled={isBusy}
+                                disabled={isBusy || isSubscriptionContextLoading}
                                 fullWidth
                                 className="flex items-center justify-center gap-2"
                             >
