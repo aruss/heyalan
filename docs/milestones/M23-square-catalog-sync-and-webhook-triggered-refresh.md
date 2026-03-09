@@ -237,56 +237,56 @@ M23 is a prerequisite milestone. It does not own LLM response generation, conver
 - [ ] Zip restriction enforcement remains out of scope for M23.
 
 ## Gate H - Agent Product Access Control Domain
-- [ ] Implement domain service methods for assignment management:
-  - [ ] replace assignment set atomically for an agent
-  - [ ] clear assignment set (revert to default-all mode)
-  - [ ] get assignment state for agent
-- [ ] Validate all requested product IDs belong to the same subscription as the agent.
-- [ ] Keep deterministic error codes for invalid assignments.
+  - [x] Implement domain service methods for assignment management:
+    - [x] replace assignment set atomically for an agent
+    - [x] clear assignment set (revert to default-all mode)
+    - [x] get assignment state for agent
+  - [x] Validate all requested product IDs belong to the same subscription as the agent.
+  - [x] Keep deterministic error codes for invalid assignments.
 
 ### Gate H Acceptance Criteria
-- [ ] Assignment updates are atomic and tenant-safe.
-- [ ] Clearing assignments reliably returns agent to default-all mode.
+  - [x] Assignment updates are atomic and tenant-safe.
+  - [x] Clearing assignments reliably returns agent to default-all mode.
 
 ## Gate J - Agent Zip Allowlist Domain
-- [ ] Implement domain service methods for zip allowlist management:
-  - [ ] replace zip allowlist atomically for an agent
-  - [ ] clear zip allowlist (revert to no regional restriction metadata)
-  - [ ] get zip allowlist state for agent
-- [ ] Implement zip normalization utility and validation rules.
-- [ ] Keep deterministic error codes for invalid zip entries.
+  - [x] Implement domain service methods for zip allowlist management:
+    - [x] replace zip allowlist atomically for an agent
+    - [x] clear zip allowlist (revert to no regional restriction metadata)
+    - [x] get zip allowlist state for agent
+  - [x] Implement zip normalization utility and validation rules.
+  - [x] Keep deterministic error codes for invalid zip entries.
 
 ### Gate J Acceptance Criteria
-- [ ] Zip allowlist updates are atomic and tenant-safe.
-- [ ] Empty allowlist reliably means no zip restriction metadata.
-- [ ] Exact normalized zip matching behavior is deterministic.
+  - [x] Zip allowlist updates are atomic and tenant-safe.
+  - [x] Empty allowlist reliably means no zip restriction metadata.
+  - [x] Exact normalized zip matching behavior is deterministic.
 
 ## Gate I - Admin Endpoints for Agent Product Access and Zip Allowlist
-- [ ] Add agent-scoped APIs:
-  - [ ] `GET /agents/{agentId}/catalog/products` (paged, include assignment state per product)
-  - [ ] `PUT /agents/{agentId}/catalog/products` (replace assignment set)
-  - [ ] `DELETE /agents/{agentId}/catalog/products` (clear assignments)
-- [ ] Apply auth and subscription membership checks consistently.
-- [ ] Use DTO naming per guideline (`*Input`, `*Result`) and concrete list result schema shape.
-- [ ] Add deterministic API error codes for:
-  - [ ] `agent_not_found`
-  - [ ] `subscription_member_required`
-  - [ ] `catalog_product_not_found`
-  - [ ] `agent_catalog_assignment_invalid`
-- [ ] Add agent zip allowlist APIs:
-  - [ ] `GET /agents/{agentId}/sales-zips`
-  - [ ] `PUT /agents/{agentId}/sales-zips` (replace full list)
-  - [ ] `DELETE /agents/{agentId}/sales-zips` (clear list)
-- [ ] Add deterministic zip-related API error codes:
-  - [ ] `agent_sales_zip_invalid`
-  - [ ] `agent_sales_zip_conflict`
-- [ ] Map all new catalog and zip-management endpoints explicitly in WebAPI endpoint composition.
+  - [x] Add agent-scoped APIs:
+    - [x] `GET /agents/{agentId}/catalog/products` (paged, include assignment state per product)
+    - [x] `PUT /agents/{agentId}/catalog/products` (replace assignment set)
+    - [x] `DELETE /agents/{agentId}/catalog/products` (clear assignments)
+  - [x] Apply auth and subscription membership checks consistently.
+  - [x] Use DTO naming per guideline (`*Input`, `*Result`) and concrete list result schema shape.
+  - [x] Add deterministic API error codes for:
+    - [x] `agent_not_found`
+    - [x] `subscription_member_required`
+    - [x] `catalog_product_not_found`
+    - [x] `agent_catalog_assignment_invalid`
+  - [x] Add agent zip allowlist APIs:
+    - [x] `GET /agents/{agentId}/sales-zips`
+    - [x] `PUT /agents/{agentId}/sales-zips` (replace full list)
+    - [x] `DELETE /agents/{agentId}/sales-zips` (clear list)
+  - [x] Add deterministic zip-related API error codes:
+    - [x] `agent_sales_zip_invalid`
+    - [x] `agent_sales_zip_conflict`
+  - [x] Map all new catalog and zip-management endpoints explicitly in WebAPI endpoint composition.
 
 ### Gate I Acceptance Criteria
-- [ ] Admin can assign subset and observe assignment state.
-- [ ] Admin can clear assignments and return to default-all mode.
-- [ ] Admin can configure and clear agent zip allowlist metadata.
-- [ ] Endpoint contracts are stable for OpenAPI client generation.
+  - [x] Admin can assign subset and observe assignment state.
+  - [x] Admin can clear assignments and return to default-all mode.
+  - [x] Admin can configure and clear agent zip allowlist metadata.
+  - [x] Endpoint contracts are stable for OpenAPI client generation.
 
 ## Gate F - Observability, Security, and Operational Controls
 - [ ] Add structured logs/metrics:
@@ -294,8 +294,8 @@ M23 is a prerequisite milestone. It does not own LLM response generation, conver
   - [ ] processed object counts and duration
   - [ ] webhook accepted/ignored/rejected counters
 - [ ] Add health/diagnostic API endpoints:
-  - [ ] `GET /subscriptions/{subscriptionId}/square/catalog/sync-state`
-  - [ ] `GET /subscriptions/{subscriptionId}/square/catalog/products` (paged)
+  - [x] `GET /subscriptions/{subscriptionId}/square/catalog/sync-state`
+  - [x] `GET /subscriptions/{subscriptionId}/square/catalog/products` (paged)
 - [ ] Confirm no logs contain:
   - [ ] access/refresh tokens
   - [ ] webhook signature key
@@ -307,35 +307,35 @@ M23 is a prerequisite milestone. It does not own LLM response generation, conver
 - [ ] Operators can observe sync health and troubleshoot failures without sensitive leakage.
 
 ## Gate K - WebApp Inventory Sync Operations UI
-- [ ] Implement inventory settings sync UI in `HeyAlan.WebApp/src/app/admin/settings/inventory/page.tsx`.
-- [ ] Align layout and interaction style with existing pages in `HeyAlan.WebApp/src/app/admin/settings`.
+- [x] Implement inventory settings sync UI in `HeyAlan.WebApp/src/app/admin/settings/inventory/page.tsx`.
+- [x] Align layout and interaction style with existing pages in `HeyAlan.WebApp/src/app/admin/settings`.
 - [ ] Limit UI scope to sync operations and catalog diagnostics:
-  - [ ] manual sync action
-  - [ ] sync-state panel
-  - [ ] minimal cached catalog snapshot
+  - [x] manual sync action
+  - [x] sync-state panel
+  - [x] minimal cached catalog snapshot
 - [ ] Add manual sync action UI:
-  - [ ] `Sync now` button invokes `POST /subscriptions/{subscriptionId}/square/catalog/sync`
-  - [ ] disable sync action while request is in-flight
-  - [ ] show deterministic success and failure feedback
+  - [x] `Sync now` button invokes `POST /subscriptions/{subscriptionId}/square/catalog/sync`
+  - [x] disable sync action while request is in-flight
+  - [x] show deterministic success and failure feedback
 - [ ] Add sync-state dashboard UI:
-  - [ ] read from `GET /subscriptions/{subscriptionId}/square/catalog/sync-state`
-  - [ ] display key sync fields (status/trigger/timestamps/last error where present)
-  - [ ] poll sync state every 30 seconds
-  - [ ] add manual refresh action
+  - [x] read from `GET /subscriptions/{subscriptionId}/square/catalog/sync-state`
+  - [x] display key sync fields (status/trigger/timestamps/last error where present)
+  - [x] poll sync state every 30 seconds
+  - [x] add manual refresh action
 - [ ] Add minimal cached catalog product snapshot:
-  - [ ] read from `GET /subscriptions/{subscriptionId}/square/catalog/products` (paged)
-  - [ ] render compact table with essential fields for operational verification
-  - [ ] include empty and error states
-- [ ] Guard UI behavior for missing subscription context and unauthorized errors.
-- [ ] Keep client usage generated-only (`.gen.ts` files remain untouched).
+  - [x] read from `GET /subscriptions/{subscriptionId}/square/catalog/products` (paged)
+  - [x] render compact table with essential fields for operational verification
+  - [x] include empty and error states
+- [x] Guard UI behavior for missing subscription context and unauthorized errors.
+- [x] Keep client usage generated-only (`.gen.ts` files remain untouched).
 - [ ] Because this milestone adds WebAPI endpoints, hand off for OpenAPI spec/client regeneration whenever those API contracts change.
 
 ### Gate K Acceptance Criteria
-- [ ] Admin can trigger manual sync from the settings inventory page.
-- [ ] Admin can see current sync state without leaving the page.
-- [ ] Sync-state panel updates automatically at 30-second cadence and via manual refresh.
-- [ ] Admin can inspect a minimal paged snapshot of cached catalog products.
-- [ ] UX is visually consistent with existing settings pages.
+- [x] Admin can trigger manual sync from the settings inventory page.
+- [x] Admin can see current sync state without leaving the page.
+- [x] Sync-state panel updates automatically at 30-second cadence and via manual refresh.
+- [x] Admin can inspect a minimal paged snapshot of cached catalog products.
+- [x] UX is visually consistent with existing settings pages.
 
 ## Gate G - Testing and Regression Coverage
 - [ ] Unit tests:
@@ -371,9 +371,9 @@ M23 is a prerequisite milestone. It does not own LLM response generation, conver
 - [x] 2) Gate B sync/read services + mapping/upsert logic.
 - [x] 3) Gate C scheduler + trigger message orchestration.
 - [x] 4) Gate D secure webhook ingest + dedupe + routing.
-- [ ] 5) Gate H agent product access domain behavior.
-- [ ] 6) Gate J agent zip allowlist domain behavior.
-- [ ] 7) Gate I admin endpoints for assignment management.
+- [x] 5) Gate H agent product access domain behavior.
+- [x] 6) Gate J agent zip allowlist domain behavior.
+- [x] 7) Gate I admin endpoints for assignment management.
 - [ ] 8) Gate E current message-path integration seam.
 - [ ] 9) Gate F observability/diagnostics.
 - [ ] 10) Gate K WebApp inventory sync operations UI.

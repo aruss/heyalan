@@ -4,6 +4,28 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:5000/' | (string & {});
 };
 
+export type AgentCatalogProductAccessStateResult = {
+    agentId: string;
+    subscriptionId: string;
+    hasExplicitAssignments: boolean;
+    subscriptionCatalogProductIds: Array<string>;
+};
+
+export type AgentCatalogProductItem = {
+    subscriptionCatalogProductId: string;
+    squareItemId: string;
+    squareVariationId: string;
+    itemName: string;
+    variationName: string;
+    description: null | string;
+    sku: null | string;
+    basePriceAmount: number;
+    basePriceCurrency: null | string;
+    isSellable: boolean;
+    isDeleted: boolean;
+    isAssigned: boolean;
+};
+
 export type AgentErrorResult = {
     errorCode: string;
     message: string;
@@ -32,6 +54,13 @@ export type AgentResult = {
     isOperationalReady: boolean;
     createdAt: string;
     updatedAt: string;
+};
+
+export type AgentSalesZipCodeStateResult = {
+    agentId: string;
+    subscriptionId: string;
+    hasExplicitZipRestrictions: boolean;
+    zipCodesNormalized: Array<string>;
 };
 
 export type AppInfo = {
@@ -108,6 +137,14 @@ export type GetActiveSubscriptionResult = {
     subscriptionId: string;
 };
 
+export type GetAgentCatalogProductsResult = {
+    hasExplicitAssignments?: boolean;
+    items?: Array<AgentCatalogProductItem>;
+    hasNextPage?: boolean;
+    skip?: number;
+    take?: number;
+};
+
 export type GetAgentConversationsResult = {
     items?: Array<ConversationListItem>;
     hasNextPage?: boolean;
@@ -141,6 +178,31 @@ export type GetSubscriptionOnboardingStateResult = {
     canFinalize: boolean;
     profilePrefill: OnboardingProfilePrefill;
     channelsPrefill: OnboardingChannelsPrefill;
+};
+
+export type GetSubscriptionSquareCatalogProductsResult = {
+    items?: Array<SubscriptionSquareCatalogProductItem>;
+    total?: number;
+    skip?: number;
+    take?: number;
+    sort?: null | Array<SortInfo>;
+};
+
+export type GetSubscriptionSquareCatalogSyncStateResult = {
+    subscriptionId: string;
+    status: string;
+    lastTriggerSource: null | string;
+    lastSyncedBeginTimeUtc: null | string;
+    nextScheduledSyncAtUtc: null | string;
+    lastSyncStartedAtUtc: null | string;
+    lastSyncCompletedAtUtc: null | string;
+    syncInProgress: boolean;
+    pendingResync: boolean;
+    lastErrorCode: null | string;
+    lastErrorMessage: null | string;
+    cachedProductCount: number;
+    sellableProductCount: number;
+    deletedProductCount: number;
 };
 
 export type IngestTelegramMessageInput = {
@@ -241,6 +303,19 @@ export type ProblemDetails = {
     instance?: null | string;
 };
 
+export type PutAgentCatalogProductsInput = {
+    subscriptionCatalogProductIds: Array<string>;
+};
+
+export type PutAgentSalesZipCodesInput = {
+    zipCodes: Array<string>;
+};
+
+export type SortInfo = {
+    field: string;
+    isAsc: boolean;
+};
+
 export type SquareConnectionErrorResult = {
     errorCode: string;
     message: string;
@@ -253,6 +328,21 @@ export type StartSubscriptionSquareConnectAuthorizeResult = {
 export type SubscriptionCatalogSyncErrorResult = {
     errorCode: string;
     message: string;
+};
+
+export type SubscriptionSquareCatalogProductItem = {
+    subscriptionCatalogProductId: string;
+    squareItemId: string;
+    squareVariationId: string;
+    itemName: string;
+    variationName: string;
+    sku: null | string;
+    basePriceAmount: number;
+    basePriceCurrency: null | string;
+    isSellable: boolean;
+    isDeleted: boolean;
+    squareUpdatedAtUtc: null | string;
+    locationCount: number;
 };
 
 export type TelegramChatInput = {
@@ -702,6 +792,228 @@ export type PostAgentsByAgentIdResponses = {
 
 export type PostAgentsByAgentIdResponse = PostAgentsByAgentIdResponses[keyof PostAgentsByAgentIdResponses];
 
+export type DeleteAgentsByAgentIdCatalogProductsData = {
+    body?: never;
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/agents/{agentId}/catalog/products';
+};
+
+export type DeleteAgentsByAgentIdCatalogProductsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AgentErrorResult;
+    /**
+     * Forbidden
+     */
+    403: AgentErrorResult;
+    /**
+     * Not Found
+     */
+    404: AgentErrorResult;
+};
+
+export type DeleteAgentsByAgentIdCatalogProductsError = DeleteAgentsByAgentIdCatalogProductsErrors[keyof DeleteAgentsByAgentIdCatalogProductsErrors];
+
+export type DeleteAgentsByAgentIdCatalogProductsResponses = {
+    /**
+     * OK
+     */
+    200: AgentCatalogProductAccessStateResult;
+};
+
+export type DeleteAgentsByAgentIdCatalogProductsResponse = DeleteAgentsByAgentIdCatalogProductsResponses[keyof DeleteAgentsByAgentIdCatalogProductsResponses];
+
+export type GetAgentsByAgentIdCatalogProductsData = {
+    body?: never;
+    path: {
+        agentId: string;
+    };
+    query: {
+        query?: string;
+        skip: number;
+        take: number;
+    };
+    url: '/agents/{agentId}/catalog/products';
+};
+
+export type GetAgentsByAgentIdCatalogProductsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AgentErrorResult;
+    /**
+     * Forbidden
+     */
+    403: AgentErrorResult;
+    /**
+     * Not Found
+     */
+    404: AgentErrorResult;
+};
+
+export type GetAgentsByAgentIdCatalogProductsError = GetAgentsByAgentIdCatalogProductsErrors[keyof GetAgentsByAgentIdCatalogProductsErrors];
+
+export type GetAgentsByAgentIdCatalogProductsResponses = {
+    /**
+     * OK
+     */
+    200: GetAgentCatalogProductsResult;
+};
+
+export type GetAgentsByAgentIdCatalogProductsResponse = GetAgentsByAgentIdCatalogProductsResponses[keyof GetAgentsByAgentIdCatalogProductsResponses];
+
+export type PutAgentsByAgentIdCatalogProductsData = {
+    body: PutAgentCatalogProductsInput;
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/agents/{agentId}/catalog/products';
+};
+
+export type PutAgentsByAgentIdCatalogProductsErrors = {
+    /**
+     * Bad Request
+     */
+    400: AgentErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: AgentErrorResult;
+    /**
+     * Forbidden
+     */
+    403: AgentErrorResult;
+    /**
+     * Not Found
+     */
+    404: AgentErrorResult;
+};
+
+export type PutAgentsByAgentIdCatalogProductsError = PutAgentsByAgentIdCatalogProductsErrors[keyof PutAgentsByAgentIdCatalogProductsErrors];
+
+export type PutAgentsByAgentIdCatalogProductsResponses = {
+    /**
+     * OK
+     */
+    200: AgentCatalogProductAccessStateResult;
+};
+
+export type PutAgentsByAgentIdCatalogProductsResponse = PutAgentsByAgentIdCatalogProductsResponses[keyof PutAgentsByAgentIdCatalogProductsResponses];
+
+export type DeleteAgentsByAgentIdSalesZipsData = {
+    body?: never;
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/agents/{agentId}/sales-zips';
+};
+
+export type DeleteAgentsByAgentIdSalesZipsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AgentErrorResult;
+    /**
+     * Forbidden
+     */
+    403: AgentErrorResult;
+    /**
+     * Not Found
+     */
+    404: AgentErrorResult;
+};
+
+export type DeleteAgentsByAgentIdSalesZipsError = DeleteAgentsByAgentIdSalesZipsErrors[keyof DeleteAgentsByAgentIdSalesZipsErrors];
+
+export type DeleteAgentsByAgentIdSalesZipsResponses = {
+    /**
+     * OK
+     */
+    200: AgentSalesZipCodeStateResult;
+};
+
+export type DeleteAgentsByAgentIdSalesZipsResponse = DeleteAgentsByAgentIdSalesZipsResponses[keyof DeleteAgentsByAgentIdSalesZipsResponses];
+
+export type GetAgentsByAgentIdSalesZipsData = {
+    body?: never;
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/agents/{agentId}/sales-zips';
+};
+
+export type GetAgentsByAgentIdSalesZipsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: AgentErrorResult;
+    /**
+     * Forbidden
+     */
+    403: AgentErrorResult;
+    /**
+     * Not Found
+     */
+    404: AgentErrorResult;
+};
+
+export type GetAgentsByAgentIdSalesZipsError = GetAgentsByAgentIdSalesZipsErrors[keyof GetAgentsByAgentIdSalesZipsErrors];
+
+export type GetAgentsByAgentIdSalesZipsResponses = {
+    /**
+     * OK
+     */
+    200: AgentSalesZipCodeStateResult;
+};
+
+export type GetAgentsByAgentIdSalesZipsResponse = GetAgentsByAgentIdSalesZipsResponses[keyof GetAgentsByAgentIdSalesZipsResponses];
+
+export type PutAgentsByAgentIdSalesZipsData = {
+    body: PutAgentSalesZipCodesInput;
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/agents/{agentId}/sales-zips';
+};
+
+export type PutAgentsByAgentIdSalesZipsErrors = {
+    /**
+     * Bad Request
+     */
+    400: AgentErrorResult;
+    /**
+     * Unauthorized
+     */
+    401: AgentErrorResult;
+    /**
+     * Forbidden
+     */
+    403: AgentErrorResult;
+    /**
+     * Not Found
+     */
+    404: AgentErrorResult;
+};
+
+export type PutAgentsByAgentIdSalesZipsError = PutAgentsByAgentIdSalesZipsErrors[keyof PutAgentsByAgentIdSalesZipsErrors];
+
+export type PutAgentsByAgentIdSalesZipsResponses = {
+    /**
+     * OK
+     */
+    200: AgentSalesZipCodeStateResult;
+};
+
+export type PutAgentsByAgentIdSalesZipsResponse = PutAgentsByAgentIdSalesZipsResponses[keyof PutAgentsByAgentIdSalesZipsResponses];
+
 export type GetAgentsByAgentIdConversationsData = {
     body?: never;
     path: {
@@ -919,6 +1231,72 @@ export type PostSubscriptionsBySubscriptionIdSquareCatalogSyncResponses = {
 };
 
 export type PostSubscriptionsBySubscriptionIdSquareCatalogSyncResponse = PostSubscriptionsBySubscriptionIdSquareCatalogSyncResponses[keyof PostSubscriptionsBySubscriptionIdSquareCatalogSyncResponses];
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query?: never;
+    url: '/subscriptions/{subscriptionId}/square/catalog/sync-state';
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateErrors = {
+    /**
+     * Unauthorized
+     */
+    401: SubscriptionCatalogSyncErrorResult;
+    /**
+     * Forbidden
+     */
+    403: SubscriptionCatalogSyncErrorResult;
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateError = GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateErrors[keyof GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateErrors];
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionSquareCatalogSyncStateResult;
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateResponse = GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateResponses[keyof GetSubscriptionsBySubscriptionIdSquareCatalogSyncStateResponses];
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogProductsData = {
+    body?: never;
+    path: {
+        subscriptionId: string;
+    };
+    query: {
+        query?: string;
+        skip: number;
+        take: number;
+    };
+    url: '/subscriptions/{subscriptionId}/square/catalog/products';
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogProductsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: SubscriptionCatalogSyncErrorResult;
+    /**
+     * Forbidden
+     */
+    403: SubscriptionCatalogSyncErrorResult;
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogProductsError = GetSubscriptionsBySubscriptionIdSquareCatalogProductsErrors[keyof GetSubscriptionsBySubscriptionIdSquareCatalogProductsErrors];
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogProductsResponses = {
+    /**
+     * OK
+     */
+    200: GetSubscriptionSquareCatalogProductsResult;
+};
+
+export type GetSubscriptionsBySubscriptionIdSquareCatalogProductsResponse = GetSubscriptionsBySubscriptionIdSquareCatalogProductsResponses[keyof GetSubscriptionsBySubscriptionIdSquareCatalogProductsResponses];
 
 export type DeleteSubscriptionsBySubscriptionIdSquareConnectionData = {
     body?: never;

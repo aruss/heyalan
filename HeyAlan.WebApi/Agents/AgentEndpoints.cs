@@ -1,7 +1,11 @@
 namespace HeyAlan.WebApi.Agents;
 
+using HeyAlan.Data;
+using HeyAlan.Data.Entities;
+using HeyAlan.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using HeyAlan.Agents;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 public static class AgentEndpoints
@@ -43,6 +47,50 @@ public static class AgentEndpoints
         routeGroup
             .MapDelete("{agentId:guid}", DeleteAgentAsync)
             .Produces<DeleteAgentResult>(StatusCodes.Status200OK)
+            .Produces<AgentErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<AgentErrorResult>(StatusCodes.Status403Forbidden)
+            .Produces<AgentErrorResult>(StatusCodes.Status404NotFound);
+
+        routeGroup
+            .MapGet("{agentId:guid}/catalog/products", GetAgentCatalogProductsAsync)
+            .Produces<GetAgentCatalogProductsResult>(StatusCodes.Status200OK)
+            .Produces<AgentErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<AgentErrorResult>(StatusCodes.Status403Forbidden)
+            .Produces<AgentErrorResult>(StatusCodes.Status404NotFound);
+
+        routeGroup
+            .MapPut("{agentId:guid}/catalog/products", PutAgentCatalogProductsAsync)
+            .Produces<AgentCatalogProductAccessStateResult>(StatusCodes.Status200OK)
+            .Produces<AgentErrorResult>(StatusCodes.Status400BadRequest)
+            .Produces<AgentErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<AgentErrorResult>(StatusCodes.Status403Forbidden)
+            .Produces<AgentErrorResult>(StatusCodes.Status404NotFound);
+
+        routeGroup
+            .MapDelete("{agentId:guid}/catalog/products", DeleteAgentCatalogProductsAsync)
+            .Produces<AgentCatalogProductAccessStateResult>(StatusCodes.Status200OK)
+            .Produces<AgentErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<AgentErrorResult>(StatusCodes.Status403Forbidden)
+            .Produces<AgentErrorResult>(StatusCodes.Status404NotFound);
+
+        routeGroup
+            .MapGet("{agentId:guid}/sales-zips", GetAgentSalesZipCodesAsync)
+            .Produces<AgentSalesZipCodeStateResult>(StatusCodes.Status200OK)
+            .Produces<AgentErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<AgentErrorResult>(StatusCodes.Status403Forbidden)
+            .Produces<AgentErrorResult>(StatusCodes.Status404NotFound);
+
+        routeGroup
+            .MapPut("{agentId:guid}/sales-zips", PutAgentSalesZipCodesAsync)
+            .Produces<AgentSalesZipCodeStateResult>(StatusCodes.Status200OK)
+            .Produces<AgentErrorResult>(StatusCodes.Status400BadRequest)
+            .Produces<AgentErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<AgentErrorResult>(StatusCodes.Status403Forbidden)
+            .Produces<AgentErrorResult>(StatusCodes.Status404NotFound);
+
+        routeGroup
+            .MapDelete("{agentId:guid}/sales-zips", DeleteAgentSalesZipCodesAsync)
+            .Produces<AgentSalesZipCodeStateResult>(StatusCodes.Status200OK)
             .Produces<AgentErrorResult>(StatusCodes.Status401Unauthorized)
             .Produces<AgentErrorResult>(StatusCodes.Status403Forbidden)
             .Produces<AgentErrorResult>(StatusCodes.Status404NotFound);
@@ -197,6 +245,239 @@ public static class AgentEndpoints
         return TypedResults.Ok(new DeleteAgentResult(true));
     }
 
+    private static async Task<IResult> GetAgentCatalogProductsAsync(
+        [FromRoute] Guid agentId,
+        [AsParameters] GetAgentCatalogProductsInput input,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        IAgentCatalogProductAccessService accessService,
+        CancellationToken cancellationToken)
+    {
+        AuthorizedAgentResult authorizedAgent = await GetAuthorizedAgentAsync(
+            agentId,
+            user,
+            dbContext,
+            cancellationToken);
+
+        if (authorizedAgent.ErrorResult is not null)
+        {
+            return authorizedAgent.ErrorResult;
+        }
+
+        HeyAlan.Agents.GetAgentCatalogProductAccessStateOperationResult accessStateResult = await accessService.GetStateAsync(
+            new HeyAlan.Agents.GetAgentCatalogProductAccessStateInput(agentId),
+            cancellationToken);
+
+        if (accessStateResult is HeyAlan.Agents.GetAgentCatalogProductAccessStateOperationResult.Failure accessFailure)
+        {
+            return MapError(accessFailure.ErrorCode);
+        }
+
+        HeyAlan.Agents.GetAgentCatalogProductAccessStateOperationResult.Success accessSuccess =
+            (HeyAlan.Agents.GetAgentCatalogProductAccessStateOperationResult.Success)accessStateResult;
+
+        HashSet<Guid> assignedProductIds = accessSuccess.State.SubscriptionCatalogProductIds.ToHashSet();
+        IQueryable<SubscriptionCatalogProduct> query = dbContext.SubscriptionCatalogProducts
+            .Where(item => item.SubscriptionId == authorizedAgent.Agent!.SubscriptionId);
+
+        string? normalizedQuery = NormalizeCatalogQuery(input.Query);
+        if (!String.IsNullOrWhiteSpace(normalizedQuery))
+        {
+            query = query.Where(item => item.SearchText.Contains(normalizedQuery));
+        }
+
+        CursorList<AgentCatalogProductItem> cursor = await query
+            .OrderBy(item => item.ItemName)
+            .ThenBy(item => item.VariationName)
+            .ThenBy(item => item.Id)
+            .ToCursorListAsync(
+                item => new AgentCatalogProductItem(
+                    item.Id,
+                    item.SquareItemId,
+                    item.SquareVariationId,
+                    item.ItemName,
+                    item.VariationName,
+                    item.Description,
+                    item.Sku,
+                    item.BasePriceAmount,
+                    item.BasePriceCurrency,
+                    item.IsSellable,
+                    item.IsDeleted,
+                    assignedProductIds.Contains(item.Id)),
+                input.Skip,
+                input.Take,
+                cancellationToken);
+
+        return TypedResults.Ok(new GetAgentCatalogProductsResult(
+            cursor.Items.ToList(),
+            cursor.Skip,
+            cursor.Take,
+            accessSuccess.State.HasExplicitAssignments));
+    }
+
+    private static async Task<IResult> PutAgentCatalogProductsAsync(
+        [FromRoute] Guid agentId,
+        [FromBody] PutAgentCatalogProductsInput input,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        IAgentCatalogProductAccessService accessService,
+        CancellationToken cancellationToken)
+    {
+        AuthorizedAgentResult authorizedAgent = await GetAuthorizedAgentAsync(
+            agentId,
+            user,
+            dbContext,
+            cancellationToken);
+
+        if (authorizedAgent.ErrorResult is not null)
+        {
+            return authorizedAgent.ErrorResult;
+        }
+
+        ReplaceAgentCatalogProductAccessResult result = await accessService.ReplaceAssignmentsAsync(
+            new ReplaceAgentCatalogProductAccessInput(
+                agentId,
+                input.SubscriptionCatalogProductIds),
+            cancellationToken);
+
+        if (result is ReplaceAgentCatalogProductAccessResult.Failure failure)
+        {
+            return MapError(failure.ErrorCode);
+        }
+
+        ReplaceAgentCatalogProductAccessResult.Success success = (ReplaceAgentCatalogProductAccessResult.Success)result;
+        return TypedResults.Ok(ToAgentCatalogProductAccessStateResult(success.State));
+    }
+
+    private static async Task<IResult> DeleteAgentCatalogProductsAsync(
+        [FromRoute] Guid agentId,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        IAgentCatalogProductAccessService accessService,
+        CancellationToken cancellationToken)
+    {
+        AuthorizedAgentResult authorizedAgent = await GetAuthorizedAgentAsync(
+            agentId,
+            user,
+            dbContext,
+            cancellationToken);
+
+        if (authorizedAgent.ErrorResult is not null)
+        {
+            return authorizedAgent.ErrorResult;
+        }
+
+        ClearAgentCatalogProductAccessResult result = await accessService.ClearAssignmentsAsync(
+            new ClearAgentCatalogProductAccessInput(agentId),
+            cancellationToken);
+
+        if (result is ClearAgentCatalogProductAccessResult.Failure failure)
+        {
+            return MapError(failure.ErrorCode);
+        }
+
+        ClearAgentCatalogProductAccessResult.Success success = (ClearAgentCatalogProductAccessResult.Success)result;
+        return TypedResults.Ok(ToAgentCatalogProductAccessStateResult(success.State));
+    }
+
+    private static async Task<IResult> GetAgentSalesZipCodesAsync(
+        [FromRoute] Guid agentId,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        IAgentSalesZipCodeService zipCodeService,
+        CancellationToken cancellationToken)
+    {
+        AuthorizedAgentResult authorizedAgent = await GetAuthorizedAgentAsync(
+            agentId,
+            user,
+            dbContext,
+            cancellationToken);
+
+        if (authorizedAgent.ErrorResult is not null)
+        {
+            return authorizedAgent.ErrorResult;
+        }
+
+        HeyAlan.Agents.GetAgentSalesZipCodeStateOperationResult result = await zipCodeService.GetStateAsync(
+            new HeyAlan.Agents.GetAgentSalesZipCodeStateInput(agentId),
+            cancellationToken);
+
+        if (result is HeyAlan.Agents.GetAgentSalesZipCodeStateOperationResult.Failure failure)
+        {
+            return MapError(failure.ErrorCode);
+        }
+
+        HeyAlan.Agents.GetAgentSalesZipCodeStateOperationResult.Success success =
+            (HeyAlan.Agents.GetAgentSalesZipCodeStateOperationResult.Success)result;
+
+        return TypedResults.Ok(ToAgentSalesZipCodeStateResult(success.State));
+    }
+
+    private static async Task<IResult> PutAgentSalesZipCodesAsync(
+        [FromRoute] Guid agentId,
+        [FromBody] PutAgentSalesZipCodesInput input,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        IAgentSalesZipCodeService zipCodeService,
+        CancellationToken cancellationToken)
+    {
+        AuthorizedAgentResult authorizedAgent = await GetAuthorizedAgentAsync(
+            agentId,
+            user,
+            dbContext,
+            cancellationToken);
+
+        if (authorizedAgent.ErrorResult is not null)
+        {
+            return authorizedAgent.ErrorResult;
+        }
+
+        ReplaceAgentSalesZipCodesResult result = await zipCodeService.ReplaceZipCodesAsync(
+            new ReplaceAgentSalesZipCodesInput(
+                agentId,
+                input.ZipCodes),
+            cancellationToken);
+
+        if (result is ReplaceAgentSalesZipCodesResult.Failure failure)
+        {
+            return MapError(failure.ErrorCode);
+        }
+
+        ReplaceAgentSalesZipCodesResult.Success success = (ReplaceAgentSalesZipCodesResult.Success)result;
+        return TypedResults.Ok(ToAgentSalesZipCodeStateResult(success.State));
+    }
+
+    private static async Task<IResult> DeleteAgentSalesZipCodesAsync(
+        [FromRoute] Guid agentId,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        IAgentSalesZipCodeService zipCodeService,
+        CancellationToken cancellationToken)
+    {
+        AuthorizedAgentResult authorizedAgent = await GetAuthorizedAgentAsync(
+            agentId,
+            user,
+            dbContext,
+            cancellationToken);
+
+        if (authorizedAgent.ErrorResult is not null)
+        {
+            return authorizedAgent.ErrorResult;
+        }
+
+        ClearAgentSalesZipCodesResult result = await zipCodeService.ClearZipCodesAsync(
+            new ClearAgentSalesZipCodesInput(agentId),
+            cancellationToken);
+
+        if (result is ClearAgentSalesZipCodesResult.Failure failure)
+        {
+            return MapError(failure.ErrorCode);
+        }
+
+        ClearAgentSalesZipCodesResult.Success success = (ClearAgentSalesZipCodesResult.Success)result;
+        return TypedResults.Ok(ToAgentSalesZipCodeStateResult(success.State));
+    }
+
     private static AgentResult ToAgentResult(AgentDetailsResult agent)
     {
         return new AgentResult(
@@ -211,6 +492,26 @@ public static class AgentEndpoints
             agent.IsOperationalReady,
             agent.CreatedAt,
             agent.UpdatedAt);
+    }
+
+    private static AgentCatalogProductAccessStateResult ToAgentCatalogProductAccessStateResult(
+        HeyAlan.Agents.AgentCatalogProductAccessStateResult state)
+    {
+        return new AgentCatalogProductAccessStateResult(
+            state.AgentId,
+            state.SubscriptionId,
+            state.HasExplicitAssignments,
+            state.SubscriptionCatalogProductIds);
+    }
+
+    private static AgentSalesZipCodeStateResult ToAgentSalesZipCodeStateResult(
+        HeyAlan.Agents.AgentSalesZipCodeStateResult state)
+    {
+        return new AgentSalesZipCodeStateResult(
+            state.AgentId,
+            state.SubscriptionId,
+            state.HasExplicitZipRestrictions,
+            state.ZipCodesNormalized);
     }
 
     private static IResult UnauthorizedError(string errorCode)
@@ -241,10 +542,63 @@ public static class AgentEndpoints
             "agent_not_found" => "The requested agent was not found.",
             "agent_name_required" => "Agent name is required.",
             "agent_personality_required" => "Agent personality is required.",
+            "catalog_product_not_found" => "The requested catalog product was not found for this agent subscription.",
+            "agent_catalog_assignment_invalid" => "The requested catalog product assignments are invalid.",
+            "agent_sales_zip_invalid" => "One or more sales zip codes are invalid. Use a 5-digit ZIP or ZIP+4 value.",
+            "agent_sales_zip_conflict" => "Sales zip codes must be unique after normalization.",
             "telegram_bot_token_already_in_use" => "This Telegram bot token is already connected to another agent. Use a different token.",
             "telegram_webhook_registration_failed" => "Telegram webhook registration failed. Verify the bot token, webhook URL reachability, and BotFather webhook settings, then try again.",
             "telegram_bot_token_invalid" => "Telegram rejected the bot token. Verify the token from BotFather and try again.",
             _ => "Agent request failed."
         };
     }
+
+    private static string? NormalizeCatalogQuery(string? query)
+    {
+        if (String.IsNullOrWhiteSpace(query))
+        {
+            return null;
+        }
+
+        return query.Trim().ToLowerInvariant();
+    }
+
+    private static async Task<AuthorizedAgentResult> GetAuthorizedAgentAsync(
+        Guid agentId,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        Guid? userId = user.GetUserId();
+        if (userId is null)
+        {
+            return new AuthorizedAgentResult(null, UnauthorizedError("unauthenticated"));
+        }
+
+        Agent? agent = await dbContext.Agents
+            .SingleOrDefaultAsync(item => item.Id == agentId, cancellationToken);
+
+        if (agent is null)
+        {
+            return new AuthorizedAgentResult(null, MapError("agent_not_found"));
+        }
+
+        bool isMember = await dbContext.SubscriptionUsers
+            .AnyAsync(
+                membership =>
+                    membership.SubscriptionId == agent.SubscriptionId &&
+                    membership.UserId == userId.Value,
+                cancellationToken);
+
+        if (!isMember)
+        {
+            return new AuthorizedAgentResult(null, MapError("subscription_member_required"));
+        }
+
+        return new AuthorizedAgentResult(agent, null);
+    }
+
+    private sealed record AuthorizedAgentResult(
+        Agent? Agent,
+        IResult? ErrorResult);
 }
