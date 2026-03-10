@@ -50,7 +50,7 @@ export function DropdownUserProfile({
           align={align}
           className="sm:!min-w-[calc(var(--radix-dropdown-menu-trigger-width))]"
         >
-          <DropdownMenuLabel>{emailLabel ?? FALLBACK_EMAIL_LABEL}</DropdownMenuLabel>
+          <DropdownMenuLabel><div className="max-w-48 truncate">{emailLabel ?? FALLBACK_EMAIL_LABEL}</div></DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuSubMenu>
               <DropdownMenuSubMenuTrigger>Theme</DropdownMenuSubMenuTrigger>

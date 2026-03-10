@@ -3,6 +3,7 @@ namespace HeyAlan.SquareIntegration;
 public static class SquareIntegrationRules
 {
     public const string ConnectCallbackPath = "/api/subscriptions/square/callback";
+    public const string CatalogWebhookPath = "/webhooks/square/catalog";
 
     private static readonly string[] RequiredFullScopes =
     [

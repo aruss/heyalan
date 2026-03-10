@@ -17,6 +17,8 @@ public record AppOptions
     public string? SquareClientId { get; init; }
 
     public string? SquareClientSecret { get; init; }
+
+    public string? SquareWebhookSignatureKey { get; init; }
 }
 
 
@@ -41,7 +43,8 @@ public static class AppOptionsConfigurationExtensions
             AuthSquareClientId = NormalizeOptional(configuration["AUTH_SQUARE_CLIENT_ID"]),
             AuthSquareClientSecret = NormalizeOptional(configuration["AUTH_SQUARE_CLIENT_SECRET"]),
             SquareClientId = NormalizeOptional(configuration["SQUARE_CLIENT_ID"]),
-            SquareClientSecret = NormalizeOptional(configuration["SQUARE_CLIENT_SECRET"])
+            SquareClientSecret = NormalizeOptional(configuration["SQUARE_CLIENT_SECRET"]),
+            SquareWebhookSignatureKey = NormalizeOptional(configuration["SQUARE_WEBHOOK_SIGNATURE_KEY"])
         };
 
         ValidatePair(
@@ -83,4 +86,3 @@ public static class AppOptionsConfigurationExtensions
         return value.Trim();
     }
 }
-

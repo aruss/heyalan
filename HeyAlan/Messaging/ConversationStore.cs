@@ -11,10 +11,13 @@ public class ConversationStore : IConversationStore
 
     public ConversationStore(MainDataContext dbContext)
     {
-        this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        this.dbContext = dbContext ?? 
+            throw new ArgumentNullException(nameof(dbContext));
     }
 
-    public async Task UpsertIncomingMessageAsync(IncomingMessage message, CancellationToken ct)
+    public async Task UpsertIncomingMessageAsync(
+        IncomingMessage message,
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(message);
 
@@ -133,7 +136,9 @@ public class ConversationStore : IConversationStore
         return conversation;
     }
 
-    private async Task<string> ResolveTelegramBotIdAsync(Guid agentId, CancellationToken ct)
+    private async Task<string> ResolveTelegramBotIdAsync(
+        Guid agentId,
+        CancellationToken ct)
     {
         string? token = await this.dbContext.Agents
             .Where(agent => agent.Id == agentId)
@@ -154,7 +159,9 @@ public class ConversationStore : IConversationStore
         return token[..separatorIndex];
     }
 
-    private void ApplySummaryFromMessage(Conversation conversation, ConversationMessage message)
+    private void ApplySummaryFromMessage(
+        Conversation conversation,
+        ConversationMessage message)
     {
         conversation.LastMessageAt = message.OccurredAt;
         conversation.LastMessageRole = message.Role;

@@ -88,7 +88,13 @@ public class SubscriptionSquareConnectionServiceTests
         });
 
         StubSubscriptionOnboardingService onboardingService = new();
-        SquareService service = CreateService(dbContext, stateProtector, handler, onboardingService: onboardingService);
+        RecordingSubscriptionCatalogSyncTriggerService triggerService = new();
+        SquareService service = CreateService(
+            dbContext,
+            stateProtector,
+            handler,
+            onboardingService: onboardingService,
+            triggerService: triggerService);
 
         CompleteSquareConnectResult result = await service.CompleteConnectAsync(
             new CompleteSquareConnectInput("valid-state", "auth-code", null));
@@ -96,6 +102,10 @@ public class SubscriptionSquareConnectionServiceTests
         CompleteSquareConnectResult.Success success = Assert.IsType<CompleteSquareConnectResult.Success>(result);
         Assert.Contains("squareConnect=success", success.RedirectUrl, StringComparison.Ordinal);
         Assert.Equal(subscriptionId, onboardingService.LastRecomputeSubscriptionId);
+        Assert.NotNull(triggerService.LastRequest);
+        Assert.Equal(subscriptionId, triggerService.LastRequest!.SubscriptionId);
+        Assert.Equal(CatalogSyncTriggerSource.Connect, triggerService.LastRequest.TriggerSource);
+        Assert.True(triggerService.LastRequest.ForceFullSync);
 
         SubscriptionSquareConnection persisted = await dbContext.SubscriptionSquareConnections
             .SingleAsync(item => item.SubscriptionId == subscriptionId);
@@ -167,7 +177,8 @@ public class SubscriptionSquareConnectionServiceTests
         HttpMessageHandler handler,
         AppOptions? appOptions = null,
         IDataProtectionProvider? dataProtectionProvider = null,
-        ISubscriptionOnboardingService? onboardingService = null)
+        ISubscriptionOnboardingService? onboardingService = null,
+        ISubscriptionCatalogSyncTriggerService? triggerService = null)
     {
         AppOptions resolvedAppOptions = appOptions ?? new AppOptions
         {
@@ -183,6 +194,7 @@ public class SubscriptionSquareConnectionServiceTests
             dataProtectionProvider ?? new FakeDataProtectionProvider(),
             stateProtector,
             onboardingService ?? new StubSubscriptionOnboardingService(),
+            triggerService ?? new RecordingSubscriptionCatalogSyncTriggerService(),
             NullLogger<SquareService>.Instance);
     }
 
@@ -368,6 +380,26 @@ public class SubscriptionSquareConnectionServiceTests
                 false,
                 new OnboardingProfilePrefill(null, null),
                 new OnboardingChannelsPrefill(null, null, false)));
+        }
+    }
+
+    private sealed class RecordingSubscriptionCatalogSyncTriggerService : ISubscriptionCatalogSyncTriggerService
+    {
+        public SubscriptionCatalogSyncRequestInput? LastRequest { get; private set; }
+
+        public Task<SubscriptionCatalogSyncRequestResult> RequestSyncAsync(
+            SubscriptionCatalogSyncRequestInput input,
+            CancellationToken cancellationToken = default)
+        {
+            this.LastRequest = input;
+            return Task.FromResult(new SubscriptionCatalogSyncRequestResult(true));
+        }
+
+        public Task<int> EnqueueDuePeriodicSyncsAsync(
+            DateTime utcNow,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 

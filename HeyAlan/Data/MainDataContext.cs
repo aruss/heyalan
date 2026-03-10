@@ -36,6 +36,18 @@ public class MainDataContext :
 
     public DbSet<SubscriptionOnboardingState> SubscriptionOnboardingStates { get; set; } = null!;
 
+    public DbSet<SubscriptionCatalogSyncState> SubscriptionCatalogSyncStates { get; set; } = null!;
+
+    public DbSet<SubscriptionCatalogProduct> SubscriptionCatalogProducts { get; set; } = null!;
+
+    public DbSet<SubscriptionCatalogProductLocation> SubscriptionCatalogProductLocations { get; set; } = null!;
+
+    public DbSet<SquareWebhookReceipt> SquareWebhookReceipts { get; set; } = null!;
+
+    public DbSet<AgentCatalogProductAccess> AgentCatalogProductAccesses { get; set; } = null!;
+
+    public DbSet<AgentSalesZipCode> AgentSalesZipCodes { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -117,6 +129,14 @@ public class MainDataContext :
                 .HasForeignKey<SubscriptionOnboardingState>(e => e.SubscriptionId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(e => e.CatalogSyncState)
+                .WithOne(e => e.Subscription)
+                .HasForeignKey<SubscriptionCatalogSyncState>(e => e.SubscriptionId)
+                .HasConstraintName("fk_subscription_catalog_sync_state_subscription")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<CreditTransaction>(entity =>
@@ -140,6 +160,7 @@ public class MainDataContext :
         builder.Entity<Agent>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasAlternateKey(e => new { e.SubscriptionId, e.Id });
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
@@ -206,6 +227,181 @@ public class MainDataContext :
                 .HasForeignKey(e => e.PrimaryAgentId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<SubscriptionCatalogSyncState>(entity =>
+        {
+            entity.HasKey(e => e.SubscriptionId);
+            entity.Property(e => e.LastSyncedBeginTimeUtc).IsRequired(false);
+            entity.Property(e => e.NextScheduledSyncAtUtc).IsRequired(false);
+            entity.Property(e => e.LastSyncStartedAtUtc).IsRequired(false);
+            entity.Property(e => e.LastSyncCompletedAtUtc).IsRequired(false);
+            entity.Property(e => e.LastTriggerSource).IsRequired(false);
+            entity.Property(e => e.SyncInProgress).IsRequired();
+            entity.Property(e => e.PendingResync).IsRequired();
+            entity.Property(e => e.LastErrorCode).IsRequired(false);
+            entity.Property(e => e.LastErrorMessage).IsRequired(false);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.SubscriptionId, e.NextScheduledSyncAtUtc });
+        });
+
+        builder.Entity<SubscriptionCatalogProduct>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasAlternateKey(e => new { e.SubscriptionId, e.Id });
+            entity.Property(e => e.SquareItemId).IsRequired();
+            entity.Property(e => e.SquareVariationId).IsRequired();
+            entity.Property(e => e.ItemName).IsRequired();
+            entity.Property(e => e.VariationName).IsRequired();
+            entity.Property(e => e.Description).IsRequired(false);
+            entity.Property(e => e.Sku).IsRequired(false);
+            entity.Property(e => e.BasePriceAmount).IsRequired(false);
+            entity.Property(e => e.BasePriceCurrency).IsRequired(false);
+            entity.Property(e => e.IsSellable).IsRequired();
+            entity.Property(e => e.IsDeleted).IsRequired();
+            entity.Property(e => e.SquareUpdatedAtUtc).IsRequired(false);
+            entity.Property(e => e.SquareVersion).IsRequired(false);
+            entity.Property(e => e.SearchText).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.SubscriptionId, e.SquareVariationId })
+                .HasDatabaseName("ix_catalog_product_subscription_variation")
+                .IsUnique();
+            entity.HasIndex(e => new { e.SubscriptionId, e.SquareItemId })
+                .HasDatabaseName("ix_catalog_product_subscription_item");
+            entity.HasIndex(e => new { e.SubscriptionId, e.IsDeleted, e.IsSellable, e.ItemName, e.Id })
+                .HasDatabaseName("ix_catalog_product_subscription_active_name");
+            entity.HasIndex(e => new { e.SubscriptionId, e.SearchText })
+                .HasDatabaseName("ix_catalog_product_subscription_search");
+
+            entity
+                .HasOne(e => e.Subscription)
+                .WithMany(e => e.CatalogProducts)
+                .HasForeignKey(e => e.SubscriptionId)
+                .HasConstraintName("fk_catalog_product_subscription")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<SubscriptionCatalogProductLocation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SquareVariationId).IsRequired();
+            entity.Property(e => e.LocationId).IsRequired();
+            entity.Property(e => e.PriceOverrideAmount).IsRequired(false);
+            entity.Property(e => e.PriceOverrideCurrency).IsRequired(false);
+            entity.Property(e => e.IsAvailableForSale).IsRequired();
+            entity.Property(e => e.IsSoldOut).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.SubscriptionId, e.SquareVariationId, e.LocationId })
+                .HasDatabaseName("ix_catalog_product_location_variation_location")
+                .IsUnique();
+            entity.HasIndex(e => new { e.SubscriptionId, e.LocationId, e.Id })
+                .HasDatabaseName("ix_catalog_product_location_location");
+            entity.HasIndex(e => new { e.SubscriptionId, e.SubscriptionCatalogProductId })
+                .HasDatabaseName("ix_catalog_product_location_product");
+
+            entity
+                .HasOne(e => e.Subscription)
+                .WithMany(e => e.CatalogProductLocations)
+                .HasForeignKey(e => e.SubscriptionId)
+                .HasConstraintName("fk_catalog_product_location_subscription")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(e => e.SubscriptionCatalogProduct)
+                .WithMany(e => e.Locations)
+                .HasForeignKey(e => new { e.SubscriptionId, e.SubscriptionCatalogProductId })
+                .HasPrincipalKey(e => new { e.SubscriptionId, e.Id })
+                .HasConstraintName("fk_catalog_product_location_product")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<SquareWebhookReceipt>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EventId).IsRequired();
+            entity.Property(e => e.EventType).IsRequired();
+            entity.Property(e => e.MerchantId).IsRequired();
+            entity.Property(e => e.ReceivedAtUtc).IsRequired();
+            entity.Property(e => e.IsProcessed).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => e.EventId).IsUnique();
+            entity.HasIndex(e => new { e.SubscriptionId, e.ReceivedAtUtc, e.Id });
+            entity.HasIndex(e => new { e.SubscriptionId, e.IsProcessed, e.ReceivedAtUtc });
+
+            entity
+                .HasOne(e => e.Subscription)
+                .WithMany(e => e.SquareWebhookReceipts)
+                .HasForeignKey(e => e.SubscriptionId)
+                .HasConstraintName("fk_square_webhook_receipt_subscription")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<AgentCatalogProductAccess>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.SubscriptionId, e.AgentId, e.SubscriptionCatalogProductId })
+                .HasDatabaseName("ix_agent_catalog_access_agent_product")
+                .IsUnique();
+            entity.HasIndex(e => new { e.SubscriptionId, e.AgentId, e.Id })
+                .HasDatabaseName("ix_agent_catalog_access_agent");
+            entity.HasIndex(e => new { e.SubscriptionId, e.SubscriptionCatalogProductId, e.AgentId })
+                .HasDatabaseName("ix_agent_catalog_access_product");
+
+            entity
+                .HasOne(e => e.Agent)
+                .WithMany(e => e.CatalogProductAccesses)
+                .HasForeignKey(e => new { e.SubscriptionId, e.AgentId })
+                .HasPrincipalKey(e => new { e.SubscriptionId, e.Id })
+                .HasConstraintName("fk_agent_catalog_access_agent")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(e => e.SubscriptionCatalogProduct)
+                .WithMany(e => e.AgentProductAccesses)
+                .HasForeignKey(e => new { e.SubscriptionId, e.SubscriptionCatalogProductId })
+                .HasPrincipalKey(e => new { e.SubscriptionId, e.Id })
+                .HasConstraintName("fk_agent_catalog_access_product")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<AgentSalesZipCode>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ZipCodeNormalized).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.SubscriptionId, e.AgentId, e.ZipCodeNormalized })
+                .HasDatabaseName("ix_agent_sales_zip_agent_zip")
+                .IsUnique();
+            entity.HasIndex(e => new { e.SubscriptionId, e.AgentId, e.Id })
+                .HasDatabaseName("ix_agent_sales_zip_agent");
+
+            entity
+                .HasOne(e => e.Agent)
+                .WithMany(e => e.SalesZipCodes)
+                .HasForeignKey(e => new { e.SubscriptionId, e.AgentId })
+                .HasPrincipalKey(e => new { e.SubscriptionId, e.Id })
+                .HasConstraintName("fk_agent_sales_zip_agent")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<Conversation>(entity =>

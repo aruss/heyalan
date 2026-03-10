@@ -108,8 +108,8 @@ const TableRow = forwardRef<
   <tr
     ref={forwardedRef}
     className={cx(
-      "sm:[&_td:last-child]:pr-6 sm:[&_th:last-child]:pr-6",
-      "sm:[&_td:first-child]:pl-6 sm:[&_th:first-child]:pl-6",
+      "sm:[&_td:last-child]:pr-0 sm:[&_th:last-child]:pr-0",
+      "sm:[&_td:first-child]:pl-0 sm:[&_th:first-child]:pl-0",
       className,
     )}
     {...props}

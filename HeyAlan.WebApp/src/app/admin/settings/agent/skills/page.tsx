@@ -6,7 +6,7 @@ export default function SettingsAgentSettingsPage() {
 
   return (
     <>
-      <section>
+      <section className="mx-4">
         <form >
           <div className="grid grid-cols-1 gap-x-14 gap-y-8 md:grid-cols-3">
             <div>

@@ -33,4 +33,8 @@ public class Agent : IEntityWithId, IEntityWithAudit
 
     // whatsapp
     public string? WhatsappNumber { get; set; } = null!;
+
+    public ICollection<AgentCatalogProductAccess> CatalogProductAccesses { get; set; } = new List<AgentCatalogProductAccess>();
+
+    public ICollection<AgentSalesZipCode> SalesZipCodes { get; set; } = new List<AgentSalesZipCode>();
 }

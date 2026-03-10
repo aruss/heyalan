@@ -27,7 +27,7 @@ All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, S
 ## Coding Style & Naming Conventions
 - You MUST first read the ./docs/CODE_GUIDELINE_DOTNET.md when writing .net C# code
 - You MUST first read the ./docs/CODE_GUIDELINE_NODE.md when writing node/typescript code
-- You MUST first read the project README before working in that project (e.g., `HeyAlan.WebApp/README.md`, `HeyAlan.WebApi/README.md`, `HeyAlan.Initializer/README.md`, `HeyAlan.Data/README.md`, `HeyAlan/README.md`)
+- You MUST first read the project README before working in that project (e.g., `HeyAlan.WebApp/README.md`, `HeyAlan.WebApi/README.md`, `HeyAlan.Initializer/README.md`, `HeyAlan/README.md`)
 
 ## Dependencies & Package Management
 - When working with `package.json` dependencies or making upgrades, you MUST use `npm view` to check the latest package version.

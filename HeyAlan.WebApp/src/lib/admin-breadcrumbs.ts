@@ -6,6 +6,8 @@ const ADMIN_SETTINGS_AGENT_PATH = "/admin/settings/agent";
 const ADMIN_SETTINGS_AGENT_CHANNELS_PATH = "/admin/settings/agent/channels";
 const ADMIN_SETTINGS_AGENT_SKILLS_PATH = "/admin/settings/agent/skills";
 const ADMIN_SETTINGS_AGENT_INVENTORY_PATH = "/admin/settings/agent/inventory";
+const ADMIN_SETTINGS_INVENTORY_PATH = "/admin/settings/inventory";
+const ADMIN_SETTINGS_MEMBERS_PATH = "/admin/settings/members";
 
 const ADMIN_BREADCRUMBS_BY_PATH: Record<string, BreadcrumbItem[]> = {
   [ADMIN_INBOX_PATH]: [{ label: "Inbox" }],
@@ -14,6 +16,8 @@ const ADMIN_BREADCRUMBS_BY_PATH: Record<string, BreadcrumbItem[]> = {
   [ADMIN_SETTINGS_AGENT_CHANNELS_PATH]: [{ label: "Agent Channels" }],
   [ADMIN_SETTINGS_AGENT_SKILLS_PATH]: [{ label: "Agent Skills" }],
   [ADMIN_SETTINGS_AGENT_INVENTORY_PATH]: [{ label: "Agent Inventory" }],
+  [ADMIN_SETTINGS_INVENTORY_PATH]: [{ label: "Inventory" }],
+  [ADMIN_SETTINGS_MEMBERS_PATH]: [{ label: "Members" }],
 };
 
 const normalizeAdminPath = (pathname: string): string => {

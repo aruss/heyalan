@@ -158,6 +158,20 @@ public class AppOptionsTests
     }
 
     [Fact]
+    public void TryGetAppOptions_WhenSquareWebhookSignatureKeyExists_ReturnsTrimmedValue()
+    {
+        IConfiguration configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["PUBLIC_BASE_URL"] = "https://heyalan.test",
+            ["SQUARE_WEBHOOK_SIGNATURE_KEY"] = "  webhook-signature-key  "
+        });
+
+        AppOptions appOptions = configuration.TryGetAppOptions();
+
+        Assert.Equal("webhook-signature-key", appOptions.SquareWebhookSignatureKey);
+    }
+
+    [Fact]
     public void TryGetAppOptions_WhenOnlySquareClientIdExists_ThrowsInvalidOperationException()
     {
         IConfiguration configuration = CreateConfiguration(new Dictionary<string, string?>

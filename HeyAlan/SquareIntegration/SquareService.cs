@@ -25,6 +25,7 @@ public sealed class SquareService : ISquareService
     private readonly IDataProtector dataProtector;
     private readonly IOAuthStateProtector stateProtector;
     private readonly ISubscriptionOnboardingService subscriptionOnboardingService;
+    private readonly ISubscriptionCatalogSyncTriggerService subscriptionCatalogSyncTriggerService;
     private readonly ILogger<SquareService> logger;
 
     public SquareService(
@@ -34,6 +35,7 @@ public sealed class SquareService : ISquareService
         IDataProtectionProvider dataProtectionProvider,
         IOAuthStateProtector stateProtector,
         ISubscriptionOnboardingService subscriptionOnboardingService,
+        ISubscriptionCatalogSyncTriggerService subscriptionCatalogSyncTriggerService,
         ILogger<SquareService> logger)
     {
         this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -43,6 +45,7 @@ public sealed class SquareService : ISquareService
             .CreateProtector(DataProtectionPurpose);
         this.stateProtector = stateProtector ?? throw new ArgumentNullException(nameof(stateProtector));
         this.subscriptionOnboardingService = subscriptionOnboardingService ?? throw new ArgumentNullException(nameof(subscriptionOnboardingService));
+        this.subscriptionCatalogSyncTriggerService = subscriptionCatalogSyncTriggerService ?? throw new ArgumentNullException(nameof(subscriptionCatalogSyncTriggerService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -154,6 +157,7 @@ public sealed class SquareService : ISquareService
                 tokenSuccess.Payload.Scopes), cancellationToken);
 
             await this.subscriptionOnboardingService.RecomputeStateAsync(statePayload.SubscriptionId, cancellationToken);
+            await this.TryEnqueueInitialCatalogSyncAsync(statePayload.SubscriptionId, cancellationToken);
             string successRedirectUrl = AddQuery(statePayload.ReturnUrl, "squareConnect", "success");
             return new CompleteSquareConnectResult.Success(successRedirectUrl);
         }
@@ -795,6 +799,28 @@ public sealed class SquareService : ISquareService
         }
 
         return "square_oauth_callback_error";
+    }
+
+    private async Task TryEnqueueInitialCatalogSyncAsync(
+        Guid subscriptionId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await this.subscriptionCatalogSyncTriggerService.RequestSyncAsync(
+                new SubscriptionCatalogSyncRequestInput(
+                    subscriptionId,
+                    CatalogSyncTriggerSource.Connect,
+                    true),
+                cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            this.logger.LogWarning(
+                exception,
+                "Square connection persisted for subscription {SubscriptionId}, but initial catalog sync enqueue failed.",
+                subscriptionId);
+        }
     }
 
     private enum RefreshTokenApiResultType

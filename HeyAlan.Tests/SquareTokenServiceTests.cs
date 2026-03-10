@@ -178,6 +178,7 @@ public class SquareServiceTokenTests
             dataProtectionProvider,
             new PassThroughStateProtector(),
             new StubSubscriptionOnboardingService(),
+            new StubSubscriptionCatalogSyncTriggerService(),
             NullLogger<SquareService>.Instance);
     }
 
@@ -315,6 +316,23 @@ public class SquareServiceTokenTests
             this.CallCount++;
             HttpResponseMessage response = this.responseFactory(request);
             return Task.FromResult(response);
+        }
+    }
+
+    private sealed class StubSubscriptionCatalogSyncTriggerService : ISubscriptionCatalogSyncTriggerService
+    {
+        public Task<SubscriptionCatalogSyncRequestResult> RequestSyncAsync(
+            SubscriptionCatalogSyncRequestInput input,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new SubscriptionCatalogSyncRequestResult(true));
+        }
+
+        public Task<int> EnqueueDuePeriodicSyncsAsync(
+            DateTime utcNow,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

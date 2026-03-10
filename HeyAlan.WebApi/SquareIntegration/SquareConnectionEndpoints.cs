@@ -2,8 +2,12 @@ namespace HeyAlan.WebApi.SquareIntegration;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using HeyAlan.SquareIntegration;
 using System.Security.Claims;
+using HeyAlan.Data;
+using HeyAlan.Data.Entities;
+using HeyAlan.Extensions;
 
 public static class SquareConnectionEndpoints
 {
@@ -22,6 +26,30 @@ public static class SquareConnectionEndpoints
             .Produces<SquareConnectionErrorResult>(StatusCodes.Status400BadRequest)
             .Produces<SquareConnectionErrorResult>(StatusCodes.Status401Unauthorized)
             .Produces<SquareConnectionErrorResult>(StatusCodes.Status403Forbidden);
+
+        subscriptionsGroup
+            .MapPost(
+                "/{subscriptionId:guid}/square/catalog/sync",
+                PostSubscriptionSquareCatalogSyncAsync)
+            .Produces<PostSubscriptionSquareCatalogSyncResult>(StatusCodes.Status200OK)
+            .Produces<SubscriptionCatalogSyncErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<SubscriptionCatalogSyncErrorResult>(StatusCodes.Status403Forbidden);
+
+        subscriptionsGroup
+            .MapGet(
+                "/{subscriptionId:guid}/square/catalog/sync-state",
+                GetSubscriptionSquareCatalogSyncStateAsync)
+            .Produces<GetSubscriptionSquareCatalogSyncStateResult>(StatusCodes.Status200OK)
+            .Produces<SubscriptionCatalogSyncErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<SubscriptionCatalogSyncErrorResult>(StatusCodes.Status403Forbidden);
+
+        subscriptionsGroup
+            .MapGet(
+                "/{subscriptionId:guid}/square/catalog/products",
+                GetSubscriptionSquareCatalogProductsAsync)
+            .Produces<GetSubscriptionSquareCatalogProductsResult>(StatusCodes.Status200OK)
+            .Produces<SubscriptionCatalogSyncErrorResult>(StatusCodes.Status401Unauthorized)
+            .Produces<SubscriptionCatalogSyncErrorResult>(StatusCodes.Status403Forbidden);
 
         subscriptionsGroup
             .MapDelete(
@@ -111,6 +139,141 @@ public static class SquareConnectionEndpoints
         return TypedResults.Ok(new DeleteSubscriptionSquareConnectionResult(true));
     }
 
+    private static async Task<IResult> PostSubscriptionSquareCatalogSyncAsync(
+        [FromRoute] Guid subscriptionId,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        ISubscriptionCatalogSyncTriggerService triggerService,
+        CancellationToken cancellationToken)
+    {
+        IResult? authorizationError = await AuthorizeSubscriptionMemberAsync(
+            subscriptionId,
+            user,
+            dbContext,
+            cancellationToken);
+        if (authorizationError is not null)
+        {
+            return authorizationError;
+        }
+
+        SubscriptionCatalogSyncRequestResult result = await triggerService.RequestSyncAsync(
+            new SubscriptionCatalogSyncRequestInput(
+                subscriptionId,
+                HeyAlan.Data.Entities.CatalogSyncTriggerSource.Manual,
+                true),
+            cancellationToken);
+
+        return TypedResults.Ok(new PostSubscriptionSquareCatalogSyncResult(result.Enqueued));
+    }
+
+    private static async Task<IResult> GetSubscriptionSquareCatalogSyncStateAsync(
+        [FromRoute] Guid subscriptionId,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        ISubscriptionCatalogReadService readService,
+        CancellationToken cancellationToken)
+    {
+        IResult? authorizationError = await AuthorizeSubscriptionMemberAsync(
+            subscriptionId,
+            user,
+            dbContext,
+            cancellationToken);
+        if (authorizationError is not null)
+        {
+            return authorizationError;
+        }
+
+        SubscriptionCatalogFreshnessResult freshness = await readService.GetFreshnessAsync(
+            subscriptionId,
+            cancellationToken);
+
+        CatalogProductCountsResult counts = await GetCatalogProductCountsAsync(
+            subscriptionId,
+            dbContext,
+            cancellationToken);
+
+        return TypedResults.Ok(
+            new GetSubscriptionSquareCatalogSyncStateResult(
+                subscriptionId,
+                ResolveCatalogSyncStatus(freshness),
+                freshness.LastTriggerSource?.ToString(),
+                freshness.LastSyncedBeginTimeUtc,
+                freshness.NextScheduledSyncAtUtc,
+                freshness.LastSyncStartedAtUtc,
+                freshness.LastSyncCompletedAtUtc,
+                freshness.SyncInProgress,
+                freshness.PendingResync,
+                freshness.LastErrorCode,
+                freshness.LastErrorMessage,
+                counts.CachedProductCount,
+                counts.SellableProductCount,
+                counts.DeletedProductCount));
+    }
+
+    private static async Task<IResult> GetSubscriptionSquareCatalogProductsAsync(
+        [FromRoute] Guid subscriptionId,
+        [AsParameters] GetSubscriptionSquareCatalogProductsInput input,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        IResult? authorizationError = await AuthorizeSubscriptionMemberAsync(
+            subscriptionId,
+            user,
+            dbContext,
+            cancellationToken);
+        if (authorizationError is not null)
+        {
+            return authorizationError;
+        }
+
+        string? normalizedQuery = NormalizeCatalogQuery(input.Query);
+
+        IQueryable<SubscriptionCatalogProduct> query = dbContext.SubscriptionCatalogProducts
+            .AsNoTracking()
+            .Include(item => item.Locations)
+            .Where(item => item.SubscriptionId == subscriptionId);
+
+        if (!String.IsNullOrWhiteSpace(normalizedQuery))
+        {
+            query = query.Where(item => item.SearchText.Contains(normalizedQuery));
+        }
+
+        int skip = Math.Clamp(input.Skip, Constants.SkipMin, Constants.SkipMax);
+        int take = Math.Clamp(input.Take, Constants.TakeMin, Constants.TakeMax);
+
+        PagedList<SubscriptionCatalogProduct> page = await query
+            .OrderBy(item => item.ItemName)
+            .ThenBy(item => item.VariationName)
+            .ThenBy(item => item.Id)
+            .ToPagedListAsync(skip, take, cancellationToken);
+
+        List<SubscriptionSquareCatalogProductItem> items = page.Items
+            .Select(
+                item =>
+                    new SubscriptionSquareCatalogProductItem(
+                        item.Id,
+                        item.SquareItemId,
+                        item.SquareVariationId,
+                        item.ItemName,
+                        item.VariationName,
+                        item.Sku,
+                        item.BasePriceAmount,
+                        item.BasePriceCurrency,
+                        item.IsSellable,
+                        item.IsDeleted,
+                        item.SquareUpdatedAtUtc,
+                        item.Locations.Count))
+            .ToList();
+
+        return TypedResults.Ok(
+            new GetSubscriptionSquareCatalogProductsResult(
+                items,
+                page.Total,
+                page.Skip,
+                page.Take));
+    }
+
     private static IResult UnauthorizedError(string errorCode)
     {
         SquareConnectionErrorResult payload = new(errorCode, "Authentication is required.");
@@ -125,6 +288,25 @@ public static class SquareConnectionEndpoints
         {
             "subscription_owner_required" => StatusCodes.Status403Forbidden,
             "connection_not_found" => StatusCodes.Status404NotFound,
+            _ => StatusCodes.Status400BadRequest
+        };
+
+        return TypedResults.Json(payload, statusCode: statusCode);
+    }
+
+    private static IResult UnauthorizedCatalogSyncError(string errorCode)
+    {
+        SubscriptionCatalogSyncErrorResult payload = new(errorCode, "Authentication is required.");
+        return TypedResults.Json(payload, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    private static IResult MapCatalogSyncError(string errorCode)
+    {
+        SubscriptionCatalogSyncErrorResult payload = new(errorCode, ResolveCatalogSyncErrorMessage(errorCode));
+
+        int statusCode = errorCode switch
+        {
+            "subscription_member_required" => StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status400BadRequest
         };
 
@@ -153,4 +335,96 @@ public static class SquareConnectionEndpoints
             _ => "Square connection request failed."
         };
     }
+
+    private static string ResolveCatalogSyncErrorMessage(string errorCode)
+    {
+        return errorCode switch
+        {
+            "subscription_member_required" => "You must be a member of the subscription.",
+            _ => "Square catalog sync request failed."
+        };
+    }
+
+    private static async Task<IResult?> AuthorizeSubscriptionMemberAsync(
+        Guid subscriptionId,
+        ClaimsPrincipal user,
+        MainDataContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        Guid? userId = user.GetUserId();
+        if (userId is null)
+        {
+            return UnauthorizedCatalogSyncError("unauthenticated");
+        }
+
+        bool isMember = await dbContext.SubscriptionUsers
+            .AnyAsync(
+                membership =>
+                    membership.SubscriptionId == subscriptionId &&
+                    membership.UserId == userId.Value,
+                cancellationToken);
+
+        if (!isMember)
+        {
+            return MapCatalogSyncError("subscription_member_required");
+        }
+
+        return null;
+    }
+
+    private static async Task<CatalogProductCountsResult> GetCatalogProductCountsAsync(
+        Guid subscriptionId,
+        MainDataContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        List<SubscriptionCatalogProduct> products = await dbContext.SubscriptionCatalogProducts
+            .AsNoTracking()
+            .Where(item => item.SubscriptionId == subscriptionId)
+            .ToListAsync(cancellationToken);
+
+        return new CatalogProductCountsResult(
+            products.Count,
+            products.Count(item => item.IsSellable && !item.IsDeleted),
+            products.Count(item => item.IsDeleted));
+    }
+
+    private static string ResolveCatalogSyncStatus(SubscriptionCatalogFreshnessResult freshness)
+    {
+        if (freshness.SyncInProgress)
+        {
+            return "in_progress";
+        }
+
+        if (freshness.PendingResync)
+        {
+            return "pending_resync";
+        }
+
+        if (!String.IsNullOrWhiteSpace(freshness.LastErrorCode))
+        {
+            return "failed";
+        }
+
+        if (freshness.LastSyncCompletedAtUtc.HasValue)
+        {
+            return "idle";
+        }
+
+        return "not_started";
+    }
+
+    private static string? NormalizeCatalogQuery(string? query)
+    {
+        if (String.IsNullOrWhiteSpace(query))
+        {
+            return null;
+        }
+
+        return query.Trim().ToLowerInvariant();
+    }
+
+    private sealed record CatalogProductCountsResult(
+        int CachedProductCount,
+        int SellableProductCount,
+        int DeletedProductCount);
 }

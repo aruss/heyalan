@@ -12,14 +12,16 @@ Build an API-first skills system where:
 ## User Decisions (Locked)
 - [x] Skill credentials and skill configuration are separated.
 - [x] Existing Square token management and skills-related credentials are consolidated under one credential manager abstraction.
+- [x] The credential manager abstraction is a single multi-source access credential service that hides credential origin from consumers.
+- [x] Credential source selection is policy-driven in code per provider, not chosen by consumers.
 - [x] Milestone scope is API only (no UI in this milestone).
 - [x] `GET /agents/{agentId}/skills` returns enabled skills only.
 - [x] Add global skills catalog endpoint `GET /skills`.
 - [x] `GET /skills` is available to authenticated users.
 - [x] `PUT /agents/{agentId}/skills/{skillKey}` keeps future-proof body shape.
 - [x] v1 Google Maps skill has no per-agent config behavior.
-- [x] Enabling Google Maps skill requires system credential readiness (reject when not configured).
-- [x] `GET /agents/{agentId}/skills/enabled` returns ready skills only.
+- [x] Required system-managed credentials follow the existing fail-fast startup policy and must be validated during application startup.
+- [x] `GET /agents/{agentId}/skills/enabled` returns enabled skills that are runtime-usable under the active credential policy.
 - [x] v1 skill implementation scope is one system-managed skill only (Google Maps).
 - [x] Square migration strategy is one-shot replace.
 
@@ -27,6 +29,9 @@ Build an API-first skills system where:
 - [x] Square access remains available through existing Square endpoint contracts while token lifecycle storage moves behind shared credential management.
 - [x] Google Maps skill accepts an address string and returns a validated, normalized full address.
 - [x] Google Maps credentials are environment/runtime managed and never user-editable via API.
+- [x] Consumers of credentials do not care whether a credential comes from startup configuration, encrypted subscription storage, or refreshed OAuth token state.
+- [x] System-managed credentials resolve from runtime configuration at application startup and do not require priming in `HeyAlan.Initializer`.
+- [x] For required system-managed providers, missing credentials are a startup configuration error rather than an enable-time runtime readiness state.
 
 ## Public API and Contract Changes
 - [ ] Add authenticated skills catalog endpoint:
@@ -58,6 +63,7 @@ Build an API-first skills system where:
   - [ ] Unique skill row per `(agentId, skillKey)`.
   - [ ] Unique credential identity per `(subscriptionId, provider, accountKey)`.
 - [ ] Add EF mappings in `MainDataContext` and relationship constraints.
+- [ ] Implement persistence changes in the `HeyAlan` project under the `HeyAlan.Data` namespace (there is no standalone `HeyAlan.Data` project in this repo layout).
 - [ ] Implement one-shot data migration mapping existing `SubscriptionSquareConnection` token lifecycle data into `SubscriptionProviderCredential` rows.
 - [ ] Stop and hand off for migration generation/run from `HeyAlan.Initializer` per repo rule.
 
@@ -69,8 +75,11 @@ Build an API-first skills system where:
 
 ## Gate B - Credential Service and Square Consolidation
 - [ ] Introduce `IAccessCredentialService` as the shared credential boundary:
-  - [ ] Upsert/get/remove provider credentials.
-  - [ ] Resolve runtime credential for internal service usage.
+  - [ ] Resolve credentials from multiple sources behind one abstraction (system-managed runtime config and subscription-managed persisted credentials in v1).
+  - [ ] Select credential source by provider policy in code (for example `google_maps` => runtime configuration, `square` => persisted subscription credential).
+  - [ ] Upsert/get/remove subscription-managed provider credentials.
+  - [ ] Resolve runtime credential for internal service usage without callers depending on credential origin.
+  - [ ] Expose readiness/metadata queries separately from secret resolution, while treating required system-managed providers as startup-validated rather than optional runtime-ready/not-ready states.
   - [ ] Encrypt on write, decrypt only internally, return masked metadata when needed.
 - [ ] Refactor `ISquareService` internals to use `IAccessCredentialService` for token lifecycle operations.
 - [ ] Preserve Square endpoint behavior, status mapping, and error codes.
@@ -111,31 +120,27 @@ Build an API-first skills system where:
 - [ ] Define runtime contract:
   - [ ] Input: address string.
   - [ ] Output: validated, normalized full address.
-- [ ] Define credential policy as system-managed (environment/runtime backed, read-only from API perspective).
-- [ ] Implement readiness checks for Google Maps system credential.
-- [ ] Enforce enable-time readiness:
-  - [ ] `PUT /agents/{agentId}/skills/{skillKey}` fails with deterministic error when not configured.
+- [ ] Define credential policy as system-managed (environment/runtime backed, read-only from API perspective, resolved through `IAccessCredentialService`, and validated at startup).
 - [ ] Wire runtime descriptor resolution:
-  - [ ] `GET /agents/{agentId}/skills/enabled` returns Google Maps descriptor only when skill is enabled and ready.
-  - [ ] Do not include not-ready skills in enabled descriptor output.
+  - [ ] `GET /agents/{agentId}/skills/enabled` returns Google Maps descriptor when the skill is enabled and the application is running with valid startup configuration.
 
 ### Gate D Acceptance Criteria
-- [ ] Google Maps skill can be enabled only when system credential is ready.
-- [ ] Enabled descriptor output includes Google Maps only when enabled + ready.
+- [ ] Google Maps startup configuration is validated under the existing fail-fast policy.
+- [ ] Enabled descriptor output includes Google Maps when enabled and the application is running with valid startup configuration.
 - [ ] Descriptor and API payloads contain no secret material.
-- [ ] Error behavior is deterministic for not-ready and invalid enable paths.
+- [ ] Error behavior is deterministic for invalid skill enable paths without introducing a runtime `not_configured` branch for required system-managed credentials.
 
 ## Gate E - Tests and Regression Coverage
 - [ ] Unit tests:
   - [ ] Credential encryption/decryption and masking behavior.
-  - [ ] Google Maps readiness resolution behavior.
+  - [ ] Google Maps system credential resolution behavior under validated startup configuration.
   - [ ] Skill enable validation and disabled-skill exclusion.
   - [ ] Authorization guards for member/owner constraints.
 - [ ] Endpoint/integration tests:
   - [ ] `/skills` catalog behavior (authenticated access only).
   - [ ] Agent skill list/upsert/disable behavior.
-  - [ ] Google Maps enable rejection when system credential not ready.
   - [ ] Enabled-skills descriptor filtering (enabled + ready only).
+  - [ ] Startup configuration validation rejects missing required Google Maps credential.
 - [ ] Regression tests:
   - [ ] Existing Square endpoints and behavior remain unchanged externally.
   - [ ] Existing agents/onboarding flows remain unchanged.

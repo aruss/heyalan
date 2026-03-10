@@ -21,21 +21,21 @@ export default function Layout({
 
     return (
         <AgentSettingsProvider>
-            <div className="min-h-dvh bg-white p-4 dark:bg-gray-925 lg:dark:border-gray-900">
+            <div className=" dark:bg-gray-925 lg:dark:border-gray-900">
                 <TabNavigation className="">
                     {navigationSettings.map((item) => (
                         <TabNavigationLink
                             key={item.name}
                             asChild
                             active={pathname === item.href}
-                            className="px-5"
+                            className="mx-4 pt-4 md:pt-6"
                         >
                             <Link href={item.href}>{item.name}</Link>
                         </TabNavigationLink>
                     ))}
                 </TabNavigation>
 
-                <div className="pt-6 max-w-5xl">{children}</div>
+                <div className="pt-4 md:pt-6 max-w-5xl">{children}</div>
             </div>
         </AgentSettingsProvider>
     );

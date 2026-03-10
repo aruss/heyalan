@@ -15,6 +15,14 @@ public class Subscription : IEntityWithId, IEntityWithAudit
 
     public SubscriptionOnboardingState? OnboardingState { get; set; }
 
+    public SubscriptionCatalogSyncState? CatalogSyncState { get; set; }
+
+    public ICollection<SubscriptionCatalogProduct> CatalogProducts { get; set; } = new List<SubscriptionCatalogProduct>();
+
+    public ICollection<SubscriptionCatalogProductLocation> CatalogProductLocations { get; set; } = new List<SubscriptionCatalogProductLocation>();
+
+    public ICollection<SquareWebhookReceipt> SquareWebhookReceipts { get; set; } = new List<SquareWebhookReceipt>();
+
     public string? StripeCustomerId { get; set; }
 
     public string? StripeSubscriptionId { get; set; }

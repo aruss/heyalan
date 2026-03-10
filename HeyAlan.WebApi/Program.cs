@@ -161,6 +161,7 @@ app.MapInfoEndpoint("HeyAlan");
 app.MapHealthChecks();
 app.MapTwilioWebhookEndpoints();
 app.MapTelegramWebhookEndpoints(); 
+app.MapSquareCatalogWebhookEndpoints();
 app.MapAuthEndpoints();
 app.MapAgentEndpoints();
 app.MapConversationEndpoints();

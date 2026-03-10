@@ -23,6 +23,8 @@ public static class CoreBuilderExtensions
         builder.AddMessagingServices();
         builder.AddNewsletterServices();
         builder.Services.AddScoped<ISubscriptionAgentService, SubscriptionAgentService>();
+        builder.Services.AddScoped<IAgentCatalogProductAccessService, AgentCatalogProductAccessService>();
+        builder.Services.AddScoped<IAgentSalesZipCodeService, AgentSalesZipCodeService>();
         builder.Services.AddScoped<ISubscriptionOnboardingService, SubscriptionOnboardingService>();
 
         builder.AddTelegramServices();

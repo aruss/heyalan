@@ -3,6 +3,7 @@ namespace HeyAlan.WebApi.Infrastructure;
 using HeyAlan.Email;
 using HeyAlan.Messaging;
 using HeyAlan.Newsletter;
+using HeyAlan.SquareIntegration;
 using Wolverine;
 using Wolverine.RabbitMQ;
 using Wolverine.Postgresql;
@@ -18,6 +19,7 @@ public static class WolverineBuilderExtensions
             options.Discovery.IncludeType<TransactionalEmailConsumer>();
             options.Discovery.IncludeType<IncomingMessageConsumer>();
             options.Discovery.IncludeType<OutgoingTelegramMessageConsumer>();
+            options.Discovery.IncludeType<SubscriptionCatalogSyncConsumer>();
 
             string? rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
             if (String.IsNullOrWhiteSpace(rabbitConnectionString))

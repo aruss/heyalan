@@ -66,8 +66,8 @@ namespace HeyAlan.Initializer.Migrations
                     b.HasKey("Id")
                         .HasName("srbd_pk_srbd_agents");
 
-                    b.HasIndex("SubscriptionId")
-                        .HasDatabaseName("srbd_ix_srbd_agents_subscription_id");
+                    b.HasAlternateKey("SubscriptionId", "Id")
+                        .HasName("srbd_ak_srbd_agents_subscription_id_id");
 
                     b.HasIndex("TelegramBotToken")
                         .IsUnique()
@@ -83,6 +83,78 @@ namespace HeyAlan.Initializer.Migrations
                         .HasFilter("\"WhatsappNumber\" IS NOT NULL");
 
                     b.ToTable("srbd_agents");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.AgentCatalogProductAccess", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AgentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SubscriptionCatalogProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id")
+                        .HasName("srbd_pk_srbd_agent_catalog_product_accesses");
+
+                    b.HasIndex("SubscriptionId", "AgentId", "Id")
+                        .HasDatabaseName("srbd_ix_agent_catalog_access_agent");
+
+                    b.HasIndex("SubscriptionId", "AgentId", "SubscriptionCatalogProductId")
+                        .IsUnique()
+                        .HasDatabaseName("srbd_ix_agent_catalog_access_agent_product");
+
+                    b.HasIndex("SubscriptionId", "SubscriptionCatalogProductId", "AgentId")
+                        .HasDatabaseName("srbd_ix_agent_catalog_access_product");
+
+                    b.ToTable("srbd_agent_catalog_product_accesses");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.AgentSalesZipCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AgentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ZipCodeNormalized")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id")
+                        .HasName("srbd_pk_srbd_agent_sales_zip_codes");
+
+                    b.HasIndex("SubscriptionId", "AgentId", "Id")
+                        .HasDatabaseName("srbd_ix_agent_sales_zip_agent");
+
+                    b.HasIndex("SubscriptionId", "AgentId", "ZipCodeNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("srbd_ix_agent_sales_zip_agent_zip");
+
+                    b.ToTable("srbd_agent_sales_zip_codes");
                 });
 
             modelBuilder.Entity("HeyAlan.Data.Entities.ApplicationRole", b =>
@@ -335,6 +407,55 @@ namespace HeyAlan.Initializer.Migrations
                     b.ToTable("srbd_credit_transactions");
                 });
 
+            modelBuilder.Entity("HeyAlan.Data.Entities.SquareWebhookReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsProcessed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MerchantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id")
+                        .HasName("srbd_pk_srbd_square_webhook_receipts");
+
+                    b.HasIndex("EventId")
+                        .IsUnique()
+                        .HasDatabaseName("srbd_ix_srbd_square_webhook_receipts_event_id");
+
+                    b.HasIndex("SubscriptionId", "IsProcessed", "ReceivedAtUtc")
+                        .HasDatabaseName("srbd_ix_srbd_square_webhook_receipts_subscription_id_is_processed_rec~");
+
+                    b.HasIndex("SubscriptionId", "ReceivedAtUtc", "Id")
+                        .HasDatabaseName("srbd_ix_srbd_square_webhook_receipts_subscription_id_received_at_utc_id");
+
+                    b.ToTable("srbd_square_webhook_receipts");
+                });
+
             modelBuilder.Entity("HeyAlan.Data.Entities.Subscription", b =>
                 {
                     b.Property<Guid>("Id")
@@ -369,6 +490,188 @@ namespace HeyAlan.Initializer.Migrations
                         .HasName("srbd_pk_srbd_subscriptions");
 
                     b.ToTable("srbd_subscriptions");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionCatalogProduct", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long?>("BasePriceAmount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("BasePriceCurrency")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSellable")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Sku")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SquareItemId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SquareUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SquareVariationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long?>("SquareVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VariationName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id")
+                        .HasName("srbd_pk_srbd_subscription_catalog_products");
+
+                    b.HasAlternateKey("SubscriptionId", "Id")
+                        .HasName("srbd_ak_srbd_subscription_catalog_products_subscription_id_id");
+
+                    b.HasIndex("SubscriptionId", "SearchText")
+                        .HasDatabaseName("srbd_ix_catalog_product_subscription_search");
+
+                    b.HasIndex("SubscriptionId", "SquareItemId")
+                        .HasDatabaseName("srbd_ix_catalog_product_subscription_item");
+
+                    b.HasIndex("SubscriptionId", "SquareVariationId")
+                        .IsUnique()
+                        .HasDatabaseName("srbd_ix_catalog_product_subscription_variation");
+
+                    b.HasIndex("SubscriptionId", "IsDeleted", "IsSellable", "ItemName", "Id")
+                        .HasDatabaseName("srbd_ix_catalog_product_subscription_active_name");
+
+                    b.ToTable("srbd_subscription_catalog_products");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionCatalogProductLocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsAvailableForSale")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSoldOut")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LocationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long?>("PriceOverrideAmount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("PriceOverrideCurrency")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SquareVariationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SubscriptionCatalogProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id")
+                        .HasName("srbd_pk_srbd_subscription_catalog_product_locations");
+
+                    b.HasIndex("SubscriptionId", "SubscriptionCatalogProductId")
+                        .HasDatabaseName("srbd_ix_catalog_product_location_product");
+
+                    b.HasIndex("SubscriptionId", "LocationId", "Id")
+                        .HasDatabaseName("srbd_ix_catalog_product_location_location");
+
+                    b.HasIndex("SubscriptionId", "SquareVariationId", "LocationId")
+                        .IsUnique()
+                        .HasDatabaseName("srbd_ix_catalog_product_location_variation_location");
+
+                    b.ToTable("srbd_subscription_catalog_product_locations");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionCatalogSyncState", b =>
+                {
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastErrorCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastSyncCompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastSyncStartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastSyncedBeginTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("LastTriggerSource")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("NextScheduledSyncAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("PendingResync")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("SyncInProgress")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("SubscriptionId")
+                        .HasName("srbd_pk_srbd_subscription_catalog_sync_states");
+
+                    b.HasIndex("SubscriptionId", "NextScheduledSyncAtUtc")
+                        .HasDatabaseName("srbd_ix_srbd_subscription_catalog_sync_states_subscription_id_next_sc~");
+
+                    b.ToTable("srbd_subscription_catalog_sync_states");
                 });
 
             modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionOnboardingState", b =>
@@ -725,6 +1028,42 @@ namespace HeyAlan.Initializer.Migrations
                     b.Navigation("Subscription");
                 });
 
+            modelBuilder.Entity("HeyAlan.Data.Entities.AgentCatalogProductAccess", b =>
+                {
+                    b.HasOne("HeyAlan.Data.Entities.Agent", "Agent")
+                        .WithMany("CatalogProductAccesses")
+                        .HasForeignKey("SubscriptionId", "AgentId")
+                        .HasPrincipalKey("SubscriptionId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_agent_catalog_access_agent");
+
+                    b.HasOne("HeyAlan.Data.Entities.SubscriptionCatalogProduct", "SubscriptionCatalogProduct")
+                        .WithMany("AgentProductAccesses")
+                        .HasForeignKey("SubscriptionId", "SubscriptionCatalogProductId")
+                        .HasPrincipalKey("SubscriptionId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_agent_catalog_access_product");
+
+                    b.Navigation("Agent");
+
+                    b.Navigation("SubscriptionCatalogProduct");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.AgentSalesZipCode", b =>
+                {
+                    b.HasOne("HeyAlan.Data.Entities.Agent", "Agent")
+                        .WithMany("SalesZipCodes")
+                        .HasForeignKey("SubscriptionId", "AgentId")
+                        .HasPrincipalKey("SubscriptionId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_agent_sales_zip_agent");
+
+                    b.Navigation("Agent");
+                });
+
             modelBuilder.Entity("HeyAlan.Data.Entities.Conversation", b =>
                 {
                     b.HasOne("HeyAlan.Data.Entities.Agent", "Agent")
@@ -766,6 +1105,64 @@ namespace HeyAlan.Initializer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("srbd_fk_srbd_credit_transactions_subscriptions_subscription_id");
+
+                    b.Navigation("Subscription");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SquareWebhookReceipt", b =>
+                {
+                    b.HasOne("HeyAlan.Data.Entities.Subscription", "Subscription")
+                        .WithMany("SquareWebhookReceipts")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_square_webhook_receipt_subscription");
+
+                    b.Navigation("Subscription");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionCatalogProduct", b =>
+                {
+                    b.HasOne("HeyAlan.Data.Entities.Subscription", "Subscription")
+                        .WithMany("CatalogProducts")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_catalog_product_subscription");
+
+                    b.Navigation("Subscription");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionCatalogProductLocation", b =>
+                {
+                    b.HasOne("HeyAlan.Data.Entities.Subscription", "Subscription")
+                        .WithMany("CatalogProductLocations")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_catalog_product_location_subscription");
+
+                    b.HasOne("HeyAlan.Data.Entities.SubscriptionCatalogProduct", "SubscriptionCatalogProduct")
+                        .WithMany("Locations")
+                        .HasForeignKey("SubscriptionId", "SubscriptionCatalogProductId")
+                        .HasPrincipalKey("SubscriptionId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_catalog_product_location_product");
+
+                    b.Navigation("Subscription");
+
+                    b.Navigation("SubscriptionCatalogProduct");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionCatalogSyncState", b =>
+                {
+                    b.HasOne("HeyAlan.Data.Entities.Subscription", "Subscription")
+                        .WithOne("CatalogSyncState")
+                        .HasForeignKey("HeyAlan.Data.Entities.SubscriptionCatalogSyncState", "SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("srbd_fk_subscription_catalog_sync_state_subscription");
 
                     b.Navigation("Subscription");
                 });
@@ -889,6 +1286,13 @@ namespace HeyAlan.Initializer.Migrations
                         .HasConstraintName("srbd_fk_srbd_asp_net_user_tokens_srbd_asp_net_users_user_id");
                 });
 
+            modelBuilder.Entity("HeyAlan.Data.Entities.Agent", b =>
+                {
+                    b.Navigation("CatalogProductAccesses");
+
+                    b.Navigation("SalesZipCodes");
+                });
+
             modelBuilder.Entity("HeyAlan.Data.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("SubscriptionUsers");
@@ -903,11 +1307,26 @@ namespace HeyAlan.Initializer.Migrations
                 {
                     b.Navigation("Agents");
 
+                    b.Navigation("CatalogProductLocations");
+
+                    b.Navigation("CatalogProducts");
+
+                    b.Navigation("CatalogSyncState");
+
                     b.Navigation("OnboardingState");
 
                     b.Navigation("SquareConnection");
 
+                    b.Navigation("SquareWebhookReceipts");
+
                     b.Navigation("SubscriptionUsers");
+                });
+
+            modelBuilder.Entity("HeyAlan.Data.Entities.SubscriptionCatalogProduct", b =>
+                {
+                    b.Navigation("AgentProductAccesses");
+
+                    b.Navigation("Locations");
                 });
 #pragma warning restore 612, 618
         }

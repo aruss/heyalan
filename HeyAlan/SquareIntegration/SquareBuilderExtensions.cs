@@ -6,12 +6,17 @@ using HeyAlan.SquareIntegration;
 
 public static class SquareBuilderExtensions
 {
-    public static TBuilder AddSquareServices<TBuilder>(this TBuilder builder) 
+    public static TBuilder AddSquareServices<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHttpClient("SquareOAuthClient");
         builder.Services.AddScoped<IOAuthStateProtector, OAuthStateProtector>();
         builder.Services.AddScoped<ISquareService, SquareService>();
+        builder.Services.AddScoped<ISubscriptionCatalogSyncService, SubscriptionCatalogSyncService>();
+        builder.Services.AddScoped<ISubscriptionCatalogReadService, SubscriptionCatalogReadService>();
+        builder.Services.AddScoped<ISubscriptionCatalogSyncMessagePublisher, SubscriptionCatalogSyncMessagePublisher>();
+        builder.Services.AddScoped<ISubscriptionCatalogSyncTriggerService, SubscriptionCatalogSyncTriggerService>();
+        builder.Services.AddHostedService<SubscriptionCatalogSyncScheduler>();
 
         return builder;
     }

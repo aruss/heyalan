@@ -29,7 +29,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} h-full bg-gray-50 antialiased dark:bg-gray-950`}
+        className={`${geistSans.variable} ${geistMono.variable} h-full bg-white antialiased dark:bg-gray-950`}
       >
         <AdminShell defaultOpen={defaultOpen}>{children}</AdminShell>
       </body>
