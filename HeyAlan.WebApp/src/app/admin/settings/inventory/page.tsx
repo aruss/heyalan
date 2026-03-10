@@ -26,6 +26,7 @@ import type {
   SubscriptionSquareCatalogProductItem,
 } from "@/lib/api";
 import { useSession } from "@/lib/session-context";
+import { Divider } from "@/components/admin/divider";
 
 const DEFAULT_SYNC_STATE_ERROR = "Unable to load catalog sync state.";
 const DEFAULT_PRODUCTS_ERROR = "Unable to load cached catalog products.";
@@ -320,7 +321,11 @@ export default function SettingInventoryPage() {
   const canGoToNextPage = productSkip + products.length < totalProducts;
 
   return (
-    <section>
+
+
+
+
+    <section className="m-4">
       <div className="grid grid-cols-1 gap-x-14 gap-y-8 md:grid-cols-3">
         <div>
           <h2 className="scroll-mt-10 text-sm font-semibold text-gray-900 dark:text-gray-50">
@@ -330,7 +335,7 @@ export default function SettingInventoryPage() {
             Trigger a manual Square catalog refresh, monitor current sync health, and inspect the cached catalog snapshot used for operational verification.
           </p>
         </div>
-        <div className="space-y-6 md:col-span-2">
+        <div className="space-y-4 md:col-span-2">
           {!subscriptionId && !isSessionLoading ? (
             <Alert title="Subscription required" type="warn">
               {MISSING_SUBSCRIPTION_ERROR}
@@ -341,7 +346,7 @@ export default function SettingInventoryPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">Manual sync</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-xs text-gray-500">
                   Use this to enqueue a catalog refresh when operators need the latest Square changes immediately.
                 </p>
               </div>
@@ -376,7 +381,7 @@ export default function SettingInventoryPage() {
                     </Badge>
                   ) : null}
                 </div>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-xs text-gray-500">
                   This panel auto-refreshes every 30 seconds and can be refreshed manually at any time.
                 </p>
               </div>
@@ -417,7 +422,7 @@ export default function SettingInventoryPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">Cached catalog snapshot</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-xs text-gray-500">
                   Minimal paged view of the subscription catalog cache for operational verification.
                 </p>
               </div>
@@ -482,24 +487,25 @@ export default function SettingInventoryPage() {
               </TableRoot>
             ) : null}
 
-            <div className="flex items-center justify-end gap-3">
-              <Button
-                disabled={!canGoToPreviousPage}
-                onClick={() => setProductSkip(Math.max(productSkip - PAGE_SIZE, 0))}
-                type="button"
-                variant="secondary"
-              >
-                Previous
-              </Button>
-              <Button
-                disabled={!canGoToNextPage}
-                onClick={() => setProductSkip(productSkip + PAGE_SIZE)}
-                type="button"
-                variant="secondary"
-              >
-                Next
-              </Button>
-            </div>
+            {canGoToPreviousPage || canGoToNextPage &&
+              <div className="flex items-center justify-end gap-3">
+                <Button
+                  disabled={!canGoToPreviousPage}
+                  onClick={() => setProductSkip(Math.max(productSkip - PAGE_SIZE, 0))}
+                  type="button"
+                  variant="secondary"
+                >
+                  Previous
+                </Button>
+                <Button
+                  disabled={!canGoToNextPage}
+                  onClick={() => setProductSkip(productSkip + PAGE_SIZE)}
+                  type="button"
+                  variant="secondary"
+                >
+                  Next
+                </Button>
+              </div>}
           </Card>
         </div>
       </div>

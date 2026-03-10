@@ -63,7 +63,7 @@ export function AdminShell({
 
                   <OnboardingButton />
                 </header>
-                <main>{children}</main>
+                <main className="">{children}</main>
               </SidebarInset>
             </SidebarProvider>
           </BreadcrumbProvider>

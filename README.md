@@ -82,8 +82,7 @@ Use this README as the product-level planning baseline.
 
 - `HeyAlan.WebApi` owns authenticated HTTP APIs, webhooks, endpoint contracts, and orchestration entry points.
 - `HeyAlan.WebApp` owns admin and operator UI workflows.
-- `HeyAlan` owns core domain logic, orchestration, integrations, and runtime behavior.
-- `HeyAlan.Data` owns persistence models and EF Core data access foundations.
+- `HeyAlan` owns core domain logic, orchestration, integrations, runtime behavior, persistence models and EF Core data access foundations.
 - `HeyAlan.AppHost` owns local development orchestration with Aspire.
 - `HeyAlan.Initializer` owns initialization and migration workflow entry points.
 - `HeyAlan.Tests` owns automated verification and regression coverage.
@@ -94,8 +93,7 @@ For v1, Square is the external system of record for merchant commerce operations
 
 - `HeyAlan.WebApi`: API surface, auth, webhooks, endpoint mapping.
 - `HeyAlan.WebApp`: admin application and operator-facing UI.
-- `HeyAlan`: core business logic, integrations, orchestration, messaging flow.
-- `HeyAlan.Data`: entities, DbContext, persistence configuration.
+- `HeyAlan`: core business logic, integrations, orchestration, messaging flow, entities, DbContext, persistence configuration.
 - `HeyAlan.AppHost`: Aspire host for local development.
 - `HeyAlan.Initializer`: initialization and migration-related entry points.
 - `HeyAlan.Tests`: backend and integration test coverage.

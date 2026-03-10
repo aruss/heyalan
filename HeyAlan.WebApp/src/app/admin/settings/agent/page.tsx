@@ -133,7 +133,7 @@ export default function SettingsAgentPage() {
   return (
     <>
 
-      <section>
+      <section className="mx-4">
         <form onSubmit={(event) => void handleSaveProfile(event)}>
           <div className="grid grid-cols-1 gap-x-14 gap-y-8 md:grid-cols-3">
             <div>
