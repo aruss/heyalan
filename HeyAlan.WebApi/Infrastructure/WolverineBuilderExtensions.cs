@@ -1,5 +1,6 @@
 namespace HeyAlan.WebApi.Infrastructure;
 
+using HeyAlan.Email;
 using HeyAlan.Messaging;
 using HeyAlan.Newsletter;
 using Wolverine;
@@ -14,9 +15,9 @@ public static class WolverineBuilderExtensions
     {
         builder.Host.UseWolverine(options =>
         {
+            options.Discovery.IncludeType<TransactionalEmailConsumer>();
             options.Discovery.IncludeType<IncomingMessageConsumer>();
             options.Discovery.IncludeType<OutgoingTelegramMessageConsumer>();
-            options.Discovery.IncludeType<NewsletterSubscriptionConsumer>();
 
             string? rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
             if (String.IsNullOrWhiteSpace(rabbitConnectionString))
@@ -27,13 +28,14 @@ public static class WolverineBuilderExtensions
             RabbitMqStartupGuard.EnsureReachable(rabbitConnectionString, TimeSpan.FromSeconds(3));
             options.UseRabbitMq(rabbitConnectionString);
 
+            options.ListenToRabbitQueue("email-send-requested");
             options.ListenToRabbitQueue("incoming-message");
             options.ListenToRabbitQueue("telegram-outgoing-messages");
             options.ListenToRabbitQueue("newsletter-subscription");
 
+            options.PublishMessage<EmailSendRequested>().ToRabbitQueue("email-send-requested");
             options.PublishMessage<IncomingMessage>().ToRabbitQueue("incoming-message");
             options.PublishMessage<OutgoingTelegramMessage>().ToRabbitQueue("telegram-outgoing-messages");
-            options.PublishMessage<NewsletterSubscriptionRequested>().ToRabbitQueue("newsletter-subscription");
 
             options.Policies.UseDurableInboxOnAllListeners();
             options.Policies.UseDurableOutboxOnAllSendingEndpoints();

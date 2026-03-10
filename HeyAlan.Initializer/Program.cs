@@ -9,6 +9,7 @@ using Npgsql;
 using Polly;
 using Polly.Retry;
 using HeyAlan;
+using HeyAlan.Email;
 using HeyAlan.Configuration;
 using HeyAlan.Data;
 using HeyAlan.Data.Entities;
@@ -121,13 +122,14 @@ public class Program
         {
             options.UseRabbitMq(rabbitConnectionString).AutoProvision();
 
+            options.ListenToRabbitQueue("email-send-requested");
             options.ListenToRabbitQueue("incoming-message");
             options.ListenToRabbitQueue("telegram-outgoing-messages");
             options.ListenToRabbitQueue("newsletter-subscription");
 
+            options.PublishMessage<EmailSendRequested>().ToRabbitQueue("email-send-requested");
             options.PublishMessage<IncomingMessage>().ToRabbitQueue("incoming-message");
             options.PublishMessage<OutgoingTelegramMessage>().ToRabbitQueue("telegram-outgoing-messages");
-            options.PublishMessage<NewsletterSubscriptionRequested>().ToRabbitQueue("newsletter-subscription");
         });
 
         #endregion

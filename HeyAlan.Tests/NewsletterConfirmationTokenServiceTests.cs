@@ -47,8 +47,6 @@ public class NewsletterConfirmationTokenServiceTests
         {
             ApiKey = "api-key",
             NewsletterListId = "list-id",
-            NewsletterConfirmTemplateId = "d-template-id",
-            NewsletterFromEmail = "newsletter@example.com",
             ConfirmTokenTtlMinutes = ttlMinutes
         };
 

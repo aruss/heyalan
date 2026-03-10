@@ -5,9 +5,12 @@ It is the SendGrid Marketing Contacts list ID used for confirmed newsletter subs
 
 Set:
 - `SENDGRID_API_KEY`
+- `SENDGRID_EMAIL_FROM`
+- `SENDGRID_TEMPLATE_IDENTITY_CONFIRMATION_LINK`
+- `SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_LINK`
+- `SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_CODE`
+- `SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION`
 - `SENDGRID_NEWSLETTER_LIST_ID`
-- `SENDGRID_NEWSLETTER_CONFIRM_TEMPLATE_ID`
-- `SENDGRID_NEWSLETTER_FROM_EMAIL`
 - `NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES` (optional, defaults to `1440`)
 
 ## Create a List in the UI
@@ -34,10 +37,18 @@ curl -X GET "https://api.sendgrid.com/v3/marketing/lists" \
 
 Find your list by `name` and use the matching `id` as `SENDGRID_NEWSLETTER_LIST_ID`.
 
-## Configure Confirmation Template
-Create a dynamic transactional template in SendGrid with a variable named `confirmation_url`.
+## Configure Transactional Templates
+Create dynamic transactional templates in SendGrid for:
+- newsletter confirmation with `confirmation_url`
+- identity confirmation link with `confirmation_url`
+- identity password reset link with `reset_url`
+- identity password reset code with `reset_code`
 
-Use the template ID (`d-...`) as `SENDGRID_NEWSLETTER_CONFIRM_TEMPLATE_ID`.
+Use the template IDs (`d-...`) as:
+- `SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION`
+- `SENDGRID_TEMPLATE_IDENTITY_CONFIRMATION_LINK`
+- `SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_LINK`
+- `SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_CODE`
 
 Example template body link:
 ```html

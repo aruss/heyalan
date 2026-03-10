@@ -12,12 +12,12 @@ public sealed class NewsletterConfirmationTokenService
     private const string ProtectorPurpose = "newsletter-confirmation-v1";
 
     private readonly IDataProtector dataProtector;
-    private readonly SendGridOptions options;
+    private readonly NewsletterOptions options;
     private readonly TimeProvider timeProvider;
 
     public NewsletterConfirmationTokenService(
         IDataProtectionProvider dataProtectionProvider,
-        SendGridOptions options,
+        NewsletterOptions options,
         TimeProvider timeProvider)
     {
         if (dataProtectionProvider is null)

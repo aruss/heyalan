@@ -1,14 +1,14 @@
 namespace HeyAlan.Tests;
 
-using HeyAlan.Newsletter;
+using HeyAlan.SendGridIntegration;
 using System.Net;
 using System.Text;
 using System.Text.Json;
 
-public class SendGridNewsletterClientTests
+public class SendGridTransactionalEmailClientTests
 {
     [Fact]
-    public async Task UpsertNewsletterContactAsync_SendsExpectedPayload()
+    public async Task SendTemplateAsync_SendsExpectedPayload()
     {
         RecordingHandler handler = new((HttpRequestMessage _) =>
         {
@@ -16,35 +16,46 @@ public class SendGridNewsletterClientTests
         });
 
         FakeHttpClientFactory httpClientFactory = new(handler);
-        SendGridOptions options = new()
+        SendGridEmailOptions options = new()
         {
             ApiKey = "sendgrid-api-key",
-            NewsletterListId = "newsletter-list-id"
+            FromEmail = "notifications@heyalan.app",
+            IdentityConfirmationLinkTemplateId = "d-confirm",
+            IdentityPasswordResetLinkTemplateId = "d-reset-link",
+            IdentityPasswordResetCodeTemplateId = "d-reset-code",
+            NewsletterConfirmationTemplateId = "d-newsletter"
         };
 
-        SendGridClient client = new(httpClientFactory, options);
-        await client.UpsertNewsletterContactAsync("person@example.com");
+        SendGridTransactionalEmailClient client = new(httpClientFactory, options);
+
+        await client.SendTemplateAsync(
+            "person@example.com",
+            "d-confirm",
+            new Dictionary<string, string>
+            {
+                ["confirmation_url"] = "https://heyalan.app/confirm?token=abc"
+            });
 
         Assert.NotNull(handler.LastRequest);
-        Assert.Equal(HttpMethod.Put, handler.LastRequest!.Method);
-        Assert.Equal("https://api.sendgrid.com/v3/marketing/contacts", handler.LastRequest.RequestUri!.ToString());
+        Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
+        Assert.Equal("https://api.sendgrid.com/v3/mail/send", handler.LastRequest.RequestUri!.ToString());
         Assert.Equal("Bearer", handler.LastRequest.Headers.Authorization?.Scheme);
         Assert.Equal("sendgrid-api-key", handler.LastRequest.Headers.Authorization?.Parameter);
 
         JsonDocument payload = JsonDocument.Parse(handler.LastRequestContent!);
         JsonElement root = payload.RootElement;
+        Assert.Equal("d-confirm", root.GetProperty("template_id").GetString());
+        Assert.Equal("notifications@heyalan.app", root.GetProperty("from").GetProperty("email").GetString());
 
-        JsonElement listIds = root.GetProperty("list_ids");
-        Assert.Equal(JsonValueKind.Array, listIds.ValueKind);
-        Assert.Equal("newsletter-list-id", listIds[0].GetString());
-
-        JsonElement contacts = root.GetProperty("contacts");
-        Assert.Equal(JsonValueKind.Array, contacts.ValueKind);
-        Assert.Equal("person@example.com", contacts[0].GetProperty("email").GetString());
+        JsonElement firstPersonalization = root.GetProperty("personalizations")[0];
+        Assert.Equal("person@example.com", firstPersonalization.GetProperty("to")[0].GetProperty("email").GetString());
+        Assert.Equal(
+            "https://heyalan.app/confirm?token=abc",
+            firstPersonalization.GetProperty("dynamic_template_data").GetProperty("confirmation_url").GetString());
     }
 
     [Fact]
-    public async Task UpsertNewsletterContactAsync_WhenSendGridFails_Throws()
+    public async Task SendTemplateAsync_WhenSendGridFails_Throws()
     {
         RecordingHandler handler = new((HttpRequestMessage _) =>
         {
@@ -55,15 +66,26 @@ public class SendGridNewsletterClientTests
         });
 
         FakeHttpClientFactory httpClientFactory = new(handler);
-        SendGridOptions options = new()
+        SendGridEmailOptions options = new()
         {
             ApiKey = "sendgrid-api-key",
-            NewsletterListId = "newsletter-list-id"
+            FromEmail = "notifications@heyalan.app",
+            IdentityConfirmationLinkTemplateId = "d-confirm",
+            IdentityPasswordResetLinkTemplateId = "d-reset-link",
+            IdentityPasswordResetCodeTemplateId = "d-reset-code",
+            NewsletterConfirmationTemplateId = "d-newsletter"
         };
 
-        SendGridClient client = new(httpClientFactory, options);
+        SendGridTransactionalEmailClient client = new(httpClientFactory, options);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => client.UpsertNewsletterContactAsync("person@example.com"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.SendTemplateAsync(
+                "person@example.com",
+                "d-confirm",
+                new Dictionary<string, string>
+                {
+                    ["confirmation_url"] = "https://heyalan.app/confirm?token=abc"
+                }));
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory

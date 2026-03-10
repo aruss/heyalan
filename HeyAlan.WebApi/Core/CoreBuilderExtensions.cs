@@ -2,6 +2,7 @@ namespace HeyAlan.WebApi.Core;
 
 using HeyAlan.Agents;
 using HeyAlan.Configuration;
+using HeyAlan.Email;
 using HeyAlan.Messaging;
 using HeyAlan.Newsletter;
 using HeyAlan.Onboarding;
@@ -15,7 +16,10 @@ public static class CoreBuilderExtensions
         AppOptions options = builder.Configuration.TryGetAppOptions();
         builder.Services.AddSingleton(options);
 
+        builder.Services.AddSingleton(TimeProvider.System);
+
         // ... add here busines services, repositories, etc.
+        builder.AddEmailServices();
         builder.AddMessagingServices();
         builder.AddNewsletterServices();
         builder.Services.AddScoped<ISubscriptionAgentService, SubscriptionAgentService>();

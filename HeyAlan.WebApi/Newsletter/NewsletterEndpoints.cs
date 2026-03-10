@@ -1,9 +1,13 @@
 namespace HeyAlan.WebApi.Newsletter;
 
-using Microsoft.AspNetCore.Mvc;
+using HeyAlan.Configuration;
+using HeyAlan.Email;
 using HeyAlan.Newsletter;
-using Wolverine;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text;
 
 public static class NewsletterEndpoints
 {
@@ -33,7 +37,9 @@ public static class NewsletterEndpoints
 
     private static async Task<IResult> CreateNewsletterSubscriptionAsync(
         [FromBody] CreateNewsletterSubscriptionInput input,
-        IMessageBus messageBus,
+        IEmailQueuingService emailService,
+        AppOptions appOptions,
+        INewsletterConfirmationTokenService confirmationTokenService,
         CancellationToken ct)
     {
         if (!TryNormalizeEmail(input.Email, out string normalizedEmail))
@@ -43,20 +49,45 @@ public static class NewsletterEndpoints
                 title: "Invalid email",
                 detail: "A valid email address is required.");
         }
+        
+        string emailHash = ComputeSha256(normalizedEmail);
 
-        NewsletterSubscriptionRequested message = new(
+        string token = confirmationTokenService
+            .CreateToken(normalizedEmail, DateTimeOffset.UtcNow);
+
+        string confirmationUrl = BuildConfirmationUrl(appOptions.PublicBaseUrl, token);
+
+        EmailSendRequested emailMessage = new(
             normalizedEmail,
-            DateTimeOffset.UtcNow);
+            EmailTemplateKey.NewsletterConfirmation,
+            new Dictionary<string, string>
+            {
+                ["confirmation_url"] = confirmationUrl
+            });
 
-        await messageBus.PublishAsync(message);
+        await emailService.EnqueueAsync(emailMessage, ct);
 
         return TypedResults.Ok(new CreateNewsletterSubscriptionResult(true));
+    }
+
+    private static string BuildConfirmationUrl(Uri publicBaseUrl, string token)
+    {
+        string trimmedBaseUrl = publicBaseUrl.AbsoluteUri.TrimEnd('/');
+        string confirmPath = $"{trimmedBaseUrl}/newsletter/confirm";
+        return QueryHelpers.AddQueryString(confirmPath, "token", token);
+    }
+
+    private static string ComputeSha256(string input)
+    {
+        byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+        byte[] hashBytes = SHA256.HashData(inputBytes);
+        return Convert.ToHexString(hashBytes);
     }
 
     private static async Task<IResult> ConfirmNewsletterSubscriptionAsync(
         [FromBody] ConfirmNewsletterSubscriptionInput input,
         INewsletterConfirmationTokenService confirmationTokenService,
-        ISendGridClient sendGridClient,
+        INewsletterUpsertService newsletterUpsertService,
         CancellationToken ct)
     {
         string token = input.Token ?? String.Empty;
@@ -69,7 +100,7 @@ public static class NewsletterEndpoints
             return TypedResults.Ok(new ConfirmNewsletterSubscriptionResult(true));
         }
 
-        await sendGridClient.UpsertNewsletterContactAsync(confirmedEmail, ct);
+        await newsletterUpsertService.UpsertNewsletterContactAsync(confirmedEmail, ct);
         return TypedResults.Ok(new ConfirmNewsletterSubscriptionResult(true));
     }
 
