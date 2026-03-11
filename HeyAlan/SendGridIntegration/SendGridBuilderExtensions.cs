@@ -14,7 +14,7 @@ public static class SendGridBuilderExtensions
         return clientFactory.CreateClient(SendGridClientName);
     }
 
-    public static TBuilder AddNewsletterServices<TBuilder>(this TBuilder builder) 
+    public static TBuilder AddSendGridServices<TBuilder>(this TBuilder builder) 
         where TBuilder : IHostApplicationBuilder
     {
         SendGridOptions options = builder.Configuration.TryGetSendGridOptions();

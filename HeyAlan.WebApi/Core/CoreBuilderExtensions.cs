@@ -6,6 +6,7 @@ using HeyAlan.Email;
 using HeyAlan.Messaging;
 using HeyAlan.Newsletter;
 using HeyAlan.Onboarding;
+using HeyAlan.SendGridIntegration;
 using HeyAlan.SquareIntegration;
 using HeyAlan.TelegramIntegration;
 
@@ -19,9 +20,12 @@ public static class CoreBuilderExtensions
         builder.Services.AddSingleton(TimeProvider.System);
 
         // ... add here busines services, repositories, etc.
+        builder.AddSendGridServices(); 
         builder.AddEmailServices();
-        builder.AddMessagingServices();
         builder.AddNewsletterServices();
+        builder.AddMessagingServices();
+
+        // TODO: move to agents module
         builder.Services.AddScoped<ISubscriptionAgentService, SubscriptionAgentService>();
         builder.Services.AddScoped<IAgentCatalogProductAccessService, AgentCatalogProductAccessService>();
         builder.Services.AddScoped<IAgentSalesZipCodeService, AgentSalesZipCodeService>();

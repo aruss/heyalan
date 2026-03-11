@@ -3,8 +3,7 @@ namespace HeyAlan.Email;
 using Microsoft.Extensions.Logging;
 
 public sealed class TransactionalEmailConsumer
-{
- 
+{ 
     private readonly ITransactionalEmailService transactionalEmailService;
     private readonly ILogger<TransactionalEmailConsumer> logger;
 
