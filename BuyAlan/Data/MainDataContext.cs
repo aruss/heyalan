@@ -468,6 +468,9 @@ public class MainDataContext :
     public void ApplyPostgresNamingConvention(ModelBuilder builder)
     {
         string prefix = Constants.TablePrefix.ToSnakeCase();
+        if (!String.IsNullOrWhiteSpace(prefix)) {
+            prefix = $"{prefix}_";
+        }
 
         foreach (var entity in builder.Model.GetEntityTypes())
         {
@@ -478,24 +481,24 @@ public class MainDataContext :
 
             // Prefix Table Name
             var currentTableName = entity.GetTableName();
-            entity.SetTableName($"{prefix}_{currentTableName?.ToSnakeCase()}");
+            entity.SetTableName($"{prefix}{currentTableName?.ToSnakeCase()}");
 
             // Prefix Primary Key Constraints
             foreach (var key in entity.GetKeys())
             {
-                key.SetName($"{prefix}_{key.GetName()?.ToSnakeCase()}");
+                key.SetName($"{prefix}{key.GetName()?.ToSnakeCase()}");
             }
 
             // Prefix Foreign Key Constraints
             foreach (var fk in entity.GetForeignKeys())
             {
-                fk.SetConstraintName($"{prefix}_{fk.GetConstraintName()?.ToSnakeCase()}");
+                fk.SetConstraintName($"{prefix}{fk.GetConstraintName()?.ToSnakeCase()}");
             }
 
             // Prefix Indexes (Addresses your previous RoleNameIndex error)
             foreach (var index in entity.GetIndexes())
             {
-                index.SetDatabaseName($"{prefix}_{index.GetDatabaseName()?.ToSnakeCase()}");
+                index.SetDatabaseName($"{prefix}{index.GetDatabaseName()?.ToSnakeCase()}");
             }
         }
     }

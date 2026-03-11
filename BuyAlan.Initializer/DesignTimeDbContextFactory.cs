@@ -22,7 +22,13 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<MainDataCo
             {
                 // typeof(DesignTimeDbContextFactory).GetTypeInfo().Assembly.GetName().Name;
                 npgsqlBuilder.MigrationsAssembly("BuyAlan.Initializer");  
-                npgsqlBuilder.MigrationsHistoryTable($"{Constants.TablePrefix}_migration_history");
+
+                string prefix = Constants.TablePrefix.ToSnakeCase();
+                if (!String.IsNullOrWhiteSpace(prefix)) {
+                    prefix = $"{prefix}_";
+                }
+                
+                npgsqlBuilder.MigrationsHistoryTable($"{prefix}migration_history");
             }
         );
 
