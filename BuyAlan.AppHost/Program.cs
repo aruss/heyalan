@@ -128,14 +128,14 @@ var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
     .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 */
 
-var runFronend = false;
+var runFronend = true;
 IResourceBuilder<ExecutableResource> webapp = null!;
 
 if (runFronend) {
     // if WebApp run is via yarn/npm, use AddExecutable
     webapp = builder.AddExecutable("webapp", "yarn.cmd", "../BuyAlan.WebApp", "dev")
         // explicitly allow unsecure transport for local dev if needed, or use https
-        .WithHttpEndpoint(env: "PORT", port: 5010, name: "http")
+        .WithHttpEndpoint(env: "PORT", port: 3300, name: "http")
         .WithExternalHttpEndpoints()
         .WithReference(webapi)
         .WaitFor(webapi)

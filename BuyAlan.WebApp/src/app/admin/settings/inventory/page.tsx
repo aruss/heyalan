@@ -14,7 +14,7 @@ import {
   TableHeaderCell,
   TableRoot,
   TableRow,
-} from "@/components/admin/table-temp";
+} from "@/components/admin/table";
 import {
   getSubscriptionsBySubscriptionIdSquareCatalogProductsOptions,
   getSubscriptionsBySubscriptionIdSquareCatalogSyncStateOptions,
@@ -26,7 +26,6 @@ import type {
   SubscriptionSquareCatalogProductItem,
 } from "@/lib/api";
 import { useSession } from "@/lib/session-context";
-import { Divider } from "@/components/admin/divider";
 
 const DEFAULT_SYNC_STATE_ERROR = "Unable to load catalog sync state.";
 const DEFAULT_PRODUCTS_ERROR = "Unable to load cached catalog products.";

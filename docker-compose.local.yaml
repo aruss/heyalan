@@ -38,7 +38,6 @@ services:
       sh -c "
         echo 'Checking for databases...';
         psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'buyalandb'\" | grep -q 1 || createdb buyalandb;
-        psql -tc \"SELECT 1 FROM pg_database WHERE datname = 'litellmdb'\" | grep -q 1 || createdb litellmdb;
         echo 'Initialization complete.'
       "
 
