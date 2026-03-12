@@ -4,37 +4,49 @@
 Implement subscription-scoped team invitations across onboarding, member settings, invitation redemption, and the existing queued email pipeline.
 
 - Add a real `SubscriptionInvitation` domain model for pending invites.
+- Generate invitation link tokens through a reusable `ITokenService`.
 - Use Square team members as onboarding suggestions via a new `SquareService` team-members read operation.
 - Show and manage invitations and current members in the admin settings members page.
-- Send invitation emails through the shared `IEmailService` and SendGrid template pipeline from M31.
+- Send invitation emails through the shared queued mail pipeline from M31.
 - Redeem invitation links into `SubscriptionUser` memberships and switch the accepting user into the invited subscription context.
 
 ## Dependencies and Current Codebase Baseline
 - [x] `SubscriptionUser` and `SubscriptionUserRole` already exist in `BuyAlan/Data/Entities/SubscriptionUser.cs`.
 - [x] Square connection and token handling already exist in `BuyAlan/SquareIntegration/SquareService.cs`.
-- [x] Onboarding already has an invitations step and endpoint, but it currently only marks the step complete.
+- [x] Onboarding already has an invitations step and endpoint, but `POST /onboarding/subscriptions/{subscriptionId}/members/invitations` currently only completes the step and does not create invitations.
 - [x] The onboarding UI already contains a placeholder invite step in `BuyAlan.WebApp/src/app/onboarding/page.tsx`.
 - [x] The members settings route already exists at `BuyAlan.WebApp/src/app/admin/settings/members/page.tsx` but is still a placeholder.
-- [x] Shared queued transactional email infrastructure already exists from M31 via `BuyAlan.Email.IEmailService`.
+- [x] Shared queued transactional email infrastructure already exists from M31 via `IEmailQueuingService`, `EmailSendRequested`, and `ITransactionalEmailService`.
 - [x] The current session model exposes `activeSubscriptionId`, but the backend currently derives it from membership ordering rather than persisted user preference.
 - [x] There is currently no subscription switcher UI, so invitation acceptance must explicitly land the user in the invited subscription.
+- [x] Current auth redirect behavior still forces non-onboarded users to `/onboarding`, so invite return URLs are not honored yet.
 
 ## User Decisions (Locked)
 - [x] Invitation role support for this milestone matches the existing enum: `Owner` and `Member`.
 - [x] If an invited user is not signed in, the invite link must redirect to login first and then return to the invite URL using the existing `returnUrl` mechanism.
 - [x] After accepting an invite, the user must switch into the invited subscription immediately.
-- [x] Invitation email delivery must use the existing mail service from M31, not a separate sender.
-- [x] Implementing the transport itself is not part of this milestone; this milestone consumes the shared email service boundary.
+- [x] Invitation email delivery must use the existing mail pipeline from M31, not a separate sender.
+- [x] Implementing the transport itself is not part of this milestone; this milestone consumes the shared mail boundary.
+- [x] Invitation links use a random opaque token stored directly on `SubscriptionInvitation`.
+- [x] Invitation tokens are not hashed and not encrypted.
+- [x] Invitation tokens are generated through a reusable `ITokenService`, not inline in invitation logic.
+- [x] Invitation acceptance requires authenticated user email to match the invitation email after normalization.
+- [x] Accepted and revoked invitations remain stored for auditability instead of being deleted inline.
+- [x] Invite-driven first login must not auto-create a personal owner subscription.
+- [x] Resend reuses the currently stored invitation token and re-sends the same link.
+- [x] Copy invitation link returns the currently stored invitation URL for the active invitation.
 
 ## Public Contracts and Internal Interfaces
 - [ ] Add `SubscriptionInvitation` entity to the core data model.
 - [ ] Add a persisted active subscription selector to `ApplicationUser`, e.g. `ActiveSubscriptionId`.
 - [ ] Extend `Subscription` with invitation navigation.
+- [ ] Add reusable `ITokenService` to generate high-entropy URL-safe opaque tokens for invitation links and future link-based flows.
 - [ ] Extend `ISquareService` with a `GetTeamMembersAsync` read operation returning minimal team-member data.
 - [ ] Add invitation-oriented DTOs following the existing `Input` / `Result` naming pattern:
   - [ ] create invitation
   - [ ] list invitations and members
   - [ ] resend invitation
+  - [ ] copy invitation link
   - [ ] revoke invitation
   - [ ] accept invitation
   - [ ] update member role
@@ -52,7 +64,8 @@ Implement subscription-scoped team invitations across onboarding, member setting
   - [ ] `SubscriptionId`
   - [ ] `Email`
   - [ ] `Role`
-  - [ ] secure token storage (`TokenHash` or equivalent non-plaintext token representation)
+  - [ ] `Token`
+  - [ ] unique index on `Token`
   - [ ] `InvitedByUserId`
   - [ ] `SentAtUtc`
   - [ ] `AcceptedAtUtc`
@@ -63,32 +76,38 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [ ] Add invitation navigation to `Subscription`.
 - [ ] Add persisted `ActiveSubscriptionId` to `ApplicationUser`.
 - [ ] Update current-user active-subscription resolution to prefer `ApplicationUser.ActiveSubscriptionId` when valid.
+- [ ] Fall back to current membership-order behavior when the persisted active subscription is null or no longer valid.
 - [ ] Keep authorization and multi-tenant boundaries subscription-scoped.
 
 ### Gate A Acceptance Criteria
-- [ ] Invitations can be stored, queried, revoked, and accepted without relying on ephemeral state.
-- [ ] Invite tokens are not stored in plaintext.
+- [ ] Invitations can be stored, queried, revoked, expired, and accepted without relying on ephemeral state.
+- [ ] Invitation tokens are unique and directly look-upable by token.
 - [ ] Active subscription is explicitly persisted and no longer depends only on membership ordering.
 
-## Gate B - Invitation Domain Service and Email Enqueue
-- [ ] Add a dedicated invitation service in `BuyAlan` to own invitation creation, resend, revoke, lookup, and acceptance rules.
+## Gate B - Token Service, Invitation Domain Service, and Email Enqueue
+- [ ] Add a reusable `ITokenService` in `BuyAlan` to own opaque token generation.
+- [ ] Add a dedicated invitation service in `BuyAlan` to own invitation creation, resend, copy-link lookup, revoke, lookup, and acceptance rules.
+- [ ] Ensure invitation creation and any future invitation token rotation go through `ITokenService`, not ad hoc random generation.
 - [ ] Enforce invitation validation rules:
   - [ ] email must be non-empty and normalized
   - [ ] role must be supported
   - [ ] duplicate active invite behavior is deterministic
+  - [ ] a subscription member cannot be re-invited
   - [ ] accepting revoked, expired, invalid, or already-accepted invites is handled deterministically
+  - [ ] accepting user email must match invitation email
 - [ ] Generate invite links against the public WebApp base URL.
-- [ ] Enqueue invitation emails through `IEmailService` using `EmailSendRequested`.
+- [ ] Enqueue invitation emails through `IEmailQueuingService` using `EmailSendRequested`.
 - [ ] Add a new email template key such as `subscription_invitation`.
 - [ ] Add SendGrid template configuration for the invitation template in the same shared config area used by M31.
 - [ ] Keep logging sanitized:
-  - [ ] no raw invite tokens
-  - [ ] no full invitation links in logs
+  - [ ] no raw invite tokens in logs
+  - [ ] no full invite links in logs
   - [ ] no unnecessary PII beyond masked email metadata
 
 ### Gate B Acceptance Criteria
 - [ ] Creating or resending an invitation enqueues a transactional email through the shared mail service.
 - [ ] Invitation business rules live in one domain service rather than controllers.
+- [ ] Token generation is reusable through `ITokenService`.
 - [ ] Sensitive invitation data is not logged.
 
 ## Gate C - Square Team Member Read Model
@@ -97,7 +116,8 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [ ] Return only minimal onboarding-safe fields:
   - [ ] display name
   - [ ] email
-- [ ] Treat missing Square connection and empty team lists as safe non-fatal states for onboarding UI.
+- [ ] Filter out unusable suggestion rows that do not have an email address.
+- [ ] Treat missing Square connection, unsupported Team API states, and empty team lists as safe non-fatal states for onboarding UI.
 
 ### Gate C Acceptance Criteria
 - [ ] Onboarding can load Square team-member suggestions from the connected merchant account.
@@ -108,35 +128,41 @@ Implement subscription-scoped team invitations across onboarding, member setting
   - [ ] listing invitations and current members
   - [ ] creating invitations
   - [ ] resending invitations
+  - [ ] copying invitation links
   - [ ] revoking invitations
   - [ ] updating member role
   - [ ] deleting a member
 - [ ] Add public or anonymous-safe invite lookup endpoint by token.
-- [ ] Add authenticated invite acceptance endpoint.
-- [ ] Replace the current onboarding invitations endpoint implementation so it creates invitations instead of only completing the step.
+- [ ] Add authenticated invite acceptance endpoint by token.
 - [ ] Extend onboarding state endpoint payload with invitation-step read data.
+- [ ] Replace the current onboarding invitations placeholder behavior with real invitation work plus explicit onboarding-step completion semantics.
 - [ ] Keep endpoint error mapping consistent with current WebApi patterns.
+- [ ] Prevent role changes or deletions that would remove the last owner from a subscription.
 
 ### Gate D Acceptance Criteria
 - [ ] Owners can fully manage invitations and members through stable WebApi contracts.
 - [ ] Invite acceptance is API-backed and idempotent enough for browser retries.
-- [ ] Onboarding step 4 now performs real invitation work.
+- [ ] Onboarding step 4 now performs real invitation work instead of placeholder completion only.
+- [ ] Owner-safety rules are enforced by the API.
 
 ## Gate E - Auth and Invitation Redemption Flow
 - [ ] Add a WebApp invite route, e.g. `/invite/[token]`.
 - [ ] If unauthenticated, redirect to `/login` with the invite URL as `returnUrl`.
 - [ ] Update auth redirect behavior so invite return URLs are honored instead of always forcing `/onboarding` for non-onboarded users.
+- [ ] Suppress personal owner-subscription auto-provisioning when first login was initiated from an invite flow.
+- [ ] Preserve current onboarding behavior for normal logins outside the invite path.
 - [ ] On accept:
   - [ ] create `SubscriptionUser` membership if missing
   - [ ] mark invitation accepted
   - [ ] set `ApplicationUser.ActiveSubscriptionId` to the invited subscription
   - [ ] refresh session state so the frontend sees the new active subscription
-- [ ] Preserve current onboarding behavior for normal logins outside the invite path.
+  - [ ] reject acceptance when signed-in user email does not match invitation email
 
 ### Gate E Acceptance Criteria
 - [ ] Users can open an invite link, sign in, return to the invite route, and accept successfully.
 - [ ] Accepted users land in the invited subscription context immediately.
 - [ ] Invite flow does not strand users on an auto-created personal owner subscription.
+- [ ] Forwarded or mismatched-account invite acceptance is blocked by email-match checks.
 
 ## Gate F - Onboarding Invitations Step
 - [ ] Replace the disabled placeholder UI in onboarding step 4 with real invitation UX.
@@ -145,8 +171,10 @@ Implement subscription-scoped team invitations across onboarding, member setting
   - [ ] pending invitations
   - [ ] current members
   - [ ] invite form with email and role
-- [ ] Submit invitation creation through the onboarding invitation endpoint.
+- [ ] Submit invitation creation through the real invitation/member-management API.
 - [ ] Keep the step dependency that invitations require completed Square connection.
+- [ ] Make onboarding-step completion explicit instead of depending on the old placeholder endpoint semantics.
+- [ ] Align the onboarding step message and behavior so docs, UI, and backend dependencies match.
 - [ ] Allow continuing to finalize after invitation handling is done.
 
 ### Gate F Acceptance Criteria
@@ -175,12 +203,14 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [ ] Current members and pending invitations are clearly separated.
 
 ## Gate H - Tests and Regression Coverage
+- [ ] Unit tests for `ITokenService` generation invariants and reasonable uniqueness.
 - [ ] Unit tests for invitation service create/resend/revoke/accept behavior.
-- [ ] Unit tests for token validation and duplicate acceptance behavior.
+- [ ] Unit tests for token lookup, email-match enforcement, and duplicate acceptance behavior.
 - [ ] Unit tests for active-subscription switching after acceptance.
 - [ ] Unit tests for invitation email enqueue payload and template-key usage.
 - [ ] API tests for owner authorization and forbidden behavior for non-owners.
-- [ ] API tests for invalid, expired, revoked, and already-accepted invite scenarios.
+- [ ] API tests for invalid, expired, revoked, already-accepted, and mismatched-email invite scenarios.
+- [ ] Auth tests for invite-driven first login versus normal first login behavior.
 - [ ] WebApp tests for onboarding invite flow.
 - [ ] WebApp tests for admin members page drawer flows and table actions.
 - [ ] WebApp tests for invite acceptance and session refresh behavior.
@@ -192,7 +222,7 @@ Implement subscription-scoped team invitations across onboarding, member setting
 
 ## Implementation Sequence
 - [ ] 1) Gate A: data model and persisted active subscription.
-- [ ] 2) Gate B: invitation domain service and email enqueue integration.
+- [ ] 2) Gate B: reusable token service, invitation domain service, and email enqueue integration.
 - [ ] 3) Gate C: Square team-member read support.
 - [ ] 4) Gate D: WebApi invitation and member-management endpoints.
 - [ ] 5) Gate E: auth and invite redemption flow.
@@ -206,3 +236,4 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [ ] After schema changes, stop for developer-created migrations per repo rules.
 - [ ] After WebApi interface changes that affect the generated client, hand off for OpenAPI client regeneration.
 - [ ] Keep logs free of raw invite tokens, full invite links, and unnecessary PII.
+- [ ] Retention cleanup for old accepted/revoked invitations is future work and not part of M32.
