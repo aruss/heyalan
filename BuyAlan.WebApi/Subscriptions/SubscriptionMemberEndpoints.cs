@@ -4,6 +4,7 @@ using System.Security.Claims;
 using BuyAlan.Data;
 using BuyAlan.Data.Entities;
 using BuyAlan.Subscriptions;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -415,7 +416,9 @@ public static class SubscriptionMemberEndpoints
     private static async Task<IResult> PostSubscriptionInvitationAcceptAsync(
         [FromRoute] string token,
         ClaimsPrincipal user,
+        MainDataContext dbContext,
         ISubscriptionInvitationService invitationService,
+        SignInManager<ApplicationUser> signInManager,
         CancellationToken cancellationToken)
     {
         Guid? userId = user.GetUserId();
@@ -427,6 +430,22 @@ public static class SubscriptionMemberEndpoints
         AcceptSubscriptionInvitationResult result = await invitationService.AcceptAsync(
             new AcceptSubscriptionInvitationInput(userId.Value, token),
             cancellationToken);
+
+        if (result is AcceptSubscriptionInvitationResult.Success or AcceptSubscriptionInvitationResult.AlreadyAccepted)
+        {
+            ApplicationUser? applicationUser = await dbContext.Users
+                .SingleOrDefaultAsync(item => item.Id == userId.Value, cancellationToken);
+
+            if (applicationUser is not null)
+            {
+                // TODO: never use endpoint functions as service functions...
+                await Identity.IdentityEndpoints.RefreshCurrentUserSessionAsync(
+                    signInManager,
+                    applicationUser,
+                    dbContext,
+                    cancellationToken);
+            }
+        }
 
         return result switch
         {

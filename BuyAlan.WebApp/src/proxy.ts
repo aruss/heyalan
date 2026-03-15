@@ -87,6 +87,27 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         }
     }
 
+    if (pathname.startsWith('/invite')) {
+        const authCookie = request.cookies.get(AUTH_COOKIE_NAME);
+
+        if (!authCookie) {
+            return createLoginRedirect(request);
+        }
+
+        if (!webApiEndpoint) {
+            return new NextResponse(null, { status: 500, statusText: 'Config Error' });
+        }
+
+        try {
+            const authMePayload = await getAuthMePayloadAsync(request, webApiEndpoint);
+            if (authMePayload === null) {
+                return createLoginRedirect(request);
+            }
+        } catch {
+            return createLoginRedirect(request);
+        }
+    }
+
     if (pathname.startsWith('/onboarding')) {
         const authCookie = request.cookies.get(AUTH_COOKIE_NAME);
         if (!authCookie) {
@@ -115,5 +136,5 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-    matcher: ['/api/:path*', '/admin/:path*', '/onboarding/:path*'],
+    matcher: ['/api/:path*', '/admin/:path*', '/invite/:path*', '/onboarding/:path*'],
 };

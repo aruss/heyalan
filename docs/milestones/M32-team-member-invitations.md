@@ -154,41 +154,41 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [x] Owner-safety rules are enforced by the API.
 
 ## Gate E - Auth and Invitation Redemption Flow
-- [ ] Add a WebApp invite route, e.g. `/invite/[token]`.
-- [ ] If unauthenticated, redirect to `/login` with the invite URL as `returnUrl`.
-- [ ] Update auth redirect behavior so invite return URLs are honored instead of always forcing `/onboarding` for non-onboarded users.
-- [ ] Suppress personal owner-subscription auto-provisioning when first login was initiated from an invite flow.
-- [ ] Preserve current onboarding behavior for normal logins outside the invite path.
-- [ ] On accept:
-  - [ ] create `SubscriptionUser` membership if missing
-  - [ ] mark invitation accepted
-  - [ ] set `ApplicationUser.ActiveSubscriptionId` to the invited subscription
-  - [ ] refresh session state so the frontend sees the new active subscription
-  - [ ] reject acceptance when signed-in user email does not match invitation email
+- [x] Add a WebApp invite route, e.g. `/invite/[token]`.
+- [x] If unauthenticated, redirect to `/login` with the invite URL as `returnUrl`.
+- [x] Update auth redirect behavior so invite return URLs are honored instead of always forcing `/onboarding` for non-onboarded users.
+- [x] Suppress personal owner-subscription auto-provisioning when first login was initiated from an invite flow.
+- [x] Preserve current onboarding behavior for normal logins outside the invite path.
+- [x] On accept:
+  - [x] create `SubscriptionUser` membership if missing
+  - [x] mark invitation accepted
+  - [x] set `ApplicationUser.ActiveSubscriptionId` to the invited subscription
+  - [x] refresh session state so the frontend sees the new active subscription
+  - [x] reject acceptance when signed-in user email does not match invitation email
 
 ### Gate E Acceptance Criteria
-- [ ] Users can open an invite link, sign in, return to the invite route, and accept successfully.
-- [ ] Accepted users land in the invited subscription context immediately.
-- [ ] Invite flow does not strand users on an auto-created personal owner subscription.
-- [ ] Forwarded or mismatched-account invite acceptance is blocked by email-match checks.
+- [x] Users can open an invite link, sign in, return to the invite route, and accept successfully.
+- [x] Accepted users land in the invited subscription context immediately.
+- [x] Invite flow does not strand users on an auto-created personal owner subscription.
+- [x] Forwarded or mismatched-account invite acceptance is blocked by email-match checks.
 
 ## Gate F - Onboarding Invitations Step
-- [ ] Replace the disabled placeholder UI in onboarding step 4 with real invitation UX.
+- [x] Replace the disabled placeholder UI in onboarding step 4 with real invitation UX.
 - [ ] Render:
   - [x] Square team-member suggestions
-  - [ ] pending invitations
+  - [x] pending invitations
   - [x] current members
-  - [ ] invite form with email and role
-- [ ] Submit invitation creation through the real invitation/member-management API.
-- [ ] Keep the step dependency that invitations require completed Square connection.
-- [ ] Make onboarding-step completion explicit instead of depending on the old placeholder endpoint semantics.
-- [ ] Align the onboarding step message and behavior so docs, UI, and backend dependencies match.
-- [ ] Allow continuing to finalize after invitation handling is done.
+  - [x] invite form with email and role
+- [x] Submit invitation creation through the real invitation/member-management API.
+- [x] Keep the step dependency that invitations require completed Square connection.
+- [x] Make onboarding-step completion explicit instead of depending on the old placeholder endpoint semantics.
+- [x] Align the onboarding step message and behavior so docs, UI, and backend dependencies match.
+- [x] Allow continuing to finalize after invitation handling is done.
 
 ### Gate F Acceptance Criteria
-- [ ] Onboarding step 4 can create invitations and reflect the resulting state.
-- [ ] Square suggestions reduce manual re-entry for team invites.
-- [ ] Finalize still works after the invitations step completes.
+- [x] Onboarding step 4 can create invitations and reflect the resulting state.
+- [x] Square suggestions reduce manual re-entry for team invites.
+- [x] Finalize still works after the invitations step completes.
 
 ## Gate G - Admin Settings Members Page
 - [ ] Build `BuyAlan.WebApp/src/app/admin/settings/members/page.tsx` using existing admin primitives.
@@ -233,8 +233,8 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [ ] 2) Gate B: reusable token service, invitation domain service, and email enqueue integration.
 - [x] 3) Gate C: Square team-member read support.
 - [x] 4) Gate D: WebApi invitation and member-management endpoints.
-- [ ] 5) Gate E: auth and invite redemption flow.
-- [ ] 6) Gate F: onboarding invitations step.
+- [x] 5) Gate E: auth and invite redemption flow.
+- [x] 6) Gate F: onboarding invitations step.
 - [ ] 7) Gate G: admin settings members page.
 - [ ] 8) Gate H: tests and regression verification.
 

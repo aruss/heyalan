@@ -21,6 +21,7 @@ public static class IdentityEndpoints
 {
     private const string DefaultReturnUrl = "/admin";
     private const string OnboardingReturnUrl = "/onboarding";
+    private const string InvitationRoutePrefix = "/invite";
 
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -120,6 +121,7 @@ public static class IdentityEndpoints
         MainDataContext dbContext)
     {
         string safeReturnUrl = NormalizeReturnUrl(returnUrl);
+        bool isInvitationFlow = IsInvitationReturnUrl(safeReturnUrl);
 
         try
         {
@@ -205,6 +207,7 @@ public static class IdentityEndpoints
             bool isNewUser = false;
 
             await using IDbContextTransaction? provisioningTransaction = applicationUser is null
+                && !isInvitationFlow
                 ? await dbContext.Database.BeginTransactionAsync(httpContext.RequestAborted)
                 : null;
 
@@ -254,7 +257,7 @@ public static class IdentityEndpoints
                 return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "external_login_link_failed"));
             }
 
-            if (isNewUser)
+            if (isNewUser && !isInvitationFlow)
             {
                 try
                 {
@@ -274,11 +277,11 @@ public static class IdentityEndpoints
                 }
             }
 
-            isOnboarded = await IsActiveSubscriptionOnboardedAsync(
-                applicationUser.Id,
+            isOnboarded = await RefreshCurrentUserSessionAsync(
+                signInManager,
+                applicationUser,
                 dbContext,
                 httpContext.RequestAborted);
-            await SignInWithOnboardingClaimAsync(signInManager, applicationUser, isOnboarded);
             string callbackRedirect = ResolvePostLoginRedirectTarget(safeReturnUrl, isOnboarded);
             return TypedResults.Redirect(callbackRedirect);
         }
@@ -507,7 +510,29 @@ public static class IdentityEndpoints
 
     internal static string ResolvePostLoginRedirectTarget(string safeReturnUrl, bool isOnboarded)
     {
+        if (IsInvitationReturnUrl(safeReturnUrl))
+        {
+            return safeReturnUrl;
+        }
+
         return isOnboarded ? safeReturnUrl : OnboardingReturnUrl;
+    }
+
+    internal static bool IsInvitationReturnUrl(string returnUrl)
+    {
+        if (String.IsNullOrWhiteSpace(returnUrl))
+        {
+            return false;
+        }
+
+        string normalizedReturnUrl = returnUrl.Trim();
+        int queryIndex = normalizedReturnUrl.IndexOfAny(['?', '#']);
+        string path = queryIndex >= 0
+            ? normalizedReturnUrl.Substring(0, queryIndex)
+            : normalizedReturnUrl;
+
+        return String.Equals(path, InvitationRoutePrefix, StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith($"{InvitationRoutePrefix}/", StringComparison.OrdinalIgnoreCase);
     }
 
     internal static string BuildAuthPath(PathString pathBase, string authPath)
@@ -612,6 +637,17 @@ public static class IdentityEndpoints
 
         dbContext.SubscriptionUsers.Add(ownerMembership);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    internal static async Task<bool> RefreshCurrentUserSessionAsync(
+        SignInManager<ApplicationUser> signInManager,
+        ApplicationUser user,
+        MainDataContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        bool isOnboarded = await IsActiveSubscriptionOnboardedAsync(user.Id, dbContext, cancellationToken);
+        await SignInWithOnboardingClaimAsync(signInManager, user, isOnboarded);
+        return isOnboarded;
     }
 
     private static async Task SignInWithOnboardingClaimAsync(

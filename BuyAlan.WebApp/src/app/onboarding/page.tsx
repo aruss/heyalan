@@ -14,11 +14,12 @@ import {
     CheckCircle2,
     ArrowRight,
     Mail,
-    Plus,
-    Trash2,
     Smile,
     Briefcase,
-    MessagesSquare
+    MessagesSquare,
+    UserPlus,
+    Users,
+    Sparkles
 } from "lucide-react";
 import {
     getOnboardingSubscriptionsBySubscriptionIdState,
@@ -27,9 +28,13 @@ import {
     postOnboardingSubscriptionsBySubscriptionIdAgents,
     postOnboardingSubscriptionsBySubscriptionIdFinalize,
     postOnboardingSubscriptionsBySubscriptionIdMembersInvitations,
+    postOnboardingSubscriptionsBySubscriptionIdMembersInvitationsComplete,
     postSubscriptionsBySubscriptionIdSquareAuthorize,
     type AgentPersonality as ApiAgentPersonality,
-    type GetSubscriptionOnboardingStateResult
+    type GetSubscriptionOnboardingStateResult,
+    type SubscriptionInvitationItem,
+    type SubscriptionMemberItem,
+    type SubscriptionUserRole
 } from "@/lib/api";
 import { PrimaryActionButton, SecondaryActionButton } from "@/components/landing/ui/action-buttons";
 import { useSession } from "@/lib/session-context";
@@ -52,7 +57,8 @@ type FormState = {
     agentName: string;
     agentPersonality: AgentPersonality;
     channels: ChannelState;
-    teamMembers: string[];
+    inviteEmail: string;
+    inviteRole: SubscriptionUserRole;
 };
 
 type StepMessageKind = "error" | "info";
@@ -85,6 +91,13 @@ type ExtendedOnboardingState = GetSubscriptionOnboardingStateResult & {
 
 const E164_LIKE_REGEX = /^\+[1-9]\d{7,14}$/;
 const ONBOARDING_PROFILE_DRAFT_KEY_PREFIX = "onboarding-profile-draft";
+const OWNER_ROLE = 0 as SubscriptionUserRole;
+const MEMBER_ROLE = 1 as SubscriptionUserRole;
+
+const roleLabelByValue: Record<number, string> = {
+    [OWNER_ROLE]: "Owner",
+    [MEMBER_ROLE]: "Member"
+};
 
 const profileSchema = z.object({
     agentName: z.string().trim().min(1, "Agent name is required."),
@@ -113,28 +126,9 @@ const channelsSchema = z.object({
     }
 });
 
-const teamSchema = z.object({
-    teamMembers: z.array(
-        z.object({
-            email: z.string().trim()
-        })
-    ).superRefine((members, ctx) => {
-        for (let index = 0; index < members.length; index++) {
-            const email = members[index].email;
-            if (!email) {
-                continue;
-            }
-
-            const isValid = z.string().email().safeParse(email).success;
-            if (!isValid) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: "Use a valid email format.",
-                    path: [index, "email"]
-                });
-            }
-        }
-    })
+const inviteSchema = z.object({
+    inviteEmail: z.string().trim().min(1, "Email is required.").email("Use a valid email format."),
+    inviteRole: z.union([z.literal(OWNER_ROLE), z.literal(MEMBER_ROLE)])
 });
 
 const mapApiStepToUiStep = (apiStep: string): OnboardingStep => {
@@ -178,6 +172,30 @@ const resolveApiErrorMessage = (error: unknown, fallback: string): string => {
     }
 
     return fallback;
+};
+
+const normalizeEmail = (value: string): string => {
+    return value.trim().toLowerCase();
+};
+
+const getRoleLabel = (role: SubscriptionUserRole): string => {
+    return roleLabelByValue[role] ?? "Member";
+};
+
+const formatDateTime = (value: string | null): string => {
+    if (!value) {
+        return "Not available";
+    }
+
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) {
+        return "Not available";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short"
+    }).format(parsedDate);
 };
 
 const mapPersonalityToApi = (personality: AgentPersonality): ApiAgentPersonality => {
@@ -280,7 +298,8 @@ const OnboardingPageContent = (): ReactElement => {
             phone: "",
             telegram: ""
         },
-        teamMembers: [""]
+        inviteEmail: "",
+        inviteRole: MEMBER_ROLE
     });
     const formDataRef = useRef<FormState>(formData);
 
@@ -301,10 +320,11 @@ const OnboardingPageContent = (): ReactElement => {
         }
     });
 
-    const teamForm = useForm({
-        resolver: zodResolver(teamSchema),
+    const inviteForm = useForm({
+        resolver: zodResolver(inviteSchema),
         defaultValues: {
-            teamMembers: formData.teamMembers.map((email) => ({ email }))
+            inviteEmail: formData.inviteEmail,
+            inviteRole: formData.inviteRole
         }
     });
 
@@ -373,6 +393,10 @@ const OnboardingPageContent = (): ReactElement => {
             ? (state.channelsPrefill?.twilioPhoneNumber ?? "")
             : formSnapshot.channels.phone;
         const hasSavedTelegramToken = state.channelsPrefill?.hasTelegramBotToken === true;
+        const availableRoles = state.invitations.availableRoles;
+        const nextInviteRole = availableRoles.includes(formSnapshot.inviteRole)
+            ? formSnapshot.inviteRole
+            : (availableRoles[0] ?? MEMBER_ROLE);
 
         const nextFormData: FormState = {
             squareConnected,
@@ -384,7 +408,8 @@ const OnboardingPageContent = (): ReactElement => {
                 phone: nextPhone,
                 telegram: applyServerPrefill ? "" : formSnapshot.channels.telegram
             },
-            teamMembers: [...formSnapshot.teamMembers]
+            inviteEmail: formSnapshot.inviteEmail,
+            inviteRole: nextInviteRole
         };
 
         setFormData(nextFormData);
@@ -393,9 +418,10 @@ const OnboardingPageContent = (): ReactElement => {
         channelsForm.setValue("whatsapp", nextFormData.channels.whatsapp, { shouldDirty: false });
         channelsForm.setValue("phone", nextFormData.channels.phone, { shouldDirty: false });
         channelsForm.setValue("telegram", nextFormData.channels.telegram, { shouldDirty: false });
-        teamForm.setValue("teamMembers", nextFormData.teamMembers.map((email) => ({ email })), { shouldDirty: false });
+        inviteForm.setValue("inviteEmail", nextFormData.inviteEmail, { shouldDirty: false });
+        inviteForm.setValue("inviteRole", nextFormData.inviteRole, { shouldDirty: false });
         return state;
-    }, [channelsForm, profileForm, teamForm]);
+    }, [channelsForm, inviteForm, profileForm]);
 
     const refreshOnboardingStateAsync = async (id: string): Promise<GetSubscriptionOnboardingStateResult> => {
         return loadOnboardingStateAsync(id, { resumeMode: false, applyServerPrefill: false });
@@ -568,27 +594,22 @@ const OnboardingPageContent = (): ReactElement => {
         }
     };
 
-    const handleMemberChange = (index: number, value: string): void => {
-        const newMembers = [...formData.teamMembers];
-        newMembers[index] = value;
-        setFormData({ ...formData, teamMembers: newMembers });
-        teamForm.setValue(`teamMembers.${index}.email`, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    const handleInviteEmailChange = (e: ChangeEvent<HTMLInputElement>): void => {
+        const nextValue = e.target.value;
+        setFormData({ ...formData, inviteEmail: nextValue });
+        inviteForm.setValue("inviteEmail", nextValue, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     };
 
-    const addMember = (): void => {
-        const updatedMembers = [...formData.teamMembers, ""];
-        setFormData({ ...formData, teamMembers: updatedMembers });
-        teamForm.setValue("teamMembers", updatedMembers.map((email) => ({ email })), { shouldDirty: true });
+    const handleInviteRoleChange = (e: ChangeEvent<HTMLSelectElement>): void => {
+        const nextRole = Number(e.target.value) as SubscriptionUserRole;
+        setFormData({ ...formData, inviteRole: nextRole });
+        inviteForm.setValue("inviteRole", nextRole, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     };
 
-    const removeMember = (index: number): void => {
-        if (formData.teamMembers.length <= 1) {
-            return;
-        }
-
-        const newMembers = formData.teamMembers.filter((_, i) => i !== index);
-        setFormData({ ...formData, teamMembers: newMembers });
-        teamForm.setValue("teamMembers", newMembers.map((email) => ({ email })), { shouldDirty: true });
+    const handleSuggestionSelect = (email: string): void => {
+        setFormData({ ...formData, inviteEmail: email });
+        inviteForm.setValue("inviteEmail", email, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+        clearMessage(4);
     };
 
     const handleChannelChange = (channel: ChannelKey, value: string): void => {
@@ -682,7 +703,7 @@ const OnboardingPageContent = (): ReactElement => {
         }
     };
 
-    const runCompleteOnboardingAsync = async (validateTeamInputs: boolean): Promise<void> => {
+    const handleInvitationCreate = async (): Promise<void> => {
         if (!subscriptionId) {
             setMessage(4, "error", "Missing subscription context.");
             return;
@@ -693,30 +714,66 @@ const OnboardingPageContent = (): ReactElement => {
             return;
         }
 
-        if (validateTeamInputs) {
-            const isValid = await teamForm.trigger();
-            if (!isValid) {
-                setMessage(4, "error", "Please enter valid team email formats.");
-                return;
-            }
+        const isValid = await inviteForm.trigger();
+        if (!isValid) {
+            setMessage(4, "error", "Enter a valid email address and role.");
+            return;
         }
 
         try {
             setIsBusy(true);
             clearMessage(4);
 
-            await postOnboardingSubscriptionsBySubscriptionIdMembersInvitations({
+            const response = await postOnboardingSubscriptionsBySubscriptionIdMembersInvitations({
                 path: { subscriptionId },
+                body: {
+                    email: formData.inviteEmail,
+                    role: formData.inviteRole
+                },
                 throwOnError: true
             });
 
-            await refreshOnboardingStateAsync(subscriptionId);
-            await postOnboardingSubscriptionsBySubscriptionIdFinalize({
+            setOnboardingState(response.data);
+            setFormData((current) => ({
+                ...current,
+                inviteEmail: ""
+            }));
+            inviteForm.setValue("inviteEmail", "", { shouldDirty: false, shouldTouch: false, shouldValidate: false });
+            setStep(mapApiStepToUiStep(response.data.currentStep));
+            setMessage(4, "info", "Invitation sent. You can send more or finish setup.");
+        } catch (error: unknown) {
+            setMessage(4, "error", resolveApiErrorMessage(error, "Unable to send that invitation."));
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
+    const runCompleteOnboardingAsync = async (): Promise<void> => {
+        if (!subscriptionId) {
+            setMessage(4, "error", "Missing subscription context.");
+            return;
+        }
+
+        if (!isSquareConnected) {
+            router.replace("/admin");
+            return;
+        }
+
+        try {
+            setIsBusy(true);
+            clearMessage(4);
+
+            const completionResponse = await postOnboardingSubscriptionsBySubscriptionIdMembersInvitationsComplete({
                 path: { subscriptionId },
                 throwOnError: true
             });
+            setOnboardingState(completionResponse.data);
 
-            await refreshOnboardingStateAsync(subscriptionId);
+            const finalizeResponse = await postOnboardingSubscriptionsBySubscriptionIdFinalize({
+                path: { subscriptionId },
+                throwOnError: true
+            });
+            setOnboardingState(finalizeResponse.data);
             setStep(5);
         } catch (error: unknown) {
             setMessage(4, "error", resolveApiErrorMessage(error, "Unable to complete onboarding yet."));
@@ -726,16 +783,7 @@ const OnboardingPageContent = (): ReactElement => {
     };
 
     const completeOnboarding = (): void => {
-        void runCompleteOnboardingAsync(true);
-    };
-
-    const skipInvites = (): void => {
-        if (!isSquareConnected) {
-            router.replace("/admin");
-            return;
-        }
-
-        void runCompleteOnboardingAsync(false);
+        void runCompleteOnboardingAsync();
     };
 
     const profileNameError = profileForm.formState.errors.agentName?.message;
@@ -743,7 +791,19 @@ const OnboardingPageContent = (): ReactElement => {
     const whatsappError = channelsForm.formState.errors.whatsapp?.message;
     const phoneError = channelsForm.formState.errors.phone?.message;
     const telegramError = channelsForm.formState.errors.telegram?.message;
-    const teamErrors = teamForm.formState.errors.teamMembers;
+    const inviteEmailError = inviteForm.formState.errors.inviteEmail?.message;
+    const inviteRoleError = inviteForm.formState.errors.inviteRole?.message;
+    const invitationStep = onboardingState?.invitations;
+    const availableRoles = invitationStep?.availableRoles ?? [OWNER_ROLE, MEMBER_ROLE];
+    const pendingInvitations = invitationStep?.invitations.filter((item) => item.status === "pending") ?? [];
+    const currentMembers = invitationStep?.members ?? [];
+    const suggestionItems = invitationStep?.suggestions ?? [];
+    const memberEmails = new Set(currentMembers.map((item) => normalizeEmail(item.email)));
+    const pendingInvitationEmails = new Set(
+        pendingInvitations
+            .filter((item) => item.status === "pending")
+            .map((item) => normalizeEmail(item.email))
+    );
 
     return (
 
@@ -985,46 +1045,209 @@ const OnboardingPageContent = (): ReactElement => {
 
                 {step === 4 && isSquareConnected && (
                     <div className="space-y-8 text-center">
-                        <div className="space-y-4 opacity-50">
+                        <div className="space-y-4">
                             <h2 className="text-3xl font-extrabold tracking-tight">Invite Team.</h2>
-                            <p className="text-slate-500">Add team members to handle escalations and monitor chats.</p>
+                            <p className="text-slate-500">
+                                Invite teammates now or finish onboarding and manage access later from settings.
+                            </p>
                         </div>
 
-                        <div className="space-y-4 text-left opacity-50">
-                            {formData.teamMembers.map((email, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    <div className="relative flex-1">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            disabled
-                                            type="email"
-                                            placeholder="colleague@company.com"
-                                            value={email}
-                                            onChange={(e) => handleMemberChange(index, e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
-                                        />
-                                        {teamErrors?.[index]?.email?.message ? (
-                                            <div className="text-xs text-red-500 pt-2">{teamErrors[index]?.email?.message}</div>
+                        <div className="space-y-6 text-left">
+                            <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                                        <Sparkles size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-slate-900">Square suggestions</h3>
+                                        <p className="text-sm text-slate-500">
+                                            Pull likely teammates from your connected Square account to avoid retyping addresses.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {suggestionItems.length > 0 ? (
+                                    <div className="mt-5 flex flex-wrap gap-3">
+                                        {suggestionItems.map((suggestion) => {
+                                            const normalizedSuggestionEmail = normalizeEmail(suggestion.email);
+                                            const isAlreadyMember = memberEmails.has(normalizedSuggestionEmail);
+                                            const hasPendingInvite = pendingInvitationEmails.has(normalizedSuggestionEmail);
+                                            const suggestionStateLabel = isAlreadyMember
+                                                ? "Already a member"
+                                                : (hasPendingInvite ? "Invite pending" : "Use suggestion");
+
+                                            return (
+                                                <button
+                                                    key={suggestion.email}
+                                                    type="button"
+                                                    onClick={() => handleSuggestionSelect(suggestion.email)}
+                                                    disabled={isAlreadyMember || hasPendingInvite || isBusy}
+                                                    className={`min-w-[220px] rounded-2xl border px-4 py-3 text-left transition ${isAlreadyMember || hasPendingInvite ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400" : "border-amber-200 bg-amber-50 text-slate-900 hover:border-amber-300 hover:bg-amber-100"}`}
+                                                >
+                                                    <div className="font-semibold">{suggestion.displayName}</div>
+                                                    <div className="mt-1 text-sm">{suggestion.email}</div>
+                                                    <div className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">{suggestionStateLabel}</div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                        No Square team members were available. You can still invite by email below.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                                        <UserPlus size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-slate-900">Send invitation</h3>
+                                        <p className="text-sm text-slate-500">
+                                            Invite an owner or member now. Pending invitations stay visible until accepted or revoked.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-slate-900" htmlFor="invite-email">
+                                            Email
+                                        </label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <input
+                                                id="invite-email"
+                                                type="email"
+                                                placeholder="colleague@company.com"
+                                                value={formData.inviteEmail}
+                                                onChange={handleInviteEmailChange}
+                                                className="w-full rounded-2xl border border-slate-200 py-3.5 pl-11 pr-4 outline-none transition-all shadow-sm focus:border-slate-900 focus:ring-2 focus:ring-slate-900"
+                                            />
+                                        </div>
+                                        {inviteEmailError ? (
+                                            <div className="text-xs text-red-500">{inviteEmailError}</div>
                                         ) : null}
                                     </div>
-                                    {formData.teamMembers.length > 1 && (
-                                        <button
-                                            onClick={() => removeMember(index)}
-                                            className="p-3.5 text-slate-400 hover:text-red-500 transition-colors rounded-2xl border border-slate-200 hover:border-red-200 bg-white"
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-slate-900" htmlFor="invite-role">
+                                            Role
+                                        </label>
+                                        <select
+                                            id="invite-role"
+                                            value={formData.inviteRole}
+                                            onChange={handleInviteRoleChange}
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 outline-none transition-all shadow-sm focus:border-slate-900 focus:ring-2 focus:ring-slate-900"
                                         >
-                                            <Trash2 size={18} />
-                                        </button>
+                                            {availableRoles.map((role) => (
+                                                <option key={role} value={role}>
+                                                    {getRoleLabel(role)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {inviteRoleError ? (
+                                            <div className="text-xs text-red-500">{inviteRoleError}</div>
+                                        ) : null}
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 flex justify-end">
+                                    <PrimaryActionButton
+                                        onClick={() => void handleInvitationCreate()}
+                                        disabled={isBusy}
+                                        className="flex items-center justify-center gap-2"
+                                    >
+                                        <UserPlus size={18} />
+                                        Send invite
+                                    </PrimaryActionButton>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-6 xl:grid-cols-2">
+                                <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+                                            <Mail size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-slate-900">Pending invitations</h3>
+                                            <p className="text-sm text-slate-500">Review who still needs to accept access.</p>
+                                        </div>
+                                    </div>
+
+                                    {pendingInvitations.length > 0 ? (
+                                        <div className="mt-5 space-y-3">
+                                            {pendingInvitations.map((invitation: SubscriptionInvitationItem) => (
+                                                <div key={invitation.invitationId} className="rounded-2xl border border-slate-200 px-4 py-3">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <div className="font-semibold text-slate-900">{invitation.email}</div>
+                                                            <div className="mt-1 text-sm text-slate-500">
+                                                                {getRoleLabel(invitation.role)} invited {formatDateTime(invitation.sentAtUtc)}
+                                                            </div>
+                                                        </div>
+                                                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                                                            {invitation.status}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                            No invitations have been sent yet.
+                                        </p>
                                     )}
                                 </div>
-                            ))}
 
-                            <button
-                                onClick={() => false /*addMember*/}
-                                className="flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-slate-700 transition-colors ml-1"
-                            >
-                                <Plus size={16} />
-                                Add another member
-                            </button>
+                                <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                                            <Users size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-slate-900">Current members</h3>
+                                            <p className="text-sm text-slate-500">These people already have access to this subscription.</p>
+                                        </div>
+                                    </div>
+
+                                    {currentMembers.length > 0 ? (
+                                        <div className="mt-5 space-y-3">
+                                            {currentMembers.map((member: SubscriptionMemberItem) => (
+                                                <div key={member.userId} className="rounded-2xl border border-slate-200 px-4 py-3">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <div className="font-semibold text-slate-900">
+                                                                {member.displayName || member.email}
+                                                            </div>
+                                                            <div className="mt-1 text-sm text-slate-500">{member.email}</div>
+                                                            <div className="mt-1 text-sm text-slate-500">
+                                                                {getRoleLabel(member.role)} joined {formatDateTime(member.joinedAtUtc)}
+                                                            </div>
+                                                        </div>
+                                                        {member.isCurrentUser ? (
+                                                            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                                                                You
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                            You are the only member right now.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="rounded-3xl border border-slate-200 bg-stone-50 px-5 py-4 text-left text-sm text-slate-600">
+                            Invitations are optional. Sending them now helps teammates join faster, and finishing setup will mark this step complete before onboarding finalizes.
                         </div>
 
                         <div className="pt-4 flex gap-3">
@@ -1038,22 +1261,14 @@ const OnboardingPageContent = (): ReactElement => {
                                 disabled={isBusy}
                                 className="flex-1"
                             >
-                                Complete Setup
+                                Finish Setup
                             </PrimaryActionButton>
                         </div>
-                        <div>
-                            <button
-                                onClick={skipInvites}
-                                className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-4"
-                            >
-                                Skip invites
-                            </button>
-                            {stepMessages[4] ? (
-                                <div className={`text-xs pt-2 ${stepMessages[4]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
-                                    {stepMessages[4]?.text}
-                                </div>
-                            ) : null}
-                        </div>
+                        {stepMessages[4] ? (
+                            <div className={`text-xs ${stepMessages[4]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
+                                {stepMessages[4]?.text}
+                            </div>
+                        ) : null}
                     </div>
                 )}
 
