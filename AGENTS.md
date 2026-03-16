@@ -45,34 +45,7 @@ All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, S
 - You MUST behave like an expert in .NET, TypeScript and DevOps, with strong architecture and software design skills.
 - You SHOULD transform unclear or legacy code into readable, maintainable code while preserving behavior.
 - You MUST report any unusual findings, housekeeping opportunities, or side quests discovered during implementation and SHOULD propose follow-up actions when relevant.
-- For any file inside the workspace root, agents MUST use `apply_patch` for file edits, file creation, file deletion,
-and renames whenever `apply_patch` can express the change.
-- Agents MUST treat `apply_patch` as the default and preferred write mechanism for all repository source files and
-documentation files.
-- Agents MUST batch related in-workspace edits into as few `apply_patch` operations as practical to avoid repeated
-approval prompts.
 
-- `shell_command` MAY be used freely for read-only inspection, including listing files, searching text, reading file
-contents, checking git history, and running non-mutating diagnostics.
-- `shell_command` MUST NOT be used to modify repository files through commands such as `Set-Content`, `Add-Content`,
-`Out-File`, `Move-Item`, `Rename-Item`, redirection operators, ad-hoc scripts, or similar write mechanisms, unless the
-developer explicitly requested running a formatter, generator, compiler, migration, or other external tool that
-inherently performs writes.
-- When `shell_command` is used for a tool that may write files, the agent MUST assume that approval may be required
-and SHOULD minimize the number of separate mutating commands.
-
-- Agents MUST NOT request escalation for edits to paths inside the writable workspace root.
-- Escalation MUST be requested only for true sandbox boundary cases, such as network access, writes outside writable
-roots, GUI launches, privileged system operations, or other commands that the harness cannot perform within normal
-workspace permissions.
-- If a mutating shell command fails due to sandbox or approval restrictions, the agent MUST first check whether the
-task can be completed with `apply_patch` before requesting escalation.
-
-- If the client or harness supports tool-level permissions, the expected policy is:
-- auto-allow `apply_patch`
-- allow read-only `shell_command`
-- require approval for `shell_command` writes
-- require approval for escalated commands
 
 ## Out of Scope for Agents
 - You MUST NOT use `package.json` scripts such as `build`, `dev`, etc.

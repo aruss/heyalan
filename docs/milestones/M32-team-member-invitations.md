@@ -191,24 +191,24 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [x] Finalize still works after the invitations step completes.
 
 ## Gate G - Admin Settings Members Page
-- [ ] Build `BuyAlan.WebApp/src/app/admin/settings/members/page.tsx` using existing admin primitives.
-- [ ] Add "invite team member" button that opens a drawer with:
+- [x] Build `BuyAlan.WebApp/src/app/admin/settings/members/page.tsx` using existing admin primitives.
+- [x] Add "invite team member" button that opens a drawer with:
   - [x] email input
-  - [ ] role dropdown
-- [ ] Add invitations table with actions:
-  - [ ] delete
+  - [x] role dropdown
+- [x] Add invitations table with actions:
+  - [x] delete
   - [x] resend invitation
   - [x] copy invitation link
-- [ ] Implement delete-invitation confirmation in a drawer.
-- [ ] Add current-members table with actions:
-  - [ ] change role
+- [x] Implement delete-invitation confirmation in a drawer.
+- [x] Add current-members table with actions:
+  - [x] change role
   - [x] delete member
-- [ ] Wire all mutations to refresh the page state cleanly.
+- [x] Wire all mutations to refresh the page state cleanly.
 
 ### Gate G Acceptance Criteria
-- [ ] The members settings page is fully functional for invitation and membership management.
-- [ ] Drawer-based create and delete flows match the requested UX.
-- [ ] Current members and pending invitations are clearly separated.
+- [x] The members settings page is fully functional for invitation and membership management.
+- [x] Drawer-based create and delete flows match the requested UX.
+- [x] Current members and pending invitations are clearly separated.
 
 ## Gate H - Tests and Regression Coverage
 - [ ] Unit tests for `ITokenService` generation invariants and reasonable uniqueness.
@@ -235,7 +235,7 @@ Implement subscription-scoped team invitations across onboarding, member setting
 - [x] 4) Gate D: WebApi invitation and member-management endpoints.
 - [x] 5) Gate E: auth and invite redemption flow.
 - [x] 6) Gate F: onboarding invitations step.
-- [ ] 7) Gate G: admin settings members page.
+- [x] 7) Gate G: admin settings members page.
 - [ ] 8) Gate H: tests and regression verification.
 
 ## Notes
