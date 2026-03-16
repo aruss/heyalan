@@ -1,4 +1,4 @@
-﻿namespace BuyAlan.WebApi.SquareIntegration;
+namespace BuyAlan.WebApi.SquareIntegration;
 
 using BuyAlan;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -251,20 +251,7 @@ public static class SquareConnectionEndpoints
 
         List<SubscriptionSquareCatalogProductItem> items = page.Items
             .Select(
-                item =>
-                    new SubscriptionSquareCatalogProductItem(
-                        item.Id,
-                        item.SquareItemId,
-                        item.SquareVariationId,
-                        item.ItemName,
-                        item.VariationName,
-                        item.Sku,
-                        item.BasePriceAmount,
-                        item.BasePriceCurrency,
-                        item.IsSellable,
-                        item.IsDeleted,
-                        item.SquareUpdatedAtUtc,
-                        item.Locations.Count))
+                item => SubscriptionSquareCatalogProductMappings.ToItem(item))
             .ToList();
 
         return TypedResults.Ok(
@@ -418,4 +405,5 @@ public static class SquareConnectionEndpoints
         int SellableProductCount,
         int DeletedProductCount);
 }
+
 

@@ -8,6 +8,7 @@ public sealed record SubscriptionSquareCatalogProductItem(
     string SquareVariationId,
     string ItemName,
     string VariationName,
+    string? Description,
     string? Sku,
     long? BasePriceAmount,
     string? BasePriceCurrency,

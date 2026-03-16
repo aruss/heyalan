@@ -7,7 +7,7 @@ import { LandingPricing } from "@/components/landing/landing-pricing";
 import { isFeatureEnabled } from "@/lib/feature-flags/server";
 
 export default function Home(): ReactElement {
-    const isPricingEnabled = isFeatureEnabled("landingPricingEnabled");
+    const isPricingEnabled = isFeatureEnabled("landingPricing");
 
     return (
         <>

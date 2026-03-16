@@ -429,6 +429,7 @@ export type SubscriptionSquareCatalogProductItem = {
     squareVariationId: string;
     itemName: string;
     variationName: string;
+    description: null | string;
     sku: null | string;
     basePriceAmount: number;
     basePriceCurrency: null | string;

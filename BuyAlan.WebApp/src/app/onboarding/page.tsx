@@ -37,6 +37,7 @@ import {
     type SubscriptionUserRole
 } from "@/lib/api";
 import { PrimaryActionButton, SecondaryActionButton } from "@/components/landing/ui/action-buttons";
+import { useFeatureFlag } from "@/lib/feature-flags";
 import { useSession } from "@/lib/session-context";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
@@ -280,6 +281,7 @@ const OnboardingPageContent = (): ReactElement => {
         isLoading: isSessionLoading,
         errorMessage: sessionErrorMessage
     } = useSession();
+    const isTeamMembersEnabled = useFeatureFlag("teamMembers");
 
     const [step, setStep] = useState<OnboardingStep>(1);
     const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
@@ -1043,7 +1045,7 @@ const OnboardingPageContent = (): ReactElement => {
                     </div>
                 )}
 
-                {step === 4 && isSquareConnected && (
+                {step === 4 && isSquareConnected && isTeamMembersEnabled && (
                     <div className="space-y-8 text-center">
                         <div className="space-y-4">
                             <h2 className="text-3xl font-extrabold tracking-tight">Invite Team.</h2>
@@ -1248,6 +1250,41 @@ const OnboardingPageContent = (): ReactElement => {
 
                         <div className="rounded-3xl border border-slate-200 bg-stone-50 px-5 py-4 text-left text-sm text-slate-600">
                             Invitations are optional. Sending them now helps teammates join faster, and finishing setup will mark this step complete before onboarding finalizes.
+                        </div>
+
+                        <div className="pt-4 flex gap-3">
+                            <SecondaryActionButton
+                                onClick={() => setStep(3)}
+                            >
+                                Back
+                            </SecondaryActionButton>
+                            <PrimaryActionButton
+                                onClick={completeOnboarding}
+                                disabled={isBusy}
+                                className="flex-1"
+                            >
+                                Finish Setup
+                            </PrimaryActionButton>
+                        </div>
+                        {stepMessages[4] ? (
+                            <div className={`text-xs ${stepMessages[4]?.kind === "error" ? "text-red-500" : "text-slate-500"}`}>
+                                {stepMessages[4]?.text}
+                            </div>
+                        ) : null}
+                    </div>
+                )}
+
+                {step === 4 && isSquareConnected && !isTeamMembersEnabled && (
+                    <div className="space-y-8 text-center">
+                        <div className="space-y-4">
+                            <h2 className="text-3xl font-extrabold tracking-tight">Finish Setup.</h2>
+                            <p className="text-slate-500">
+                                Team member invitations are disabled for this workspace right now. You can finish onboarding without configuring access here.
+                            </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-slate-200 bg-stone-50 px-6 py-5 text-left text-sm text-slate-600">
+                            The onboarding flow will skip invite suggestions, invitations, and current member management while the team-members feature flag is turned off.
                         </div>
 
                         <div className="pt-4 flex gap-3">

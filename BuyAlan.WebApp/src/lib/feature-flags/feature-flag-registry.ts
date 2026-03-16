@@ -17,12 +17,19 @@ const defineFeatureFlags = <
 };
 
 const featureFlagRegistryDefinition = defineFeatureFlags({
-  landingPricingEnabled: {
-    key: "landingPricingEnabled",
+  landingPricing: {
+    key: "landingPricing",
     defaultValue: false,
     description:
       "Controls pricing visibility on the landing page, including pricing-related navigation.",
     category: "landing",
+  },
+  teamMembers: {
+    key: "teamMembers",
+    defaultValue: true,
+    description:
+      "Controls whether onboarding and admin expose team-member invitation and membership management UI.",
+    category: "admin",
   },
 });
 

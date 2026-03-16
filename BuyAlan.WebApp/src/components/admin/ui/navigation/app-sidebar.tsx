@@ -14,6 +14,7 @@ import {
   SidebarSubLink,
   useSidebar,
 } from "@/components/admin/sidebar"
+import { useFeatureFlag } from "@/lib/feature-flags"
 import { cx, focusRing } from "@/lib/utils"
 import { RiArrowDownSFill } from "@remixicon/react"
 import { PackageSearch, Settings, Bug, type LucideIcon } from "lucide-react"
@@ -37,7 +38,7 @@ type NavigationItem = {
   children?: NavigationChild[]
 }
 
-const navigation: NavigationItem[] = [
+const navigationDefinition: NavigationItem[] = [
   {
     name: "Inbox",
     href: "/admin/inbox",
@@ -94,8 +95,37 @@ const SIDEBAR_AUTO_COLLAPSE_BREAKPOINT = 1200
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
+  const isTeamMembersEnabled = useFeatureFlag("teamMembers")
   const { isMobile, setOpen } = useSidebar()
   const wasBelowAutoCollapseBreakpoint = useRef<boolean | null>(null)
+  const navigation = useMemo(() => {
+    return navigationDefinition
+      .map((item) => {
+        if (item.name !== "Settings" || !item.children) {
+          return item
+        }
+
+        const children = item.children.filter((child) => {
+          if (child.href !== "/admin/settings/members") {
+            return true
+          }
+
+          return isTeamMembersEnabled
+        })
+
+        return {
+          ...item,
+          children,
+        }
+      })
+      .filter((item) => {
+        if (!item.children) {
+          return true
+        }
+
+        return item.children.length > 0
+      })
+  }, [isTeamMembersEnabled])
   const isActivePath = useCallback(
     (href: string) => {
       if (!pathname) {
@@ -121,7 +151,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         return item.children.some((child) => isActivePath(child.href))
       })
       .map((item) => item.name)
-  }, [isActivePath])
+  }, [isActivePath, navigation])
 
   const [openMenus, setOpenMenus] = useState<string[]>(activeParentNames)
 

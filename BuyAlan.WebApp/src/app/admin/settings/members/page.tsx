@@ -47,6 +47,7 @@ import {
   postSubscriptionsBySubscriptionIdMembersInvitationsMutation,
   putSubscriptionsBySubscriptionIdMembersByMemberUserIdRoleMutation,
 } from "@/lib/api/@tanstack/react-query.gen";
+import { useFeatureFlag } from "@/lib/feature-flags";
 import { useSession } from "@/lib/session-context";
 
 type FeedbackState = {
@@ -193,6 +194,7 @@ const MembersSummaryCards = ({
 };
 
 export default function SettingsMembersPage() {
+  const isTeamMembersEnabled = useFeatureFlag("teamMembers");
   const queryClient = useQueryClient();
   const { currentUser, errorMessage: sessionErrorMessage, isLoading: isSessionLoading } = useSession();
   const [feedback, setFeedback] = useState<FeedbackState>(null);
@@ -211,7 +213,7 @@ export default function SettingsMembersPage() {
         subscriptionId: subscriptionId ?? "",
       },
     }),
-    enabled: subscriptionId !== null,
+    enabled: subscriptionId !== null && isTeamMembersEnabled,
     retry: false,
   });
 
@@ -561,6 +563,16 @@ export default function SettingsMembersPage() {
     deleteInvitationMutation.isPending ||
     updateMemberRoleMutation.isPending ||
     deleteMemberMutation.isPending;
+
+  if (!isTeamMembersEnabled) {
+    return (
+      <section className="m-4">
+        <Alert title="Members unavailable" type="info">
+          Team member management is disabled for this workspace right now. Invitations and member changes are unavailable until the feature flag is turned back on.
+        </Alert>
+      </section>
+    );
+  }
 
   if (isSessionLoading) {
     return <div className="p-4 text-sm text-gray-500">Loading member settings...</div>;

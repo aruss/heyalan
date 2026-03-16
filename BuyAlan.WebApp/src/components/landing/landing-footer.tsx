@@ -8,7 +8,7 @@ import { NewsletterSubscriptionForm } from "./newsletter-subscription-form";
 export const LandingFooter = async (): Promise<ReactElement> => {
     const cookieStore = await cookies();
     const isSubscribedForSession = cookieStore.get(NEWSLETTER_CONFIRMATION_COOKIE_NAME)?.value === "1";
-    const isPricingEnabled = isFeatureEnabled("landingPricingEnabled");
+    const isPricingEnabled = isFeatureEnabled("landingPricing");
 
     return (
         <footer className="border-t border-zinc-800 bg-black py-16 text-white">

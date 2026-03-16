@@ -16,7 +16,7 @@ import {
 export const LandingNavigation = (): ReactElement => {
     const [isOpen, setIsOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
-    const isPricingEnabled = useFeatureFlag("landingPricingEnabled");
+    const isPricingEnabled = useFeatureFlag("landingPricing");
 
     const handleOpenChange = (open: boolean): void => {
         setIsOpen(open);

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BuyAlan\BuyAlan.csproj" />
+    <ProjectReference Include="..\BuyAlan.WebApi\BuyAlan.WebApi.csproj" />
   </ItemGroup>
   
   <ItemGroup>

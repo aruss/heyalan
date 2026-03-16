@@ -203,6 +203,7 @@ public class SubscriptionCatalogServicesTests
             .SingleAsync(item => item.SubscriptionId == subscriptionId);
         Assert.Equal("Coffee", product.ItemName);
         Assert.Equal("Large", product.VariationName);
+        Assert.Equal("Fresh roast", product.Description);
         Assert.Equal(1299, product.BasePriceAmount);
         Assert.Equal("USD", product.BasePriceCurrency);
         Assert.False(product.IsDeleted);
@@ -405,3 +406,4 @@ public class SubscriptionCatalogServicesTests
         }
     }
 }
+

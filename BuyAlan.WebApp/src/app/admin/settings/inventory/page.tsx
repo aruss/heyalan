@@ -26,6 +26,10 @@ import type {
   SubscriptionSquareCatalogProductItem,
 } from "@/lib/api";
 import { useSession } from "@/lib/session-context";
+import {
+  CATALOG_SNAPSHOT_HEADERS,
+  getCatalogProductDescription,
+} from "./inventory-catalog-table";
 
 const DEFAULT_SYNC_STATE_ERROR = "Unable to load catalog sync state.";
 const DEFAULT_PRODUCTS_ERROR = "Unable to load cached catalog products.";
@@ -451,42 +455,45 @@ export default function SettingInventoryPage() {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableHeaderCell>Product</TableHeaderCell>
-                      <TableHeaderCell>Variation</TableHeaderCell>
-                      <TableHeaderCell>SKU</TableHeaderCell>
-                      <TableHeaderCell>Price</TableHeaderCell>
-                      <TableHeaderCell>State</TableHeaderCell>
-                      <TableHeaderCell>Locations</TableHeaderCell>
-                      <TableHeaderCell>Updated</TableHeaderCell>
+                      {CATALOG_SNAPSHOT_HEADERS.map((header) => (
+                        <TableHeaderCell key={header}>{header}</TableHeaderCell>
+                      ))}
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {products.map((product) => (
-                      <TableRow key={product.subscriptionCatalogProductId}>
-                        <TableCell className="font-medium text-gray-900">
-                          <div className="flex flex-col">
-                            <span>{product.itemName}</span>
-                            <span className="text-xs text-gray-500">{product.squareVariationId}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{product.variationName}</TableCell>
-                        <TableCell>{product.sku ?? "Not set"}</TableCell>
-                        <TableCell>{formatPrice(product.basePriceAmount, product.basePriceCurrency)}</TableCell>
-                        <TableCell>
-                          <Badge variant={getProductStateVariant(product)}>
-                            {getProductStateLabel(product)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{product.locationCount}</TableCell>
-                        <TableCell>{formatDateTime(product.squareUpdatedAtUtc)}</TableCell>
-                      </TableRow>
-                    ))}
+                    {products.map((product) => {
+                      const productDescription = getCatalogProductDescription(product);
+
+                      return (
+                        <TableRow key={product.subscriptionCatalogProductId}>
+                          <TableCell className="font-medium text-gray-900">
+                            <div className="flex flex-col">
+                              <span>{product.itemName}</span>
+                              {productDescription ? (
+                                <span className="text-xs font-normal text-gray-500">
+                                  {productDescription}
+                                </span>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                          <TableCell>{product.variationName}</TableCell>
+                          <TableCell>{product.sku ?? "Not set"}</TableCell>
+                          <TableCell>{formatPrice(product.basePriceAmount, product.basePriceCurrency)}</TableCell>
+                          <TableCell>
+                            <Badge variant={getProductStateVariant(product)}>
+                              {getProductStateLabel(product)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{formatDateTime(product.squareUpdatedAtUtc)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableRoot>
             ) : null}
 
-            {canGoToPreviousPage || canGoToNextPage &&
+            {(canGoToPreviousPage || canGoToNextPage) &&
               <div className="flex items-center justify-end gap-3">
                 <Button
                   disabled={!canGoToPreviousPage}
@@ -511,3 +518,6 @@ export default function SettingInventoryPage() {
     </section>
   );
 }
+
+
+
