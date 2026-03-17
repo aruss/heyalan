@@ -6,6 +6,7 @@ import { formatInboxTimestamp } from "./conversation-overview-formatters"
 export interface ConversationListPanelProps {
   conversations: ConversationListItem[]
   activeConversationId: string
+  emptyStateLabel?: string
   // searchQuery?: string
   // onSearchQueryChange?: (value: string) => void
   onSelectConversation: (conversationId: string) => void
@@ -13,7 +14,8 @@ export interface ConversationListPanelProps {
 
 export function ConversationListPanel({
   conversations,
-  activeConversationId,  
+  activeConversationId,
+  emptyStateLabel = "No conversations found.",
   onSelectConversation,
 }: ConversationListPanelProps) {
   return (
@@ -35,7 +37,7 @@ export function ConversationListPanel({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
           <div className="p-4 text-sm text-gray-500 dark:text-gray-400">
-            No conversations found.
+            {emptyStateLabel}
           </div>
         ) : (
           conversations.map((conversation) => {

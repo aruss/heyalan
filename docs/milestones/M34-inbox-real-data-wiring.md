@@ -1,11 +1,13 @@
 # Milestone M34: Inbox Real Data Wiring
 
 ## Summary
-Fill the existing inbox UI with real conversation data from the Web API without changing the current design or UI behavior.
+Wire the existing inbox UI to real conversation and message data from the Web API without changing the current design or UI behavior.
 
-This milestone wires the `ConversationListPanel` and `ChatPanel` to the existing conversation endpoints through the generated web client. It keeps the current layout, mobile transitions, search interaction, chat header actions, and disabled send-box behavior intact.
+The inbox list and chat panels already consume generated API DTO field names and already apply local presentation formatting for timestamps and message roles. This milestone only covers replacing the current DTO-shaped mock data with live WebAPI queries for:
+- the conversation list
+- the selected conversation message list
 
-This milestone does not redesign the inbox, does not introduce new inbox actions, and does not change read-state behavior. The right-side `ChatInfoPanel` remains mock-backed until dedicated backend contracts exist for that data.
+This milestone does not redesign the inbox, does not introduce new inbox actions, and does not change read-state behavior. The right-side `ChatInfoPanel` remains mock-backed until dedicated backend contracts exist for that data. Conversation and message paging are deferred; this milestone loads up to `1000` records per request.
 
 ## Dependencies and Preconditions
 - [ ] M6 conversation persistence and inbox APIs are available.
@@ -19,105 +21,100 @@ This milestone does not redesign the inbox, does not introduce new inbox actions
 - [x] Generated client must be used; no manual fetch wrapper for these endpoints.
 - [x] `ChatInfoPanel` stays mock-backed in this milestone.
 - [x] Read-state endpoints are not used in this milestone; unread is display-only.
+- [x] Conversation loading uses a single `skip: 0, take: 1000` request in this milestone.
+- [x] Message loading uses a single `skip: 0, take: 1000` request in this milestone.
 
 ## Public API and Contract Changes
-- [ ] No backend API changes.
-- [ ] No OpenAPI regeneration required as part of this milestone.
-- [ ] Add WebApp-only adapter logic to map generated DTOs into existing inbox UI props:
-  - [ ] conversation list item mapping,
-  - [ ] message item mapping,
-  - [ ] timestamp formatting for existing short labels,
-  - [ ] fallback chat-info model for conversations without mock details.
+- [x] No backend API changes.
+- [x] No OpenAPI regeneration required as part of this milestone.
+- [x] Inbox list and chat panels already consume generated DTO field names directly:
+  - [x] `conversationId`, `participantExternalId`, `lastMessagePreview`, `lastMessageAt`, `hasUnread`
+  - [x] `messageId`, `role`, `content`, `occurredAt`
+- [x] Local inbox presentation mapping already exists and remains client-side:
+  - [x] timestamp formatting for short labels
+  - [x] `Customer` / `Agent` / `Operator` message rendering behavior
+- [x] Preserve the current search input markup in commented source instead of deleting it.
 
-## Gate A - Agent Resolution and Conversation List Query
-- [ ] Resolve the active subscription from the existing session context.
-- [ ] Resolve the current agent using the same admin convention already used elsewhere:
-  - [ ] fetch `getAgents` by active subscription,
-  - [ ] use the first returned agent as the inbox agent.
-- [ ] Fetch conversations with the generated query helpers for `/agents/{agentId}/conversations`.
-- [ ] Continue loading additional conversation pages until exhausted so client-side search works across the full loaded set.
-- [ ] Merge paginated conversation pages deterministically by `conversationId` without duplicates.
-- [ ] Preserve existing list behavior:
-  - [ ] local search filters the loaded list,
-  - [ ] first available filtered conversation becomes active,
-  - [ ] empty state remains stable when no conversations exist.
+## Gate A - Agent Resolution and Live Conversation Query
+- [x] Resolve the active subscription from the existing session context.
+- [x] Resolve the current agent using the same admin convention already used elsewhere:
+  - [x] fetch `getAgents` by active subscription,
+  - [x] use the first returned agent as the inbox agent.
+- [x] Fetch conversations with the generated query helpers for `/agents/{agentId}/conversations` using `skip: 0` and `take: 1000`.
+- [x] Feed API conversation items directly into the current conversation list state without introducing a legacy adapter model.
+- [x] Preserve existing list behavior:
+  - [x] first available conversation becomes active,
+  - [x] empty state remains stable when no conversations exist.
 
 ### Gate A Acceptance Criteria
-- [ ] Inbox loads the real conversation list for the active agent.
-- [ ] Search behavior remains client-side and unchanged from the user’s perspective.
-- [ ] Conversation selection remains stable when the filter changes.
+- [x] Inbox loads the real conversation list for the active agent.
+- [x] The search input is not rendered, but its code is preserved in comments.
+- [x] Conversation selection remains stable when the loaded list changes.
 
-## Gate B - Selected Conversation Message Query
-- [ ] Fetch messages for the selected conversation with the generated query helpers for `/agents/{agentId}/conversations/{conversationId}/messages`.
-- [ ] Map API message roles into the existing chat sender model used by `ChatPanel`.
-- [ ] Reorder API results from newest-first to oldest-first before rendering so the visible chat timeline matches the current UI.
-- [ ] Preserve the existing chat header and footer behavior:
-  - [ ] current channel icon behavior,
-  - [ ] local `agentActive` toggle only,
-  - [ ] existing disabled send-box behavior when AI is active,
-  - [ ] no message sending implementation in this milestone.
-- [ ] Keep mobile list/chat/info navigation exactly as it behaves today.
+## Gate B - Live Selected Conversation Message Query
+- [x] Fetch messages for the selected conversation with the generated query helpers for `/agents/{agentId}/conversations/{conversationId}/messages` using `skip: 0` and `take: 1000`.
+- [x] Feed API message items directly into the current chat panel state without introducing a legacy sender model.
+- [x] Confirm API message ordering against the current UI and only reverse client-side if necessary.
+- [x] Preserve the existing chat presentation rules already implemented locally:
+  - [x] current channel icon behavior,
+  - [x] local timestamp formatting,
+  - [x] `Customer` renders as the user-side bubble,
+  - [x] `Agent` renders as the AI-side bubble with bot icon,
+  - [x] `Operator` renders as the non-user-side bubble without bot icon,
+  - [x] local `agentActive` toggle only,
+  - [x] existing disabled send-box behavior when AI is active,
+  - [x] no message sending implementation in this milestone.
+- [x] Keep mobile list/chat/info navigation exactly as it behaves today.
 
 ### Gate B Acceptance Criteria
-- [ ] Selecting a conversation renders its real message history in the current chat UI.
-- [ ] No visible layout or interaction regression is introduced in desktop or mobile views.
-- [ ] Switching between conversations does not leak stale message state.
+- [x] Selecting a conversation renders its real message history in the current chat UI.
+- [x] No visible layout or interaction regression is introduced in desktop or mobile views.
+- [x] Switching between conversations does not leak stale message state.
 
-## Gate C - Chat Info Compatibility and Fallbacks
-- [ ] Keep `ChatInfoPanel` connected to the current mock dataset for now.
-- [ ] Continue using mock chat info when a real conversation id matches existing mock entries.
-- [ ] Introduce a stable empty fallback chat-info object for real conversations with no mock match.
-- [ ] Do not change the panel’s structure, headings, buttons, or visual treatment.
+## Gate C - Loading, Error, and State Coordination
+- [x] Follow existing admin-page patterns for loading and error handling.
+- [x] Handle missing session, missing active subscription, missing agent, and failed conversation/message requests without breaking the page shell.
+- [x] Prevent selection and query race conditions when:
+  - [x] the active conversation changes quickly,
+  - [x] the selected conversation is no longer present in the loaded list.
+- [x] Keep unread state display-only:
+  - [x] show API unread indicators in the list,
+  - [x] do not call mark-message-read,
+  - [x] do not call mark-conversation-read.
 
 ### Gate C Acceptance Criteria
-- [ ] The right-side panel continues to render without blocking the real inbox integration.
-- [ ] Real conversations without mock details do not crash the page or alter the layout.
+- [x] The inbox remains stable through loading, empty, and failure states.
+- [x] Unread indicators reflect API state without changing existing behavior.
 
-## Gate D - Loading, Error, and State Coordination
-- [ ] Follow existing admin-page patterns for loading and error handling.
-- [ ] Handle missing session, missing active subscription, missing agent, and failed conversation/message requests without breaking the page shell.
-- [ ] Prevent selection and query race conditions when:
-  - [ ] the active conversation changes quickly,
-  - [ ] search removes the currently active conversation,
-  - [ ] paginated loads finish out of order.
-- [ ] Keep unread state display-only:
-  - [ ] show API unread indicators in the list,
-  - [ ] do not call mark-message-read,
-  - [ ] do not call mark-conversation-read.
-
-### Gate D Acceptance Criteria
-- [ ] The inbox remains stable through loading, empty, and failure states.
-- [ ] Unread indicators reflect API state without changing existing behavior.
-
-## Gate E - Tests and Regression Coverage
-- [ ] Add tests for DTO-to-UI mapping:
-  - [ ] conversation mapping,
-  - [ ] message mapping,
-  - [ ] timestamp formatting,
-  - [ ] fallback chat-info generation.
+## Gate D - Tests and Regression Coverage
+- [ ] Add tests for current inbox presentation behavior:
+  - [ ] timestamp formatting
+  - [ ] `Customer` / `Agent` / `Operator` message rendering
+  - [ ] preserved commented search markup does not become visible
 - [ ] Add component or page-level tests for:
   - [ ] rendering a real conversation list,
   - [ ] selecting a conversation updates the chat panel,
-  - [ ] message order is oldest-to-newest in the rendered chat,
-  - [ ] client-side search filters loaded conversations,
-  - [ ] fallback behavior when no chat-info mock entry exists.
+  - [ ] message order matches the expected visible chat timeline,
+  - [ ] loading, empty, and error states for live list/message queries.
 - [ ] Add regression coverage for:
   - [ ] mobile list/chat/info navigation,
   - [ ] local agent toggle behavior,
   - [ ] no read-state mutation calls are issued.
 
-### Gate E Acceptance Criteria
-- [ ] Inbox wiring is covered by tests at the adapter and UI integration level.
+### Gate D Acceptance Criteria
+- [ ] Inbox live wiring is covered by tests at the query integration and UI state level.
 - [ ] Existing inbox visuals and interactions remain unchanged.
 
 ## Implementation Sequence
-- [ ] 1) Gate A: resolve current agent and load the full conversation list.
-- [ ] 2) Gate B: load selected-conversation messages and map them into the existing chat UI.
-- [ ] 3) Gate C: keep the chat info panel compatible with real conversations through fallback data.
-- [ ] 4) Gate D: finalize loading/error coordination and preserve passive unread behavior.
-- [ ] 5) Gate E: add tests and regression verification.
+- [x] 1) Resolve current subscription and current agent for the inbox context.
+- [x] 2) Replace conversation mock sourcing with a live conversation query using `take: 1000`.
+- [x] 3) Replace selected-conversation message mock sourcing with a live message query using `take: 1000`.
+- [x] 4) Finalize loading, empty, error, and selection-state coordination.
+- [ ] 5) Add tests and regression verification.
 
 ## Handoff and Operational Notes
-- [ ] This milestone is WebApp-only unless backend contract gaps are discovered.
+- [x] DTO-shaped mock data and UI-side presentation mapping are already in place and are not the remaining focus of this milestone.
+- [x] This milestone is WebApp-only unless backend contract gaps are discovered.
 - [ ] If any WebAPI contract changes become necessary after implementation starts, stop and hand off for `yarn openapi-ts` per repo rule.
 - [ ] Read-state mutation is intentionally deferred to a later milestone so the existing UX remains unchanged.
+- [ ] Conversation and message paging are intentionally deferred to a later milestone.

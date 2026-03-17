@@ -1,110 +1,215 @@
 "use client"
 
 import { Button } from "@/components/admin/button"
+import {
+  getAgentsByAgentIdConversationsByConversationIdMessagesOptions,
+  getAgentsByAgentIdConversationsOptions,
+  getAgentsOptions,
+} from "@/lib/api/@tanstack/react-query.gen"
+import { useSession } from "@/lib/session-context"
 import { useMobileState } from "@/lib/use-mobile"
 import { cx } from "@/lib/utils"
+import { useQuery } from "@tanstack/react-query"
 import { ChevronLeft } from "lucide-react"
+import { useMemo, useState } from "react"
+import { chatInfo, ChatInfo } from "@/data/data"
 import { ChatInfoPanel } from "./chat-info-panel"
 import { ChatPanel } from "./chat-panel"
 import { ConversationListPanel } from "./conversation-list-panel"
-import { useEffect, useMemo, useState } from "react"
-import { chatInfo, ChatInfo, conversationMessages, conversations } from "@/data/data"
 
 type MobileView = "list" | "chat" | "info"
 
-export function ConversationOverview() {
-  const fallbackConversation = conversations[0] ?? null
-  const fallbackChatInfo = chatInfo[0] ?? null
-  const hasRequiredData = fallbackConversation !== null && fallbackChatInfo !== null
+const DEFAULT_INBOX_ERROR = "Unable to load inbox."
+const DEFAULT_MESSAGES_ERROR = "Unable to load conversation messages."
+const MISSING_SUBSCRIPTION_ERROR = "No active subscription available for this account."
+const NO_AGENT_ERROR = "No agent found for this subscription."
+const QUERY_SKIP = 0
+const QUERY_TAKE = 1000
 
+const resolveApiErrorMessage = (error: unknown, fallback: string) => {
+  if (error && typeof error === "object") {
+    const errorRecord = error as Record<string, unknown>
+    const message = errorRecord.message
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message
+    }
+  }
+
+  return fallback
+}
+
+interface ConversationPlaceholderPanelProps {
+  title: string
+  description: string
+}
+
+function ConversationPlaceholderPanel({
+  title,
+  description,
+}: ConversationPlaceholderPanelProps) {
+  return (
+    <section className="flex h-full min-h-0 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
+      <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+            {title}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export function ConversationOverview() {
+  const fallbackChatInfo = chatInfo[0] ?? null
+  const { currentUser, errorMessage: sessionErrorMessage, isLoading: isSessionLoading } =
+    useSession()
   const { isMobile, isResolved } = useMobileState()
-  const [activeConversationId, setActiveConversationId] = useState(() => {
-    return fallbackConversation?.conversationId ?? ""
-  })
-  const [searchQuery, setSearchQuery] = useState("")
+  const [activeConversationId, setActiveConversationId] = useState("")
   const [agentActive, setAgentActive] = useState(true)
   const [mobileView, setMobileView] = useState<MobileView>("list")
 
-  const filteredConversations = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
-    if (normalizedQuery.length === 0) {
-      return conversations
-    }
+  const subscriptionId = currentUser?.activeSubscriptionId ?? null
 
-    return conversations.filter((conversation) => {
-      const haystack = [
-        conversation.participantExternalId,
-        conversation.channel,
-        conversation.lastMessagePreview ?? "",
-      ]
-        .join(" ")
-        .toLowerCase()
-      return haystack.includes(normalizedQuery)
-    })
-  }, [searchQuery])
+  const agentsQuery = useQuery({
+    ...getAgentsOptions({
+      query: {
+        subscription: subscriptionId ?? "",
+      },
+    }),
+    enabled: subscriptionId !== null,
+    retry: false,
+  })
 
-  useEffect(() => {
-    if (!hasRequiredData) {
-      return
-    }
+  const agentId = agentsQuery.data?.items?.[0]?.agentId ?? null
 
-    const hasActiveConversation = filteredConversations.some((conversation) => {
+  const conversationsQuery = useQuery({
+    ...getAgentsByAgentIdConversationsOptions({
+      path: {
+        agentId: agentId ?? "",
+      },
+      query: {
+        skip: QUERY_SKIP,
+        take: QUERY_TAKE,
+      },
+    }),
+    enabled: agentId !== null,
+    retry: false,
+  })
+
+  const conversations = useMemo(() => {
+    return conversationsQuery.data?.items ?? []
+  }, [conversationsQuery.data?.items])
+
+  const resolvedActiveConversationId = useMemo(() => {
+    const hasSelectedConversation = conversations.some((conversation) => {
       return conversation.conversationId === activeConversationId
     })
 
-    if (!hasActiveConversation && filteredConversations.length > 0) {
-      setActiveConversationId(filteredConversations[0].conversationId)
-    }
-  }, [activeConversationId, filteredConversations, hasRequiredData])
-
-  useEffect(() => {
-    if (!isResolved) {
-      return
+    if (hasSelectedConversation) {
+      return activeConversationId
     }
 
-    if (!isMobile) {
-      setMobileView("list")
+    return conversations[0]?.conversationId ?? ""
+  }, [activeConversationId, conversations])
+
+  const resolvedMobileView = useMemo(() => {
+    if (!isMobile || conversations.length === 0) {
+      return "list"
     }
-  }, [isMobile, isResolved])
+
+    return mobileView
+  }, [conversations.length, isMobile, mobileView])
+
+  const messagesQuery = useQuery({
+    ...getAgentsByAgentIdConversationsByConversationIdMessagesOptions({
+      path: {
+        agentId: agentId ?? "",
+        conversationId: resolvedActiveConversationId,
+      },
+      query: {
+        skip: QUERY_SKIP,
+        take: QUERY_TAKE,
+      },
+    }),
+    enabled: agentId !== null && resolvedActiveConversationId.length > 0,
+    retry: false,
+  })
 
   const activeConversation =
-    hasRequiredData
-      ? conversations.find((conversation) => {
-          return conversation.conversationId === activeConversationId
-        }) ?? fallbackConversation
-      : null
+    conversations.find((conversation) => {
+      return conversation.conversationId === resolvedActiveConversationId
+    }) ?? null
 
-  const activeMessages = activeConversation
-    ? conversationMessages[activeConversation.conversationId] ?? []
-    : []
+  const activeMessages = useMemo(() => {
+    const apiMessages = messagesQuery.data?.items ?? []
+    return [...apiMessages].reverse()
+  }, [messagesQuery.data?.items])
 
-  const activeChatInfo: ChatInfo | null =
-    activeConversation !== null
-      ? chatInfo.find((chatInfoItem) => {
-          return chatInfoItem.conversationId === activeConversation.conversationId
-        }) ?? fallbackChatInfo
-      : null
+  const activeChatInfo: ChatInfo | null = activeConversation === null ? null : fallbackChatInfo
 
-  if (!hasRequiredData || activeConversation === null || activeChatInfo === null) {
-    return (
-      <section className="p-4 text-sm text-gray-500 dark:text-gray-400">
-        Conversation data is not available.
-      </section>
-    )
-  }
+  const isResolvingAgent =
+    isSessionLoading ||
+    agentsQuery.isLoading ||
+    agentsQuery.isRefetching ||
+    conversationsQuery.isLoading ||
+    conversationsQuery.isRefetching
 
-  if (!isResolved) {
+  const inboxErrorMessage = useMemo(() => {
+    if (sessionErrorMessage) {
+      return sessionErrorMessage
+    }
+
+    if (subscriptionId === null && !isSessionLoading) {
+      return MISSING_SUBSCRIPTION_ERROR
+    }
+
+    if (agentsQuery.error) {
+      return resolveApiErrorMessage(agentsQuery.error, DEFAULT_INBOX_ERROR)
+    }
+
+    if (!isResolvingAgent && agentId === null) {
+      return NO_AGENT_ERROR
+    }
+
+    if (conversationsQuery.error) {
+      return resolveApiErrorMessage(conversationsQuery.error, DEFAULT_INBOX_ERROR)
+    }
+
     return null
-  }
+  }, [
+    agentId,
+    agentsQuery.error,
+    conversationsQuery.error,
+    isResolvingAgent,
+    isSessionLoading,
+    sessionErrorMessage,
+    subscriptionId,
+  ])
 
-  const resolvedActiveConversation = activeConversation
-  const resolvedActiveChatInfo = activeChatInfo
+  const messagesErrorMessage = useMemo(() => {
+    if (messagesQuery.error) {
+      return resolveApiErrorMessage(messagesQuery.error, DEFAULT_MESSAGES_ERROR)
+    }
+
+    return null
+  }, [messagesQuery.error])
+
+  const activeConversationIdForList = activeConversation?.conversationId ?? ""
+  const conversationListEmptyStateLabel = isResolvingAgent
+    ? "Loading conversations..."
+    : (inboxErrorMessage ?? "No conversations found.")
 
   const onSelectConversation = (conversationId: string) => {
     setActiveConversationId(conversationId)
     if (isMobile) {
       setMobileView("chat")
     }
+  }
+
+  if (!isResolved) {
+    return null
   }
 
   if (isMobile) {
@@ -117,47 +222,67 @@ export function ConversationOverview() {
           <div
             className={cx(
               "absolute inset-0 transition-transform duration-300 ease-out",
-              mobileView === "list" ? "translate-x-0" : "-translate-x-full",
+              resolvedMobileView === "list" ? "translate-x-0" : "-translate-x-full",
             )}
           >
             <ConversationListPanel
-              conversations={filteredConversations}
-              activeConversationId={resolvedActiveConversation.conversationId}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
+              conversations={conversations}
+              activeConversationId={activeConversationIdForList}
+              emptyStateLabel={conversationListEmptyStateLabel}
               onSelectConversation={onSelectConversation}
             />
           </div>
           <div
             className={cx(
               "absolute inset-0 transition-transform duration-300 ease-out",
-              mobileView === "chat"
+              resolvedMobileView === "chat"
                 ? "translate-x-0"
-                : mobileView === "list"
+                : resolvedMobileView === "list"
                   ? "translate-x-full"
                   : "-translate-x-full",
             )}
           >
-            <ChatPanel
-              conversation={resolvedActiveConversation}
-              messages={activeMessages}
-              agentActive={agentActive}
-              isMobile
-              onAgentToggle={() => {
-                setAgentActive((currentValue) => !currentValue)
-              }}
-              onBackToList={() => {
-                setMobileView("list")
-              }}
-              onOpenInfo={() => {
-                setMobileView("info")
-              }}
-            />
+            {activeConversation === null ? (
+              <ConversationPlaceholderPanel
+                title="Conversation"
+                description={
+                  inboxErrorMessage ?? (
+                    isResolvingAgent ? "Loading conversation..." : "No conversation selected."
+                  )
+                }
+              />
+            ) : messagesQuery.isLoading || messagesQuery.isRefetching ? (
+              <ConversationPlaceholderPanel
+                title={activeConversation.participantExternalId}
+                description="Loading messages..."
+              />
+            ) : messagesErrorMessage ? (
+              <ConversationPlaceholderPanel
+                title={activeConversation.participantExternalId}
+                description={messagesErrorMessage}
+              />
+            ) : (
+              <ChatPanel
+                conversation={activeConversation}
+                messages={activeMessages}
+                agentActive={agentActive}
+                isMobile
+                onAgentToggle={() => {
+                  setAgentActive((currentValue) => !currentValue)
+                }}
+                onBackToList={() => {
+                  setMobileView("list")
+                }}
+                onOpenInfo={() => {
+                  setMobileView("info")
+                }}
+              />
+            )}
           </div>
           <div
             className={cx(
               "absolute inset-0 transition-transform duration-300 ease-out",
-              mobileView === "info" ? "translate-x-0" : "translate-x-full",
+              resolvedMobileView === "info" ? "translate-x-0" : "translate-x-full",
             )}
           >
             <section className="flex h-full min-h-0 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
@@ -178,7 +303,14 @@ export function ConversationOverview() {
                 </h2>
               </header>
               <div className="min-h-0 flex-1">
-                <ChatInfoPanel chatInfo={resolvedActiveChatInfo} />
+                {activeChatInfo === null ? (
+                  <ConversationPlaceholderPanel
+                    title="Chat Info"
+                    description="Select a conversation to view chat details."
+                  />
+                ) : (
+                  <ChatInfoPanel chatInfo={activeChatInfo} />
+                )}
               </div>
             </section>
           </div>
@@ -194,22 +326,49 @@ export function ConversationOverview() {
     >
       <div className="h-full min-h-0 grid-cols-[20rem_minmax(24rem,1fr)_22rem] md:grid">
         <ConversationListPanel
-          conversations={filteredConversations}
-          activeConversationId={resolvedActiveConversation.conversationId}
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
+          conversations={conversations}
+          activeConversationId={activeConversationIdForList}
+          emptyStateLabel={conversationListEmptyStateLabel}
           onSelectConversation={onSelectConversation}
         />
-        <ChatPanel
-          conversation={resolvedActiveConversation}
-          messages={activeMessages}
-          agentActive={agentActive}
-          isMobile={false}
-          onAgentToggle={() => {
-            setAgentActive((currentValue) => !currentValue)
-          }}
-        />
-        <ChatInfoPanel chatInfo={resolvedActiveChatInfo} />
+        {activeConversation === null ? (
+          <ConversationPlaceholderPanel
+            title="Conversation"
+            description={
+              inboxErrorMessage ?? (
+                isResolvingAgent ? "Loading conversation..." : "No conversation selected."
+              )
+            }
+          />
+        ) : messagesQuery.isLoading || messagesQuery.isRefetching ? (
+          <ConversationPlaceholderPanel
+            title={activeConversation.participantExternalId}
+            description="Loading messages..."
+          />
+        ) : messagesErrorMessage ? (
+          <ConversationPlaceholderPanel
+            title={activeConversation.participantExternalId}
+            description={messagesErrorMessage}
+          />
+        ) : (
+          <ChatPanel
+            conversation={activeConversation}
+            messages={activeMessages}
+            agentActive={agentActive}
+            isMobile={false}
+            onAgentToggle={() => {
+              setAgentActive((currentValue) => !currentValue)
+            }}
+          />
+        )}
+        {activeChatInfo === null ? (
+          <ConversationPlaceholderPanel
+            title="Chat Info"
+            description="Select a conversation to view chat details."
+          />
+        ) : (
+          <ChatInfoPanel chatInfo={activeChatInfo} />
+        )}
       </div>
     </section>
   )
