@@ -104,6 +104,7 @@ var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
     .WithEnvironment("SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION", builder.Configuration["SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION"])
     .WithEnvironment("SENDGRID_NEWSLETTER_LIST_ID", builder.Configuration["SENDGRID_NEWSLETTER_LIST_ID"])
     .WithEnvironment("NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES", builder.Configuration["NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES"])
+    .WithEnvironment("Logging__LogLevel__Default", builder.Configuration["LOG_LEVEL"])
     .WithReference(rabbitmq)
     .WithEnvironment("ConnectionStrings__rabbitmq", ReferenceExpression.Create($"{rabbitmq}/buyalan"))
     .WithReference(buyalanDb)
@@ -128,7 +129,7 @@ var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
     .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 */
 
-var runFronend = false;
+var runFronend = true;
 IResourceBuilder<ExecutableResource> webapp = null!;
 
 if (runFronend) {
@@ -142,6 +143,7 @@ if (runFronend) {
         .WithOtlpExporter()
         .WithEnvironment("APP_VERSION", "1.2.3")
         .WithEnvironment("FEATURE_FLAGS", builder.Configuration["FEATURE_FLAGS"])
+        .WithEnvironment("LOG_LEVEL", builder.Configuration["LOG_LEVEL"])
         .WithEnvironment("WEBAPI_ENDPOINT", webapi.GetEndpoint("http"))
         .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 }

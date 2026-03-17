@@ -6,6 +6,8 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import { logger } from '@/lib/logger';
+import { registerServerErrorHooks } from '@/lib/server-error-hooks';
 
 const sdk = new NodeSDK({
     resource: resourceFromAttributes({
@@ -17,4 +19,13 @@ const sdk = new NodeSDK({
     }),
 });
 
+registerServerErrorHooks();
 sdk.start();
+logger.debug(
+    {
+        eventName: "webapp_started",
+        nextRuntime: process.env.NEXT_RUNTIME,
+        serviceName: process.env.OTEL_SERVICE_NAME || 'buyalan-webapp',
+    },
+    "WebApp started",
+);

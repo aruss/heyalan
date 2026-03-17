@@ -5,6 +5,7 @@ import {
   type FeatureFlagDefinition,
   type FeatureFlagKey,
 } from "@/lib/feature-flags/feature-flag-registry";
+import { createLogger } from "@/lib/logger";
 
 export type FeatureFlagEnvironment = NodeJS.ProcessEnv;
 
@@ -13,6 +14,9 @@ const FALSE_NUMERIC_FLAG_VALUE = "0";
 const FEATURE_FLAGS_ENV_KEY = "FEATURE_FLAGS";
 const FEATURE_FLAG_ENTRY_SEPARATOR = ";";
 const FEATURE_FLAG_KEY_VALUE_SEPARATOR = "=";
+const featureFlagLogger = createLogger({
+  module: "feature-flags",
+});
 
 type ParsedFeatureFlagMap = Partial<Record<FeatureFlagKey, boolean>>;
 
@@ -24,20 +28,36 @@ const warnInvalidFeatureFlagsSegment = (
   rawSegment: string,
   reason: string,
 ): void => {
-  console.warn(
-    `[feature-flags] Ignoring invalid ${FEATURE_FLAGS_ENV_KEY} segment ${JSON.stringify(rawSegment)}. ${reason}`,
+  featureFlagLogger.warn(
+    {
+      eventName: "feature_flags_invalid_segment",
+      featureFlagsEnvKey: FEATURE_FLAGS_ENV_KEY,
+      rawSegment,
+      reason,
+    },
+    "Ignoring invalid feature flag segment",
   );
 };
 
 const warnUnknownFeatureFlagKey = (rawKey: string): void => {
-  console.warn(
-    `[feature-flags] Ignoring unknown feature flag key ${JSON.stringify(rawKey)} in ${FEATURE_FLAGS_ENV_KEY}.`,
+  featureFlagLogger.warn(
+    {
+      eventName: "feature_flags_unknown_key",
+      featureFlagsEnvKey: FEATURE_FLAGS_ENV_KEY,
+      rawKey,
+    },
+    "Ignoring unknown feature flag key",
   );
 };
 
 const warnDuplicateFeatureFlagKey = (key: FeatureFlagKey): void => {
-  console.warn(
-    `[feature-flags] Duplicate feature flag key ${JSON.stringify(key)} in ${FEATURE_FLAGS_ENV_KEY}. Using the last value.`,
+  featureFlagLogger.warn(
+    {
+      eventName: "feature_flags_duplicate_key",
+      featureFlagsEnvKey: FEATURE_FLAGS_ENV_KEY,
+      key,
+    },
+    "Duplicate feature flag key detected; using the last value",
   );
 };
 
