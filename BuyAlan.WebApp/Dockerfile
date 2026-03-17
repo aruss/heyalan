@@ -43,7 +43,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=5010
+ENV PORT=3300
 ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs
@@ -59,7 +59,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/BuyAlan.WebApp/.next/static ./.ne
 
 USER nextjs
 
-EXPOSE 5010
+EXPOSE 3300
 
 # NOTE: If standalone output preserves directory structure, this may need to be:
 CMD ["node", "server.js"]

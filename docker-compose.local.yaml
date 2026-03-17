@@ -161,13 +161,13 @@ services:
     image: europe-west10-docker.pkg.dev/econduct/dev-docker/buyalan-webapp:latest
     container_name: buyalan-webapp
     ports:
-      - "5010:5010"
+      - "3300:3300"
     environment:
       NODE_ENV: production
       WEBAPI_ENDPOINT: http://buyalan-webapi:5000
       NODE_OPTIONS: --dns-result-order=ipv4first
     healthcheck:
-      test: 'wget --no-verbose --tries=1 --spider http://localhost:5010/health || exit 1'
+      test: 'wget --no-verbose --tries=1 --spider http://localhost:3300/health || exit 1'
       interval: 5s
       timeout: 5s
       retries: 5

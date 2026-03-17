@@ -119,7 +119,7 @@ var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
 /*var webapp = builder.AddJavaScriptApp("webapp", "../BuyAlan.WebApp", "dev")
 
     .WithYarn()
-    .WithHttpEndpoint(env: "PORT", port: 5010)
+    .WithHttpEndpoint(env: "PORT", port: 3300)
     .WithExternalHttpEndpoints()
     .WithReference(webapi)
     .WaitFor(webapi)
@@ -128,7 +128,7 @@ var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
     .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 */
 
-var runFronend = true;
+var runFronend = false;
 IResourceBuilder<ExecutableResource> webapp = null!;
 
 if (runFronend) {
@@ -160,7 +160,7 @@ if (!String.IsNullOrEmpty(ngrokDomain))
         .WithProjectName("buyalan")
         .WithEnvironment("NGROK_AUTHTOKEN", ngrokAuthToken)
         .WithHttpEndpoint(targetPort: 4040, port: 4040, name: "inspect")
-        .WithArgs("http", $"--url={ngrokDomain}", "--log=stdout", "http://host.docker.internal:5010")
+        .WithArgs("http", $"--url={ngrokDomain}", "--log=stdout", "http://host.docker.internal:3300")
         .WithLifetime(ContainerLifetime.Persistent);
 
     if (webapp != null)

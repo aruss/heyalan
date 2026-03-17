@@ -5,7 +5,7 @@
       "name": "Chrome: Client Side",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:5010", // MUST match the port Aspire assigns to the WebApp
+      "url": "http://localhost:3300", // MUST match the port Aspire assigns to the WebApp
       "webRoot": "${workspaceFolder}/BuyAlan.WebApp",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
