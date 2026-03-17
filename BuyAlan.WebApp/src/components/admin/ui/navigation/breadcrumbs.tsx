@@ -10,9 +10,7 @@ export function Breadcrumbs() {
   const pathname = usePathname();
   const { override } = useBreadcrumbs();
   const routeItems = getAdminBreadcrumbs(pathname);
-
-  console.log(routeItems);
-
+ 
   const hasOverride =
     override?.pathname === pathname && override.items.length > 0;
   const items = hasOverride ? override.items : routeItems;
