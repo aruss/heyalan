@@ -1,25 +1,23 @@
-import { Input } from "@/components/admin/input"
+// import { Input } from "@/components/admin/input"
 import { ConversationItem } from "@/data/data"
 import { cx } from "@/lib/utils"
 
 export interface ConversationListPanelProps {
   conversations: ConversationItem[]
   activeConversationId: string
-  searchQuery: string
-  onSearchQueryChange: (value: string) => void
+  // searchQuery: string
+  // onSearchQueryChange: (value: string) => void
   onSelectConversation: (conversationId: string) => void
 }
 
 export function ConversationListPanel({
   conversations,
-  activeConversationId,
-  searchQuery,
-  onSearchQueryChange,
+  activeConversationId,  
   onSelectConversation,
 }: ConversationListPanelProps) {
   return (
     <section className="flex h-full min-h-0 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-      <div className="border-b border-gray-200 p-4 dark:border-gray-800">
+      {/*<div className="border-b border-gray-200 p-4 dark:border-gray-800">
         <h2 className="mb-2 text-base font-semibold text-gray-900 dark:text-gray-50">
           Conversations
         </h2>
@@ -31,7 +29,7 @@ export function ConversationListPanel({
           }}
           placeholder="Search conversations..."
         />
-      </div>
+      </div>*/}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
