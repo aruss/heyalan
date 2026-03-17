@@ -1,571 +1,9 @@
-interface AssignedPerson {
-  name: string
-  initials: string
-}
+import type {
+  ConversationListItem,
+  ConversationMessageItem,
+  MessageRole,
+} from "@/lib/api"
 
-interface Project {
-  company: string
-  size: string
-  probability: string
-  duration: string
-  status: "Drafted" | "Sent" | "Closed"
-  assigned: AssignedPerson[]
-}
-
-interface Region {
-  region: string
-  project: Project[]
-}
-
-export const quotes: Region[] = [
-  {
-    region: "Europe",
-    project: [
-      {
-        company: "Walton Holding",
-        size: "50K USD",
-        probability: "40%",
-        duration: "18 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Emily Smith",
-            initials: "E",
-          },
-          {
-            name: "Max Warmer",
-            initials: "M",
-          },
-          {
-            name: "Victoria Steep",
-            initials: "V",
-          },
-        ],
-      },
-      {
-        company: "Zurich Coats LLC",
-        size: "100-150K USD",
-        probability: "80%",
-        duration: "24 months",
-        status: "Sent",
-        assigned: [
-          {
-            name: "Emma Stone",
-            initials: "E",
-          },
-          {
-            name: "Chris Bold",
-            initials: "C",
-          },
-        ],
-      },
-      {
-        company: "Riverflow Media Group",
-        size: "280-300K USD",
-        probability: "80%",
-        duration: "24 months",
-        status: "Sent",
-        assigned: [
-          {
-            name: "Emma Stephcorn",
-            initials: "E",
-          },
-          {
-            name: "Chris Bold",
-            initials: "C",
-          },
-        ],
-      },
-      {
-        company: "Nordic Solutions AG",
-        size: "175K USD",
-        probability: "60%",
-        duration: "12 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Victoria Stone",
-            initials: "V",
-          },
-          {
-            name: "Max W.",
-            initials: "M",
-          },
-        ],
-      },
-      {
-        company: "Swiss Tech Innovations",
-        size: "450K USD",
-        probability: "90%",
-        duration: "36 months",
-        status: "Sent",
-        assigned: [
-          {
-            name: "Emily Satally",
-            initials: "E",
-          },
-          {
-            name: "Chris Bold",
-            initials: "C",
-          },
-        ],
-      },
-      {
-        company: "Berlin Digital Hub",
-        size: "200K USD",
-        probability: "70%",
-        duration: "15 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Emma Stone",
-            initials: "E",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    region: "Asia",
-    project: [
-      {
-        company: "Real Estate Group",
-        size: "1.2M USD",
-        probability: "100%",
-        duration: "6 months",
-        status: "Closed",
-        assigned: [
-          {
-            name: "Lena Mayer",
-            initials: "L",
-          },
-          {
-            name: "Sara Brick",
-            initials: "S",
-          },
-        ],
-      },
-      {
-        company: "Grison Appartments",
-        size: "100K USD",
-        probability: "20%",
-        duration: "12 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Jordan Afolter",
-            initials: "J",
-          },
-          {
-            name: "Corinna Bridge",
-            initials: "C",
-          },
-        ],
-      },
-      {
-        company: "Tokyo Tech Solutions",
-        size: "750K USD",
-        probability: "85%",
-        duration: "24 months",
-        status: "Sent",
-        assigned: [
-          {
-            name: "Lena Mayer",
-            initials: "L",
-          },
-          {
-            name: "Jordan Corner",
-            initials: "J",
-          },
-        ],
-      },
-      {
-        company: "Singapore Systems Ltd",
-        size: "300K USD",
-        probability: "75%",
-        duration: "18 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Sara Bridge",
-            initials: "S",
-          },
-        ],
-      },
-      {
-        company: "Seoul Digital Corp",
-        size: "880K USD",
-        probability: "95%",
-        duration: "30 months",
-        status: "Sent",
-        assigned: [
-          {
-            name: "Corinna Berner",
-            initials: "C",
-          },
-          {
-            name: "Lena Mayer",
-            initials: "L",
-          },
-        ],
-      },
-      {
-        company: "Mumbai Innovations",
-        size: "450K USD",
-        probability: "40%",
-        duration: "12 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Jordan Afolter",
-            initials: "J",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    region: "North America",
-    project: [
-      {
-        company: "Liquid Holdings Group",
-        size: "5.1M USD",
-        probability: "100%",
-        duration: "Member",
-        status: "Closed",
-        assigned: [
-          {
-            name: "Charlie Anuk",
-            initials: "C",
-          },
-        ],
-      },
-      {
-        company: "Craft Labs, Inc.",
-        size: "80-90K USD",
-        probability: "80%",
-        duration: "18 months",
-        status: "Sent",
-        assigned: [
-          {
-            name: "Charlie Anuk",
-            initials: "C",
-          },
-          {
-            name: "Patrick Daller",
-            initials: "P",
-          },
-        ],
-      },
-      {
-        company: "Toronto Tech Hub",
-        size: "250K USD",
-        probability: "65%",
-        duration: "12 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Patrick Daller",
-            initials: "P",
-          },
-          {
-            name: "Charlie Anuk",
-            initials: "C",
-          },
-        ],
-      },
-      {
-        company: "Silicon Valley Startups",
-        size: "1.5M USD",
-        probability: "90%",
-        duration: "24 months",
-        status: "Sent",
-        assigned: [
-          {
-            name: "Charlie Anuk",
-            initials: "C",
-          },
-        ],
-      },
-      {
-        company: "NYC Digital Solutions",
-        size: "750K USD",
-        probability: "70%",
-        duration: "15 months",
-        status: "Drafted",
-        assigned: [
-          {
-            name: "Patrick Daller",
-            initials: "P",
-          },
-        ],
-      },
-    ],
-  },
-]
-
-interface DataChart {
-  date: string
-  "Current year": number
-  "Same period last year": number
-}
-
-interface DataChart2 {
-  date: string
-  Quotes: number
-  "Total deal size": number
-}
-
-interface DataChart3 {
-  date: string
-  Addressed: number
-  Unrealized: number
-}
-
-interface DataChart4 {
-  date: string
-  Density: number
-}
-
-export const dataChart: DataChart[] = [
-  {
-    date: "Jan 24",
-    "Current year": 23,
-    "Same period last year": 67,
-  },
-  {
-    date: "Feb 24",
-    "Current year": 31,
-    "Same period last year": 23,
-  },
-  {
-    date: "Mar 24",
-    "Current year": 46,
-    "Same period last year": 78,
-  },
-  {
-    date: "Apr 24",
-    "Current year": 46,
-    "Same period last year": 23,
-  },
-  {
-    date: "May 24",
-    "Current year": 39,
-    "Same period last year": 32,
-  },
-  {
-    date: "Jun 24",
-    "Current year": 65,
-    "Same period last year": 32,
-  },
-]
-
-export const dataChart2: DataChart2[] = [
-  {
-    date: "Jan 24",
-    Quotes: 120,
-    "Total deal size": 55000,
-  },
-  {
-    date: "Feb 24",
-    Quotes: 183,
-    "Total deal size": 75400,
-  },
-  {
-    date: "Mar 24",
-    Quotes: 165,
-    "Total deal size": 50450,
-  },
-  {
-    date: "Apr 24",
-    Quotes: 99,
-    "Total deal size": 41540,
-  },
-  {
-    date: "May 24",
-    Quotes: 194,
-    "Total deal size": 63850,
-  },
-  {
-    date: "Jun 24",
-    Quotes: 241,
-    "Total deal size": 73850,
-  },
-]
-
-export const dataChart3: DataChart3[] = [
-  {
-    date: "Jan 24",
-    Addressed: 8,
-    Unrealized: 12,
-  },
-  {
-    date: "Feb 24",
-    Addressed: 9,
-    Unrealized: 12,
-  },
-  {
-    date: "Mar 24",
-    Addressed: 6,
-    Unrealized: 12,
-  },
-  {
-    date: "Apr 24",
-    Addressed: 5,
-    Unrealized: 12,
-  },
-  {
-    date: "May 24",
-    Addressed: 12,
-    Unrealized: 12,
-  },
-  {
-    date: "Jun 24",
-    Addressed: 9,
-    Unrealized: 12,
-  },
-]
-
-export const dataChart4: DataChart4[] = [
-  {
-    date: "Jan 24",
-    Density: 0.891,
-  },
-  {
-    date: "Feb 24",
-    Density: 0.084,
-  },
-  {
-    date: "Mar 24",
-    Density: 0.155,
-  },
-  {
-    date: "Apr 24",
-    Density: 0.75,
-  },
-  {
-    date: "May 24",
-    Density: 0.221,
-  },
-  {
-    date: "Jun 24",
-    Density: 0.561,
-  },
-]
-
-interface Progress {
-  current: number
-  total: number
-}
-
-interface AuditDate {
-  date: string
-  auditor: string
-}
-
-interface Document {
-  name: string
-  status: "OK" | "Needs update" | "In audit"
-}
-
-interface Section {
-  id: string
-  title: string
-  certified: string
-  progress: Progress
-  status: "complete" | "warning"
-  auditDates: AuditDate[]
-  documents: Document[]
-}
-
-export const sections: Section[] = [
-  {
-    id: "item-1",
-    title: "CompTIA Security+",
-    certified: "ISO",
-    progress: { current: 46, total: 46 },
-    status: "complete",
-    auditDates: [
-      { date: "Dec 10, 2023", auditor: "Max Duster" },
-      { date: "Dec 12, 2023", auditor: "Emma Stone" },
-    ],
-    documents: [
-      { name: "policy_overview.xlsx", status: "OK" },
-      { name: "employee_guidelines.xlsx", status: "Needs update" },
-      { name: "compliance_checklist.xlsx", status: "In audit" },
-    ],
-  },
-  {
-    id: "item-2",
-    title: "SAFe Certifications",
-    certified: "IEC 2701",
-    progress: { current: 32, total: 41 },
-    status: "warning",
-    auditDates: [
-      { date: "Jan 15, 2024", auditor: "Sarah Johnson" },
-      { date: "Jan 20, 2024", auditor: "Mike Peters" },
-    ],
-    documents: [
-      { name: "certification_records.xlsx", status: "OK" },
-      { name: "training_logs.xlsx", status: "In audit" },
-      { name: "assessment_results.xlsx", status: "Needs update" },
-    ],
-  },
-  {
-    id: "item-3",
-    title: "PMP Certifications",
-    certified: "ISO",
-    progress: { current: 21, total: 21 },
-    status: "complete",
-    auditDates: [
-      { date: "Feb 5, 2024", auditor: "Lisa Chen" },
-      { date: "Feb 8, 2024", auditor: "Tom Wilson" },
-    ],
-    documents: [
-      { name: "project_documents.xlsx", status: "OK" },
-      { name: "methodology_guide.xlsx", status: "OK" },
-      { name: "best_practices.xlsx", status: "In audit" },
-    ],
-  },
-  {
-    id: "item-4",
-    title: "Cloud Certifications",
-    certified: "SOC 2",
-    progress: { current: 21, total: 21 },
-    status: "complete",
-    auditDates: [
-      { date: "Mar 1, 2024", auditor: "Alex Kumar" },
-      { date: "Mar 5, 2024", auditor: "Rachel Green" },
-    ],
-    documents: [
-      { name: "aws_certifications.xlsx", status: "OK" },
-      { name: "azure_competencies.xlsx", status: "OK" },
-      { name: "gcp_credentials.xlsx", status: "In audit" },
-      { name: "cloud_security.xlsx", status: "OK" },
-    ],
-  },
-]
-
-export type ConversationChannel = "WhatsApp" | "Telegram" | "SMS"
-
-export type MessageSender = "user" | "agent"
-
-export interface ConversationItem {
-  id: string;
-  name: string;        // phone number or @handle
-  channel: ConversationChannel;
-  lastMsg: string;
-  time: string;        // "10:42 AM", "Yesterday", "Mon", etc.
-  unread: boolean;
-}
-
-export interface MessageItem {
-  id: string;
-  convoId: string;
-  sender: MessageSender;
-  text: string;
-  time: string;  
-}
 
 export interface CartItem {
   id: string
@@ -602,135 +40,683 @@ export interface ChatInfo {
   manualActions: ManualAction[]
   pastOrders: PastOrder[]
 }
+const MINUTES_PER_HOUR = 60
+const HOURS_PER_DAY = 24
 
-
-
-/*
-
-export interface Conversation {
-  id: string;
-  name: string;        // phone number or @handle
-  channel: Channel;
-  lastMsg: string;
-  time: string;        // "10:42 AM", "Yesterday", "Mon", etc.
-  unread: boolean;
+const createRelativeTimestamp = ({
+  daysAgo = 0,
+  hoursAgo = 0,
+  minutesAgo = 0,
+}: {
+  daysAgo?: number
+  hoursAgo?: number
+  minutesAgo?: number
+}) => {
+  const timestamp = new Date()
+  timestamp.setMinutes(
+    timestamp.getMinutes()
+      - minutesAgo
+      - (hoursAgo * MINUTES_PER_HOUR)
+      - (daysAgo * HOURS_PER_DAY * MINUTES_PER_HOUR),
+  )
+  return timestamp.toISOString()
 }
 
-export interface Message {
-  id: string;
-  convoId: string;
-  sender: Sender;
-  text: string;
-  time: string;        // same formatting as Conversation.time
+const createConversationMock = ({
+  conversationId,
+  participantExternalId,
+  channel,
+  lastMessagePreview,
+  daysAgo = 0,
+  hoursAgo = 0,
+  minutesAgo = 0,
+  lastMessageRole,
+  unreadCount,
+}: {
+  conversationId: string
+  participantExternalId: string
+  channel: ConversationListItem["channel"]
+  lastMessagePreview: ConversationListItem["lastMessagePreview"]
+  daysAgo?: number
+  hoursAgo?: number
+  minutesAgo?: number
+  lastMessageRole: ConversationListItem["lastMessageRole"]
+  unreadCount: number
+}): ConversationListItem => {
+  return {
+    conversationId,
+    participantExternalId,
+    channel,
+    lastMessagePreview,
+    lastMessageAt: createRelativeTimestamp({ daysAgo, hoursAgo, minutesAgo }),
+    lastMessageRole,
+    unreadCount,
+    hasUnread: unreadCount > 0,
+  }
 }
-  */
 
-export const conversations : ConversationItem[] = [
-  { id: '1',  name: '+1 555-0101',       channel: 'WhatsApp', lastMsg: 'Is the Pro version in stock?',                     time: '10:42 AM',  unread: true  },
-  { id: '2',  name: '@alex_dev',         channel: 'Telegram', lastMsg: 'Payment completed.',                                time: '09:15 AM',  unread: false },
-  { id: '3',  name: '+44 7700 900077',   channel: 'SMS',      lastMsg: 'When will it ship?',                                time: 'Yesterday', unread: false },
+const createMessageMock = ({
+  messageId,
+  role,
+  content,
+  from,
+  to,
+  daysAgo = 0,
+  hoursAgo = 0,
+  minutesAgo = 0,
+  isRead = true,
+}: {
+  messageId: string
+  role: MessageRole
+  content: string
+  from: string
+  to: string
+  daysAgo?: number
+  hoursAgo?: number
+  minutesAgo?: number
+  isRead?: boolean
+}): ConversationMessageItem => {
+  const occurredAt = createRelativeTimestamp({ daysAgo, hoursAgo, minutesAgo })
 
-  { id: '4',  name: '+49 1512 3456789',  channel: 'WhatsApp', lastMsg: 'Can you invoice with VAT ID?',                      time: '08:03 AM',  unread: true  },
-  { id: '5',  name: '@maria_pm',         channel: 'Telegram', lastMsg: 'Do you have the white keycaps set?',                time: 'Mon',       unread: false },
-  { id: '6',  name: '+33 6 12 34 56 78', channel: 'SMS',      lastMsg: 'Need to change delivery address.',                  time: 'Sun',       unread: true  },
-  { id: '7',  name: '+1 555-0199',       channel: 'WhatsApp', lastMsg: 'Any discount for 2 units?',                         time: 'Sat',       unread: false },
-  { id: '8',  name: '@kamil_w',          channel: 'Telegram', lastMsg: 'Order #4921: please confirm switch type.',          time: 'Sat',       unread: true  },
-  { id: '9',  name: '+48 600 700 800',   channel: 'SMS',      lastMsg: 'Can I pick up in store?',                           time: 'Fri',       unread: false },
-  { id: '10', name: '+81 90 1234 5678',  channel: 'WhatsApp', lastMsg: 'Does it support Mac layout?',                       time: 'Fri',       unread: false },
-  { id: '11', name: '@noah_sre',         channel: 'Telegram', lastMsg: 'Tracking link says “label created” only.',          time: 'Thu',       unread: true  },
-  { id: '12', name: '+61 412 345 678',   channel: 'SMS',      lastMsg: 'Please cancel my order.',                           time: 'Thu',       unread: true  },
-  { id: '13', name: '+1 555-0133',       channel: 'WhatsApp', lastMsg: 'Can you recommend a quieter switch?',               time: 'Wed',       unread: false },
-  { id: '14', name: '@lina_design',      channel: 'Telegram', lastMsg: 'Need 10 keyboards for the team—bulk pricing?',      time: 'Wed',       unread: true  },
-  { id: '15', name: '+39 320 123 4567',  channel: 'SMS',      lastMsg: 'Do you ship to Italy?',                             time: 'Tue',       unread: false },
-  { id: '16', name: '+34 612 345 678',   channel: 'WhatsApp', lastMsg: 'My package arrived damaged.',                       time: 'Tue',       unread: true  },
-  { id: '17', name: '@tom_qc',           channel: 'Telegram', lastMsg: 'Key “A” sometimes double registers.',               time: 'Tue',       unread: true  },
-  { id: '18', name: '+1 555-0177',       channel: 'SMS',      lastMsg: 'Is there a wrist rest included?',                   time: 'Mon',       unread: false },
-  { id: '19', name: '+46 70 123 45 67',  channel: 'WhatsApp', lastMsg: 'Can I get ISO-Nordic layout?',                      time: 'Mon',       unread: false },
-  { id: '20', name: '@jen_ops',          channel: 'Telegram', lastMsg: 'Please resend confirmation email.',                 time: 'Mon',       unread: false },
+  return {
+    messageId,
+    role,
+    content,
+    from,
+    to,
+    occurredAt,
+    isRead,
+    readAt: isRead ? occurredAt : null,
+  }
+}
 
-  { id: '21', name: '+1 555-0148',       channel: 'WhatsApp', lastMsg: 'Do you have the aluminum case in black?',           time: 'Last week', unread: false },
-  { id: '22', name: '@viktor_ml',        channel: 'Telegram', lastMsg: 'Can you split shipment into 2 addresses?',          time: 'Last week', unread: true  },
-  { id: '23', name: '+52 55 1234 5678',  channel: 'SMS',      lastMsg: 'Need help pairing via Bluetooth.',                  time: 'Last week', unread: true  },
-  { id: '24', name: '+1 555-0112',       channel: 'WhatsApp', lastMsg: 'What’s your return policy?',                        time: 'Last week', unread: false },
-  { id: '25', name: '@sasha_fin',        channel: 'Telegram', lastMsg: 'Can you provide a proforma invoice?',               time: '2 weeks ago', unread: false },
-  { id: '26', name: '+7 916 123-45-67',  channel: 'SMS',      lastMsg: 'Do you sell replacement stabilizers?',             time: '2 weeks ago', unread: false },
-  { id: '27', name: '+1 555-0166',       channel: 'WhatsApp', lastMsg: 'My promo code is not working.',                     time: '2 weeks ago', unread: true  },
-  { id: '28', name: '@hanna_hr',         channel: 'Telegram', lastMsg: 'Need 5 units by Friday—possible?',                  time: '2 weeks ago', unread: true  },
-  { id: '29', name: '+1 555-0181',       channel: 'SMS',      lastMsg: 'Can I change switches after ordering?',             time: '3 weeks ago', unread: false },
-  { id: '30', name: '+86 138 0013 8000', channel: 'WhatsApp', lastMsg: 'Does it have hot-swap sockets?',                    time: '3 weeks ago', unread: false },
-];
+export const conversations: ConversationListItem[] = [
+  createConversationMock({
+    conversationId: "1",
+    participantExternalId: "+1 555-0101",
+    channel: "WhatsApp",
+    lastMessagePreview: "Is the Pro version in stock?",
+    minutesAgo: 8,
+    lastMessageRole: "Customer",
+    unreadCount: 2,
+  }),
+  createConversationMock({
+    conversationId: "2",
+    participantExternalId: "@alex_dev",
+    channel: "Telegram",
+    lastMessagePreview: "Payment completed.",
+    minutesAgo: 95,
+    lastMessageRole: "Agent",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "3",
+    participantExternalId: "+44 7700 900077",
+    channel: "SMS",
+    lastMessagePreview: "When will it ship?",
+    daysAgo: 1,
+    hoursAgo: 2,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "4",
+    participantExternalId: "+49 1512 3456789",
+    channel: "WhatsApp",
+    lastMessagePreview: "Can you invoice with VAT ID?",
+    hoursAgo: 3,
+    minutesAgo: 5,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "5",
+    participantExternalId: "@maria_pm",
+    channel: "Telegram",
+    lastMessagePreview: "Do you have the white keycaps set?",
+    daysAgo: 2,
+    hoursAgo: 3,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "6",
+    participantExternalId: "+33 6 12 34 56 78",
+    channel: "SMS",
+    lastMessagePreview: "Need to change delivery address.",
+    daysAgo: 3,
+    hoursAgo: 1,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "7",
+    participantExternalId: "+1 555-0199",
+    channel: "WhatsApp",
+    lastMessagePreview: "Any discount for 2 units?",
+    daysAgo: 3,
+    hoursAgo: 7,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "8",
+    participantExternalId: "@kamil_w",
+    channel: "Telegram",
+    lastMessagePreview: "Order #4921: please confirm switch type.",
+    daysAgo: 4,
+    hoursAgo: 2,
+    lastMessageRole: "Customer",
+    unreadCount: 3,
+  }),
+  createConversationMock({
+    conversationId: "9",
+    participantExternalId: "+48 600 700 800",
+    channel: "SMS",
+    lastMessagePreview: "Can I pick up in store?",
+    daysAgo: 4,
+    hoursAgo: 9,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "10",
+    participantExternalId: "+81 90 1234 5678",
+    channel: "WhatsApp",
+    lastMessagePreview: "Does it support Mac layout?",
+    daysAgo: 5,
+    hoursAgo: 4,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "11",
+    participantExternalId: "@noah_sre",
+    channel: "Telegram",
+    lastMessagePreview: "Tracking link says label created only.",
+    daysAgo: 5,
+    hoursAgo: 12,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "12",
+    participantExternalId: "+61 412 345 678",
+    channel: "SMS",
+    lastMessagePreview: "Please cancel my order.",
+    daysAgo: 5,
+    hoursAgo: 14,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "13",
+    participantExternalId: "+1 555-0133",
+    channel: "WhatsApp",
+    lastMessagePreview: "Can you recommend a quieter switch?",
+    daysAgo: 6,
+    hoursAgo: 3,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "14",
+    participantExternalId: "@lina_design",
+    channel: "Telegram",
+    lastMessagePreview: "Need 10 keyboards for the team. Bulk pricing?",
+    daysAgo: 6,
+    hoursAgo: 10,
+    lastMessageRole: "Customer",
+    unreadCount: 2,
+  }),
+  createConversationMock({
+    conversationId: "15",
+    participantExternalId: "+39 320 123 4567",
+    channel: "SMS",
+    lastMessagePreview: "Do you ship to Italy?",
+    daysAgo: 7,
+    hoursAgo: 4,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "16",
+    participantExternalId: "+34 612 345 678",
+    channel: "WhatsApp",
+    lastMessagePreview: "My package arrived damaged.",
+    daysAgo: 7,
+    hoursAgo: 6,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "17",
+    participantExternalId: "@tom_qc",
+    channel: "Telegram",
+    lastMessagePreview: "Key A sometimes double registers.",
+    daysAgo: 8,
+    hoursAgo: 1,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "18",
+    participantExternalId: "+1 555-0177",
+    channel: "SMS",
+    lastMessagePreview: "Is there a wrist rest included?",
+    daysAgo: 8,
+    hoursAgo: 5,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "19",
+    participantExternalId: "+46 70 123 45 67",
+    channel: "WhatsApp",
+    lastMessagePreview: "Can I get ISO-Nordic layout?",
+    daysAgo: 8,
+    hoursAgo: 9,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "20",
+    participantExternalId: "@jen_ops",
+    channel: "Telegram",
+    lastMessagePreview: "Please resend confirmation email.",
+    daysAgo: 9,
+    hoursAgo: 2,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "21",
+    participantExternalId: "+1 555-0148",
+    channel: "WhatsApp",
+    lastMessagePreview: "Do you have the aluminum case in black?",
+    daysAgo: 10,
+    hoursAgo: 4,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "22",
+    participantExternalId: "@viktor_ml",
+    channel: "Telegram",
+    lastMessagePreview: "Can you split shipment into 2 addresses?",
+    daysAgo: 11,
+    hoursAgo: 6,
+    lastMessageRole: "Customer",
+    unreadCount: 2,
+  }),
+  createConversationMock({
+    conversationId: "23",
+    participantExternalId: "+52 55 1234 5678",
+    channel: "SMS",
+    lastMessagePreview: "Need help pairing via Bluetooth.",
+    daysAgo: 12,
+    hoursAgo: 3,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "24",
+    participantExternalId: "+1 555-0112",
+    channel: "WhatsApp",
+    lastMessagePreview: "What is your return policy?",
+    daysAgo: 13,
+    hoursAgo: 4,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "25",
+    participantExternalId: "@sasha_fin",
+    channel: "Telegram",
+    lastMessagePreview: "Can you provide a proforma invoice?",
+    daysAgo: 15,
+    hoursAgo: 4,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "26",
+    participantExternalId: "+7 916 123-45-67",
+    channel: "SMS",
+    lastMessagePreview: "Do you sell replacement stabilizers?",
+    daysAgo: 16,
+    hoursAgo: 1,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "27",
+    participantExternalId: "+1 555-0166",
+    channel: "WhatsApp",
+    lastMessagePreview: "My promo code is not working.",
+    daysAgo: 17,
+    hoursAgo: 6,
+    lastMessageRole: "Customer",
+    unreadCount: 1,
+  }),
+  createConversationMock({
+    conversationId: "28",
+    participantExternalId: "@hanna_hr",
+    channel: "Telegram",
+    lastMessagePreview: "Need 5 units by Friday. Possible?",
+    daysAgo: 18,
+    hoursAgo: 2,
+    lastMessageRole: "Customer",
+    unreadCount: 2,
+  }),
+  createConversationMock({
+    conversationId: "29",
+    participantExternalId: "+1 555-0181",
+    channel: "SMS",
+    lastMessagePreview: null,
+    daysAgo: 20,
+    hoursAgo: 4,
+    lastMessageRole: null,
+    unreadCount: 0,
+  }),
+  createConversationMock({
+    conversationId: "30",
+    participantExternalId: "+86 138 0013 8000",
+    channel: "WhatsApp",
+    lastMessagePreview: "Does it have hot-swap sockets?",
+    daysAgo: 21,
+    hoursAgo: 5,
+    lastMessageRole: "Customer",
+    unreadCount: 0,
+  }),
+]
 
-export const messages: MessageItem[] = [
-  // Conversation 1 (keyboard purchase)
-  { id: 'm1',  convoId: '1', sender: 'user',  text: 'Hi, I want to order the mechanical keyboard.',                                                        time: '10:40 AM' },
-  { id: 'm2',  convoId: '1', sender: 'agent', text: 'Hello! I can help with that. Are you looking for the tactile or linear switches?',                     time: '10:40 AM' },
-  { id: 'm3',  convoId: '1', sender: 'user',  text: 'Tactile, please. Is the Pro version in stock?',                                                       time: '10:42 AM' },
-  { id: 'm4',  convoId: '1', sender: 'agent', text: 'Yes—Pro is in stock in black and silver. Which case color do you prefer?',                              time: '10:43 AM' },
-  { id: 'm5',  convoId: '1', sender: 'user',  text: 'Black case. Also, do you have ISO-DE layout?',                                                        time: '10:44 AM' },
-  { id: 'm6',  convoId: '1', sender: 'agent', text: 'ISO-DE is available. Want PBT keycaps or the standard ABS set?',                                       time: '10:45 AM' },
-  { id: 'm7',  convoId: '1', sender: 'user',  text: 'PBT please. Can you add a wrist rest too?',                                                            time: '10:46 AM' },
-  { id: 'm8',  convoId: '1', sender: 'agent', text: 'Absolutely. I’ll add the matching wrist rest. Ready to check out?',                                    time: '10:47 AM' },
-
-  // Conversation 2 (payment confirmation)
-  { id: 'm9',  convoId: '2', sender: 'user',  text: 'Hey, just paid the invoice for order #4920.',                                                          time: '09:14 AM' },
-  { id: 'm10', convoId: '2', sender: 'agent', text: 'Thanks! I see the payment—your order is confirmed.',                                                    time: '09:15 AM' },
-  { id: 'm11', convoId: '2', sender: 'user',  text: 'Great. Can you send the tracking when it ships?',                                                      time: '09:16 AM' },
-  { id: 'm12', convoId: '2', sender: 'agent', text: 'Will do. You’ll get an automated message as soon as the label is created.',                             time: '09:17 AM' },
-
-  // Conversation 3 (shipping ETA)
-  { id: 'm13', convoId: '3', sender: 'user',  text: 'Hi—order placed yesterday. When will it ship?',                                                        time: 'Yesterday' },
-  { id: 'm14', convoId: '3', sender: 'agent', text: 'Orders placed before 2 PM ship same day; otherwise next business day. What’s your order number?',       time: 'Yesterday' },
-  { id: 'm15', convoId: '3', sender: 'user',  text: 'Order #4917.',                                                                                         time: 'Yesterday' },
-  { id: 'm16', convoId: '3', sender: 'agent', text: 'Thanks—#4917 is queued for dispatch today. You’ll get tracking later this afternoon.',                  time: 'Yesterday' },
-
-  // Conversation 4 (VAT invoice)
-  { id: 'm17', convoId: '4', sender: 'user',  text: 'Can you issue an invoice with VAT ID for our company?',                                                time: '08:01 AM' },
-  { id: 'm18', convoId: '4', sender: 'agent', text: 'Yes. Please send your company name, address, and VAT ID.',                                             time: '08:02 AM' },
-  { id: 'm19', convoId: '4', sender: 'user',  text: 'ACME GmbH, Musterstr. 1, 10115 Berlin, DE123456789.',                                                  time: '08:03 AM' },
-  { id: 'm20', convoId: '4', sender: 'agent', text: "Perfect—I'll generate the VAT invoice and attach it to the order confirmation.",                       time: '08:04 AM' },
-
-  // Conversation 6 (address change)
-  { id: 'm21', convoId: '6', sender: 'user',  text: 'Need to change delivery address for order #4902.',                                                      time: 'Sun' },
-  { id: 'm22', convoId: '6', sender: 'agent', text: 'Sure—please send the new address. If the label is already created, we may need a carrier reroute.',    time: 'Sun' },
-  { id: 'm23', convoId: '6', sender: 'user',  text: 'New address: 12 Rue de Rivoli, 75001 Paris.',                                                          time: 'Sun' },
-  { id: 'm24', convoId: '6', sender: 'agent', text: 'Got it. I’ll update it now and confirm once the system accepts the change.',                           time: 'Sun' },
-
-  // Conversation 8 (switch type confirmation)
-  { id: 'm25', convoId: '8', sender: 'user',  text: 'Order #4921—can you confirm I selected linear switches?',                                               time: 'Sat' },
-  { id: 'm26', convoId: '8', sender: 'agent', text: 'Checking… you selected tactile. Want me to change it to linear before fulfillment?',                   time: 'Sat' },
-  { id: 'm27', convoId: '8', sender: 'user',  text: 'Yes, please change to linear.',                                                                         time: 'Sat' },
-  { id: 'm28', convoId: '8', sender: 'agent', text: 'Done. Updated to linear switches. Everything else stays the same.',                                     time: 'Sat' },
-
-  // Conversation 11 (tracking stuck)
-  { id: 'm29', convoId: '11', sender: 'user',  text: 'Tracking only shows “label created”. Any update?',                                                     time: 'Thu' },
-  { id: 'm30', convoId: '11', sender: 'agent', text: 'That usually means the carrier hasn’t scanned it yet. Can you share the tracking number?',            time: 'Thu' },
-  { id: 'm31', convoId: '11', sender: 'user',  text: '1Z999AA10123456784',                                                                                    time: 'Thu' },
-  { id: 'm32', convoId: '11', sender: 'agent', text: 'Thanks. I’ll ping the warehouse—if it missed pickup, we’ll get it scanned today.',                    time: 'Thu' },
-
-  // Conversation 12 (cancellation)
-  { id: 'm33', convoId: '12', sender: 'user',  text: 'Please cancel my order #4899.',                                                                         time: 'Thu' },
-  { id: 'm34', convoId: '12', sender: 'agent', text: 'I can help. Has it shipped yet? If not, we can cancel immediately.',                                  time: 'Thu' },
-  { id: 'm35', convoId: '12', sender: 'user',  text: 'No tracking yet.',                                                                                      time: 'Thu' },
-  { id: 'm36', convoId: '12', sender: 'agent', text: 'Great—cancellation requested. You’ll receive a confirmation and refund notice shortly.',              time: 'Thu' },
-
-  // Conversation 16 (damaged package)
-  { id: 'm37', convoId: '16', sender: 'user',  text: 'My package arrived damaged. The box is torn.',                                                          time: 'Tue' },
-  { id: 'm38', convoId: '16', sender: 'agent', text: 'Sorry about that. Can you send photos of the box + the keyboard so we can file a claim?',            time: 'Tue' },
-  { id: 'm39', convoId: '16', sender: 'user',  text: 'Sure, sending now.',                                                                                    time: 'Tue' },
-  { id: 'm40', convoId: '16', sender: 'agent', text: 'Thanks—once received, we’ll offer replacement or refund, whichever you prefer.',                      time: 'Tue' },
-
-  // Conversation 17 (double key)
-  { id: 'm41', convoId: '17', sender: 'user',  text: 'Key “A” sometimes double registers. Any fix?',                                                         time: 'Tue' },
-  { id: 'm42', convoId: '17', sender: 'agent', text: 'If it’s hot-swap, try reseating the switch. Also test with another USB port/cable.',                 time: 'Tue' },
-  { id: 'm43', convoId: '17', sender: 'user',  text: 'It is hot-swap. I’ll reseat it.',                                                                       time: 'Tue' },
-  { id: 'm44', convoId: '17', sender: 'agent', text: 'If it persists, we can send a replacement switch or start an RMA.',                                   time: 'Tue' },
-
-  // Conversation 23 (Bluetooth pairing help)
-  { id: 'm45', convoId: '23', sender: 'user',  text: 'Need help pairing via Bluetooth.',                                                                      time: 'Last week' },
-  { id: 'm46', convoId: '23', sender: 'agent', text: 'Sure—hold Fn + 1 for 3 seconds until the LED blinks, then pair “KB Pro” in your Bluetooth settings.', time: 'Last week' },
-  { id: 'm47', convoId: '23', sender: 'user',  text: 'Got it. Does it support switching devices?',                                                           time: 'Last week' },
-  { id: 'm48', convoId: '23', sender: 'agent', text: 'Yes—Fn + 1/2/3 to switch between the three saved devices.',                                            time: 'Last week' },
-];
+export const conversationMessages: Record<string, ConversationMessageItem[]> = {
+  "1": [
+    createMessageMock({
+      messageId: "m1",
+      role: "Customer",
+      content: "Hi, I want to order the mechanical keyboard.",
+      from: "+1 555-0101",
+      to: "BuyAlan",
+      minutesAgo: 15,
+      isRead: true,
+    }),
+    createMessageMock({
+      messageId: "m2",
+      role: "Agent",
+      content: "Hello! I can help with that. Are you looking for tactile or linear switches?",
+      from: "BuyAlan",
+      to: "+1 555-0101",
+      minutesAgo: 14,
+      isRead: true,
+    }),
+    createMessageMock({
+      messageId: "m3",
+      role: "Customer",
+      content: "Tactile, please. Is the Pro version in stock?",
+      from: "+1 555-0101",
+      to: "BuyAlan",
+      minutesAgo: 8,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m4",
+      role: "Agent",
+      content: "Yes. Pro is in stock in black and silver. Which case color do you prefer?",
+      from: "BuyAlan",
+      to: "+1 555-0101",
+      minutesAgo: 7,
+      isRead: true,
+    }),
+    createMessageMock({
+      messageId: "m5",
+      role: "Customer",
+      content: "Black case. Also, do you have ISO-DE layout?",
+      from: "+1 555-0101",
+      to: "BuyAlan",
+      minutesAgo: 6,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m6",
+      role: "Operator",
+      content: "I can confirm ISO-DE is available and I can hold one while you decide on keycaps.",
+      from: "Max from support",
+      to: "+1 555-0101",
+      minutesAgo: 4,
+      isRead: true,
+    }),
+  ],
+  "2": [
+    createMessageMock({
+      messageId: "m9",
+      role: "Customer",
+      content: "Hey, just paid the invoice for order #4920.",
+      from: "@alex_dev",
+      to: "BuyAlan",
+      minutesAgo: 100,
+      isRead: true,
+    }),
+    createMessageMock({
+      messageId: "m10",
+      role: "Agent",
+      content: "Thanks. I see the payment and your order is confirmed.",
+      from: "BuyAlan",
+      to: "@alex_dev",
+      minutesAgo: 95,
+      isRead: true,
+    }),
+  ],
+  "3": [
+    createMessageMock({
+      messageId: "m13",
+      role: "Customer",
+      content: "Hi, order placed yesterday. When will it ship?",
+      from: "+44 7700 900077",
+      to: "BuyAlan",
+      daysAgo: 1,
+      hoursAgo: 4,
+      isRead: true,
+    }),
+    createMessageMock({
+      messageId: "m14",
+      role: "Agent",
+      content: "Orders before 2 PM ship the same day. What is your order number?",
+      from: "BuyAlan",
+      to: "+44 7700 900077",
+      daysAgo: 1,
+      hoursAgo: 3,
+      isRead: true,
+    }),
+    createMessageMock({
+      messageId: "m15",
+      role: "Customer",
+      content: "Order #4917.",
+      from: "+44 7700 900077",
+      to: "BuyAlan",
+      daysAgo: 1,
+      hoursAgo: 2,
+      isRead: true,
+    }),
+  ],
+  "4": [
+    createMessageMock({
+      messageId: "m17",
+      role: "Customer",
+      content: "Can you issue an invoice with VAT ID for our company?",
+      from: "+49 1512 3456789",
+      to: "BuyAlan",
+      hoursAgo: 3,
+      minutesAgo: 8,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m18",
+      role: "Agent",
+      content: "Yes. Please send your company name, address, and VAT ID.",
+      from: "BuyAlan",
+      to: "+49 1512 3456789",
+      hoursAgo: 3,
+      minutesAgo: 7,
+      isRead: true,
+    }),
+  ],
+  "6": [
+    createMessageMock({
+      messageId: "m21",
+      role: "Customer",
+      content: "Need to change delivery address for order #4902.",
+      from: "+33 6 12 34 56 78",
+      to: "BuyAlan",
+      daysAgo: 3,
+      hoursAgo: 2,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m22",
+      role: "Operator",
+      content: "Please send the new address. If the label already exists, we may need a reroute.",
+      from: "Emma from support",
+      to: "+33 6 12 34 56 78",
+      daysAgo: 3,
+      hoursAgo: 1,
+      isRead: true,
+    }),
+  ],
+  "8": [
+    createMessageMock({
+      messageId: "m25",
+      role: "Customer",
+      content: "Order #4921, can you confirm I selected linear switches?",
+      from: "@kamil_w",
+      to: "BuyAlan",
+      daysAgo: 4,
+      hoursAgo: 3,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m26",
+      role: "Agent",
+      content: "Checking now. You selected tactile. Want me to change it before fulfillment?",
+      from: "BuyAlan",
+      to: "@kamil_w",
+      daysAgo: 4,
+      hoursAgo: 2,
+      isRead: true,
+    }),
+  ],
+  "11": [
+    createMessageMock({
+      messageId: "m29",
+      role: "Customer",
+      content: "Tracking only shows label created. Any update?",
+      from: "@noah_sre",
+      to: "BuyAlan",
+      daysAgo: 5,
+      hoursAgo: 13,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m30",
+      role: "Operator",
+      content: "That usually means the carrier has not scanned it yet. I will check with the warehouse.",
+      from: "Sarah from ops",
+      to: "@noah_sre",
+      daysAgo: 5,
+      hoursAgo: 12,
+      isRead: true,
+    }),
+  ],
+  "12": [
+    createMessageMock({
+      messageId: "m33",
+      role: "Customer",
+      content: "Please cancel my order #4899.",
+      from: "+61 412 345 678",
+      to: "BuyAlan",
+      daysAgo: 5,
+      hoursAgo: 15,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m34",
+      role: "Agent",
+      content: "If it has not shipped yet, we can cancel it immediately.",
+      from: "BuyAlan",
+      to: "+61 412 345 678",
+      daysAgo: 5,
+      hoursAgo: 14,
+      isRead: true,
+    }),
+  ],
+  "16": [
+    createMessageMock({
+      messageId: "m37",
+      role: "Customer",
+      content: "My package arrived damaged. The box is torn.",
+      from: "+34 612 345 678",
+      to: "BuyAlan",
+      daysAgo: 7,
+      hoursAgo: 7,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m38",
+      role: "Agent",
+      content: "Please send photos of the box and the keyboard so we can file a claim.",
+      from: "BuyAlan",
+      to: "+34 612 345 678",
+      daysAgo: 7,
+      hoursAgo: 6,
+      isRead: true,
+    }),
+  ],
+  "17": [
+    createMessageMock({
+      messageId: "m41",
+      role: "Customer",
+      content: "Key A sometimes double registers. Any fix?",
+      from: "@tom_qc",
+      to: "BuyAlan",
+      daysAgo: 8,
+      hoursAgo: 2,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m42",
+      role: "Agent",
+      content: "If it is hot-swap, try reseating the switch and testing another cable.",
+      from: "BuyAlan",
+      to: "@tom_qc",
+      daysAgo: 8,
+      hoursAgo: 1,
+      isRead: true,
+    }),
+  ],
+  "23": [
+    createMessageMock({
+      messageId: "m45",
+      role: "Customer",
+      content: "Need help pairing via Bluetooth.",
+      from: "+52 55 1234 5678",
+      to: "BuyAlan",
+      daysAgo: 12,
+      hoursAgo: 4,
+      isRead: false,
+    }),
+    createMessageMock({
+      messageId: "m46",
+      role: "Agent",
+      content: "Hold Fn + 1 for 3 seconds until the LED blinks, then pair KB Pro in Bluetooth settings.",
+      from: "BuyAlan",
+      to: "+52 55 1234 5678",
+      daysAgo: 12,
+      hoursAgo: 3,
+      isRead: true,
+    }),
+  ],
+}
 
  export const chatInfo : ChatInfo[] = [
     {

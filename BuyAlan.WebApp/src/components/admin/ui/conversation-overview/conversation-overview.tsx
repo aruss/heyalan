@@ -8,7 +8,7 @@ import { ChatInfoPanel } from "./chat-info-panel"
 import { ChatPanel } from "./chat-panel"
 import { ConversationListPanel } from "./conversation-list-panel"
 import { useEffect, useMemo, useState } from "react"
-import { chatInfo, ChatInfo, conversations, messages } from "@/data/data"
+import { chatInfo, ChatInfo, conversationMessages, conversations } from "@/data/data"
 
 type MobileView = "list" | "chat" | "info"
 
@@ -19,7 +19,7 @@ export function ConversationOverview() {
 
   const { isMobile, isResolved } = useMobileState()
   const [activeConversationId, setActiveConversationId] = useState(() => {
-    return fallbackConversation?.id ?? ""
+    return fallbackConversation?.conversationId ?? ""
   })
   const [searchQuery, setSearchQuery] = useState("")
   const [agentActive, setAgentActive] = useState(true)
@@ -33,9 +33,9 @@ export function ConversationOverview() {
 
     return conversations.filter((conversation) => {
       const haystack = [
-        conversation.name,
+        conversation.participantExternalId,
         conversation.channel,
-        conversation.lastMsg,
+        conversation.lastMessagePreview ?? "",
       ]
         .join(" ")
         .toLowerCase()
@@ -49,11 +49,11 @@ export function ConversationOverview() {
     }
 
     const hasActiveConversation = filteredConversations.some((conversation) => {
-      return conversation.id === activeConversationId
+      return conversation.conversationId === activeConversationId
     })
 
     if (!hasActiveConversation && filteredConversations.length > 0) {
-      setActiveConversationId(filteredConversations[0].id)
+      setActiveConversationId(filteredConversations[0].conversationId)
     }
   }, [activeConversationId, filteredConversations, hasRequiredData])
 
@@ -70,20 +70,18 @@ export function ConversationOverview() {
   const activeConversation =
     hasRequiredData
       ? conversations.find((conversation) => {
-          return conversation.id === activeConversationId
+          return conversation.conversationId === activeConversationId
         }) ?? fallbackConversation
       : null
 
   const activeMessages = activeConversation
-    ? messages.filter((message) => {
-        return message.convoId === activeConversation.id
-      })
+    ? conversationMessages[activeConversation.conversationId] ?? []
     : []
 
   const activeChatInfo: ChatInfo | null =
     activeConversation !== null
       ? chatInfo.find((chatInfoItem) => {
-          return chatInfoItem.conversationId === activeConversation.id
+          return chatInfoItem.conversationId === activeConversation.conversationId
         }) ?? fallbackChatInfo
       : null
 
@@ -124,7 +122,7 @@ export function ConversationOverview() {
           >
             <ConversationListPanel
               conversations={filteredConversations}
-              activeConversationId={resolvedActiveConversation.id}
+              activeConversationId={resolvedActiveConversation.conversationId}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               onSelectConversation={onSelectConversation}
@@ -197,7 +195,7 @@ export function ConversationOverview() {
       <div className="h-full min-h-0 grid-cols-[20rem_minmax(24rem,1fr)_22rem] md:grid">
         <ConversationListPanel
           conversations={filteredConversations}
-          activeConversationId={resolvedActiveConversation.id}
+          activeConversationId={resolvedActiveConversation.conversationId}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           onSelectConversation={onSelectConversation}

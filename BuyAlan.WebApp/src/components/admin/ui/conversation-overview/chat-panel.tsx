@@ -5,14 +5,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/admin/dropdown-menu"
-import { ConversationChannel, ConversationItem, MessageItem } from "@/data/data"
+import type { ConversationListItem, ConversationMessageItem, MessageChannel } from "@/lib/api"
 import { Bot, ChevronLeft, ChevronRight, MessageSquare, MoreHorizontal, Phone, Send } from "lucide-react"
 import type { ElementType } from "react"
+import {
+  formatConversationDayLabel,
+  formatInboxTimestamp,
+} from "./conversation-overview-formatters"
 
 
 export interface ChatPanelProps {
-  conversation: ConversationItem
-  messages: MessageItem[]
+  conversation: ConversationListItem
+  messages: ConversationMessageItem[]
   agentActive: boolean
   isMobile: boolean
   onAgentToggle: () => void
@@ -20,7 +24,7 @@ export interface ChatPanelProps {
   onOpenInfo?: () => void
 }
 
-const channelIcons: Record<ConversationChannel, ElementType> = {
+const channelIcons: Record<MessageChannel, ElementType> = {
   WhatsApp: MessageSquare,
   Telegram: Send,
   SMS: Phone,
@@ -36,6 +40,9 @@ export function ChatPanel({
   onOpenInfo,
 }: ChatPanelProps) {
   const ChannelIcon = channelIcons[conversation.channel]
+  const conversationDayLabel = formatConversationDayLabel(
+    messages[0]?.occurredAt ?? conversation.lastMessageAt,
+  )
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 ">
@@ -57,7 +64,7 @@ export function ChatPanel({
             aria-hidden="true"
           />
           <span className="truncate text-sm font-semibold text-gray-900 dark:text-gray-50">
-            {conversation.name}
+            {conversation.participantExternalId}
           </span>
           <span className="hidden rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300 sm:inline-flex">
             {agentActive ? "AI Agent Active" : "Human Operator"}
@@ -101,40 +108,45 @@ export function ChatPanel({
         <div className="my-3 flex w-full items-center">
           <div className="grow border-t border-gray-200 dark:border-gray-800" />
           <span className="px-4 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            Today
+            {conversationDayLabel}
           </span>
           <div className="grow border-t border-gray-200 dark:border-gray-800" />
         </div>
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={message.sender === "user" ? "flex justify-end" : "flex justify-start"}
-          >
+        {messages.map((message) => {
+          const isCustomerMessage = message.role === "Customer"
+          const isAgentMessage = message.role === "Agent"
+
+          return (
             <div
-              className={
-                message.sender === "user"
-                  ? "flex max-w-[80%] flex-col items-end"
-                  : "flex max-w-[80%] flex-col items-start"
-              }
+              key={message.messageId}
+              className={isCustomerMessage ? "flex justify-end" : "flex justify-start"}
             >
-              <div className="mb-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-                <span>{message.time}</span>
-                {message.sender === "agent" ? (
-                  <Bot className="size-3" aria-hidden="true" />
-                ) : null}
-              </div>
               <div
                 className={
-                  message.sender === "user"
-                    ? "rounded-xl rounded-tr-none bg-gray-900 p-3 text-sm text-gray-50 dark:bg-gray-100 dark:text-gray-900"
-                    : "rounded-xl rounded-tl-none border border-gray-200 bg-gray-100 p-3 text-sm text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50"
+                  isCustomerMessage
+                    ? "flex max-w-[80%] flex-col items-end"
+                    : "flex max-w-[80%] flex-col items-start"
                 }
               >
-                {message.text}
+                <div className="mb-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                  <span>{formatInboxTimestamp(message.occurredAt)}</span>
+                  {isAgentMessage ? (
+                    <Bot className="size-3" aria-hidden="true" />
+                  ) : null}
+                </div>
+                <div
+                  className={
+                    isCustomerMessage
+                      ? "rounded-xl rounded-tr-none bg-gray-900 p-3 text-sm text-gray-50 dark:bg-gray-100 dark:text-gray-900"
+                      : "rounded-xl rounded-tl-none border border-gray-200 bg-gray-100 p-3 text-sm text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50"
+                  }
+                >
+                  {message.content}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-t border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">

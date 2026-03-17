@@ -1,12 +1,13 @@
 // import { Input } from "@/components/admin/input"
-import { ConversationItem } from "@/data/data"
+import type { ConversationListItem } from "@/lib/api"
 import { cx } from "@/lib/utils"
+import { formatInboxTimestamp } from "./conversation-overview-formatters"
 
 export interface ConversationListPanelProps {
-  conversations: ConversationItem[]
+  conversations: ConversationListItem[]
   activeConversationId: string
-  // searchQuery: string
-  // onSearchQueryChange: (value: string) => void
+  // searchQuery?: string
+  // onSearchQueryChange?: (value: string) => void
   onSelectConversation: (conversationId: string) => void
 }
 
@@ -38,13 +39,13 @@ export function ConversationListPanel({
           </div>
         ) : (
           conversations.map((conversation) => {
-            const isActive = conversation.id === activeConversationId
+            const isActive = conversation.conversationId === activeConversationId
             return (
               <button
-                key={conversation.id}
+                key={conversation.conversationId}
                 type="button"
                 onClick={() => {
-                  onSelectConversation(conversation.id)
+                  onSelectConversation(conversation.conversationId)
                 }}
                 className={cx(
                   "w-full border-b border-gray-100 px-4 py-3 text-left transition hover:bg-gray-50 dark:border-gray-900 dark:hover:bg-gray-900",
@@ -53,18 +54,18 @@ export function ConversationListPanel({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-50">
-                    {conversation.name}
+                    {conversation.participantExternalId}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {conversation.time}
+                    {formatInboxTimestamp(conversation.lastMessageAt)}
                   </span>
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <span className="truncate text-xs text-gray-500 dark:text-gray-400">
-                    {conversation.lastMsg}
+                    {conversation.lastMessagePreview ?? ""}
                   </span>
                   <div className="flex items-center gap-2">
-                    {conversation.unread ? (
+                    {conversation.hasUnread ? (
                       <span className="size-1.5 rounded-full bg-gray-900 dark:bg-gray-100" />
                     ) : null}
                     <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
