@@ -1,19 +1,15 @@
 import "server-only";
 
+import fs from "node:fs";
 import {
-  flushLogger,
   logger,
   serializeError,
-  shutdownLoggerTransport,
 } from "@/lib/logger";
 
-const UNCAUGHT_EXCEPTION_EXIT_CODE = 1;
 const SERVER_ERROR_HOOKS_SENTINEL_KEY =
   "__buyalanWebAppServerErrorHooksRegistered__";
-const FATAL_EXIT_SENTINEL_KEY = "__buyalanWebAppFatalExitScheduled__";
 
 type GlobalSentinelState = typeof globalThis & {
-  [FATAL_EXIT_SENTINEL_KEY]?: boolean;
   [SERVER_ERROR_HOOKS_SENTINEL_KEY]?: boolean;
 };
 
@@ -24,45 +20,22 @@ const writeEmergencyErrorLog = (error: unknown): void => {
   const stackSuffix =
     serializedError.stack == null ? "" : `\n${serializedError.stack}`;
 
-  console.error(
-    `[webapp] Failed to persist fatal server error log. ${serializedError.errorMessage}${stackSuffix}`,
+  fs.writeSync(
+    process.stderr.fd,
+    `[webapp] Fatal server error. ${serializedError.errorMessage}${stackSuffix}\n`,
   );
 };
 
-const scheduleFatalExit = (): void => {
-  if (globalSentinelState[FATAL_EXIT_SENTINEL_KEY] === true) {
-    return;
-  }
-
-  globalSentinelState[FATAL_EXIT_SENTINEL_KEY] = true;
-
-  setImmediate(() => {
-    process.exit(UNCAUGHT_EXCEPTION_EXIT_CODE);
-  });
-};
-
-const handleUncaughtException = async (
+const handleUncaughtExceptionMonitor = (
   error: Error,
   origin: NodeJS.UncaughtExceptionOrigin,
-): Promise<void> => {
-  scheduleFatalExit();
-
-  try {
-    logger.critical(
-      {
-        eventName: "webapp_uncaught_exception",
-        origin,
-        ...serializeError(error),
-      },
-      "Unhandled server exception",
-    );
-
-    await flushLogger();
-    await shutdownLoggerTransport();
-  } catch (loggingError) {
-    writeEmergencyErrorLog(loggingError);
-    writeEmergencyErrorLog(error);
-  }
+): void => {
+  writeEmergencyErrorLog({
+    message: `Unhandled server exception (${origin})`,
+    name: "UncaughtExceptionMonitor",
+    stack: error.stack,
+  });
+  writeEmergencyErrorLog(error);
 };
 
 export const registerServerErrorHooks = (): void => {
@@ -83,9 +56,9 @@ export const registerServerErrorHooks = (): void => {
   });
 
   process.on(
-    "uncaughtException",
+    "uncaughtExceptionMonitor",
     (error: Error, origin: NodeJS.UncaughtExceptionOrigin) => {
-      void handleUncaughtException(error, origin);
+      handleUncaughtExceptionMonitor(error, origin);
     },
   );
 };
