@@ -4,10 +4,8 @@ import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-grpc";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import {
-  getLoggerTransportReadyTimeoutMs,
   logger,
   loggerRuntimeConfig,
-  waitForLoggerTransportReady,
 } from "@/lib/logger";
 import { registerServerErrorHooks } from "@/lib/server-error-hooks";
 import { createWebAppStartupLogFields } from "@/lib/webapp-startup-log";
@@ -23,28 +21,7 @@ const sdk = new NodeSDK({
 });
 
 const emitStartupLog = async (): Promise<void> => {
-  const transportReadyState = await waitForLoggerTransportReady();
-
-  if (transportReadyState === "error") {
-    logger.warn(
-      {
-        eventName: "webapp_logger_transport_ready_failed",
-      },
-      "Logger transport failed before startup debug log was emitted.",
-    );
-  }
-
-  if (transportReadyState === "timeout") {
-    logger.warn(
-      {
-        eventName: "webapp_logger_transport_ready_timeout",
-        timeoutMs: getLoggerTransportReadyTimeoutMs(),
-      },
-      "Logger transport was not ready before the startup debug log timeout elapsed.",
-    );
-  }
-
-  if (!logger.isLevelEnabled("debug")) {
+  if (!logger.isLevelEnabled("Debug")) {
     return;
   }
 

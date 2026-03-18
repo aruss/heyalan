@@ -1,32 +1,22 @@
 import "server-only";
 
-import { once } from "node:events";
-import pino, {
-  type Logger,
-  type LoggerOptions,
-  type TransportTargetOptions,
-} from "pino";
-import type { Options as OpenTelemetryTransportOptions } from "pino-opentelemetry-transport";
-import { getTelemetryRuntimeConfig } from "@/lib/telemetry-config";
+import { logs, SeverityNumber } from "@opentelemetry/api-logs";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-grpc";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import {
+  BatchLogRecordProcessor,
+  LoggerProvider,
+} from "@opentelemetry/sdk-logs";
+import {
+  type DotNetLogLevel,
+  getTelemetryRuntimeConfig,
+} from "@/lib/telemetry-config";
 
 const LOGGER_FLUSH_TIMEOUT_MS = 1000;
-const LOGGER_TRANSPORT_READY_TIMEOUT_MS = 2_000;
-const REDACTED_LOG_VALUE = "[redacted]";
-const REDACT_PATHS = [
-  "authorization",
-  "cookie",
-  "headers.authorization",
-  "headers.cookie",
-  "password",
-  "set-cookie",
-  "token",
-] as const;
+const OTEL_LOGGER_GLOBAL_KEY = "__buyalanWebAppOtelLogger__";
 
-export type LoggerBindings = Record<
-  string,
-  boolean | number | string | null | undefined
->;
-
+export type LogAttributeValue = boolean | number | string | null | undefined;
+export type LoggerBindings = Record<string, LogAttributeValue>;
 export type SerializedError = {
   errorCode?: string;
   errorMessage: string;
@@ -35,86 +25,58 @@ export type SerializedError = {
   stack?: string;
 };
 
-const telemetryRuntimeConfig = getTelemetryRuntimeConfig();
+type LogFields = LoggerBindings;
+type LogLevelPriority = Record<DotNetLogLevel, number>;
+type LoggerMethodArguments =
+  | [message: string]
+  | [message: string, fields: LogFields]
+  | [fields: LogFields, message: string];
 
-const toLoggerOptions = (): LoggerOptions => {
-  return {
-    base: undefined,
-    level: telemetryRuntimeConfig.resolvedLogLevel,
-    redact: {
-      censor: REDACTED_LOG_VALUE,
-      paths: [...REDACT_PATHS],
-    },
-    timestamp: pino.stdTimeFunctions.isoTime,
-  };
+export type WebAppLogger = {
+  critical: (...arguments_: LoggerMethodArguments) => void;
+  debug: (...arguments_: LoggerMethodArguments) => void;
+  error: (...arguments_: LoggerMethodArguments) => void;
+  information: (...arguments_: LoggerMethodArguments) => void;
+  isLevelEnabled: (level: DotNetLogLevel) => boolean;
+  log: (level: DotNetLogLevel, message: string, fields?: LogFields) => void;
+  trace: (...arguments_: LoggerMethodArguments) => void;
+  warning: (...arguments_: LoggerMethodArguments) => void;
 };
 
-const toTransportOptions = (): OpenTelemetryTransportOptions => {
-  const transportOptions: OpenTelemetryTransportOptions = {
-    loggerName: telemetryRuntimeConfig.serviceName,
-    resourceAttributes: telemetryRuntimeConfig.resourceAttributes,
-    serviceVersion: telemetryRuntimeConfig.serviceVersion,
-  };
-
-  return transportOptions;
+type OtelLoggerState = {
+  provider: LoggerProvider;
+  logger: ReturnType<typeof logs.getLogger>;
 };
 
-const transportTargets: TransportTargetOptions[] = [
-  {
-    options: {
-      destination: 1,
-    },
-    target: "pino/file",
-  },
-  {
-    options: toTransportOptions(),
-    target: "pino-opentelemetry-transport",
-  },
-];
-
-const transport = pino.transport({
-  targets: transportTargets,
-});
-
-export const logger = pino(toLoggerOptions(), transport);
-export const loggerRuntimeConfig = telemetryRuntimeConfig;
-
-const waitForTransportEvent = async (eventName: "error" | "ready"): Promise<void> => {
-  await once(transport, eventName);
+type GlobalLoggerState = typeof globalThis & {
+  [OTEL_LOGGER_GLOBAL_KEY]?: OtelLoggerState;
 };
 
-const transportReadyEventPromise: Promise<"error" | "ready"> = Promise.race([
-  waitForTransportEvent("ready").then(() => {
-    return "ready" as const;
-  }),
-  waitForTransportEvent("error").then(() => {
-    return "error" as const;
-  }),
-]);
-
-const transportReadyTimeoutPromise = new Promise<"timeout">((resolve) => {
-  setTimeout(() => {
-    resolve("timeout");
-  }, LOGGER_TRANSPORT_READY_TIMEOUT_MS);
-});
-
-const transportReadyPromise: Promise<"error" | "ready" | "timeout"> = Promise.race([
-  transportReadyEventPromise,
-  transportReadyTimeoutPromise,
-]);
-
-export type LoggerTransportReadyState = Awaited<typeof transportReadyPromise>;
-
-export const waitForLoggerTransportReady = async (): Promise<LoggerTransportReadyState> => {
-  return await transportReadyPromise;
+const globalLoggerState = globalThis as GlobalLoggerState;
+const loggerRuntimeConfig = getTelemetryRuntimeConfig();
+const LOG_LEVEL_PRIORITY: LogLevelPriority = {
+  Critical: 5,
+  Debug: 1,
+  Error: 4,
+  Information: 2,
+  None: 6,
+  Trace: 0,
+  Warning: 3,
+};
+const OTEL_SEVERITY_NUMBER: Record<Exclude<DotNetLogLevel, "None">, SeverityNumber> = {
+  Critical: SeverityNumber.FATAL,
+  Debug: SeverityNumber.DEBUG,
+  Error: SeverityNumber.ERROR,
+  Information: SeverityNumber.INFO,
+  Trace: SeverityNumber.TRACE,
+  Warning: SeverityNumber.WARN,
 };
 
-export const getLoggerTransportReadyTimeoutMs = (): number => {
-  return LOGGER_TRANSPORT_READY_TIMEOUT_MS;
-};
-
-export const createLogger = (bindings: LoggerBindings): Logger => {
-  return logger.child(bindings);
+const writeBootstrapError = (
+  message: string,
+  fields: Record<string, LogAttributeValue> = {},
+): void => {
+  console.error(`[webapp] ${message}`, fields);
 };
 
 export const serializeError = (error: unknown): SerializedError => {
@@ -163,58 +125,205 @@ export const serializeError = (error: unknown): SerializedError => {
   };
 };
 
-const toSettledPromise = (
-  executor: (resolve: () => void) => void,
-  timeoutMs: number,
-): Promise<void> => {
-  return new Promise((resolve) => {
-    let isSettled = false;
+const createLoggerProvider = (): LoggerProvider => {
+  if (!loggerRuntimeConfig.otlpLogsExportEnabled) {
+    writeBootstrapError(
+      "Unsupported OTLP logs protocol configured. Disabling OTEL log export.",
+      {
+        configuredProtocol:
+          loggerRuntimeConfig.otlpLogsExportWarning?.configuredProtocol,
+        eventName: "webapp_otel_logs_protocol_unsupported",
+      },
+    );
 
-    const resolveOnce = (): void => {
-      if (isSettled) {
-        return;
-      }
+    return new LoggerProvider({
+      resource: resourceFromAttributes(loggerRuntimeConfig.resourceAttributes),
+    });
+  }
 
-      isSettled = true;
-      clearTimeout(timeoutHandle);
-      resolve();
-    };
+  try {
+    const exporterOptions =
+      loggerRuntimeConfig.otlpEndpoint == null
+        ? undefined
+        : {
+            url: loggerRuntimeConfig.otlpEndpoint,
+          };
 
-    const timeoutHandle = setTimeout(resolveOnce, timeoutMs);
+    return new LoggerProvider({
+      processors: [
+        new BatchLogRecordProcessor(new OTLPLogExporter(exporterOptions)),
+      ],
+      resource: resourceFromAttributes(loggerRuntimeConfig.resourceAttributes),
+    });
+  } catch (error) {
+    writeBootstrapError("Failed to initialize OTEL log exporter.", {
+      ...serializeError(error),
+      eventName: "webapp_otel_logger_bootstrap_failed",
+    });
+  }
 
-    executor(resolveOnce);
+  return new LoggerProvider({
+    resource: resourceFromAttributes(loggerRuntimeConfig.resourceAttributes),
   });
 };
 
-export const flushLogger = async (): Promise<void> => {
-  await toSettledPromise((resolve) => {
-    logger.flush(() => {
-      resolve();
+const getOtelLoggerState = (): OtelLoggerState => {
+  const existingState = globalLoggerState[OTEL_LOGGER_GLOBAL_KEY];
+
+  if (existingState != null) {
+    return existingState;
+  }
+
+  const provider = createLoggerProvider();
+  logs.setGlobalLoggerProvider(provider);
+
+  const state: OtelLoggerState = {
+    provider,
+    logger: logs.getLogger(
+      loggerRuntimeConfig.serviceName,
+      loggerRuntimeConfig.serviceVersion,
+    ),
+  };
+
+  globalLoggerState[OTEL_LOGGER_GLOBAL_KEY] = state;
+
+  return state;
+};
+
+const otelLoggerState = getOtelLoggerState();
+
+const resolveLogArguments = (
+  arguments_: LoggerMethodArguments,
+): {
+  fields: LogFields;
+  message: string;
+} => {
+  const [firstArgument, secondArgument] = arguments_;
+
+  if (typeof firstArgument === "string") {
+    return {
+      fields:
+        secondArgument != null && typeof secondArgument !== "string"
+          ? secondArgument
+          : {},
+      message: firstArgument,
+    };
+  }
+
+  return {
+    fields: firstArgument,
+    message: typeof secondArgument === "string" ? secondArgument : "",
+  };
+};
+
+const mergeFields = (
+  bindings: LoggerBindings,
+  fields: LogFields,
+): Record<string, boolean | number | string> => {
+  const mergedFields = {
+    ...bindings,
+    ...fields,
+  };
+  const sanitizedFields: Record<string, boolean | number | string> = {};
+
+  for (const [key, value] of Object.entries(mergedFields)) {
+    if (value === undefined) {
+      continue;
+    }
+
+    sanitizedFields[key] = value === null ? "null" : value;
+  }
+
+  return sanitizedFields;
+};
+
+const isLevelEnabled = (configuredLevel: DotNetLogLevel, level: DotNetLogLevel): boolean => {
+  if (configuredLevel === "None" || level === "None") {
+    return false;
+  }
+
+  return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[configuredLevel];
+};
+
+const createScopedLogger = (bindings: LoggerBindings): WebAppLogger => {
+  const emitLog = (
+    level: Exclude<DotNetLogLevel, "None">,
+    message: string,
+    fields: LogFields = {},
+  ): void => {
+    if (!isLevelEnabled(loggerRuntimeConfig.resolvedLogLevel, level)) {
+      return;
+    }
+
+    otelLoggerState.logger.emit({
+      attributes: mergeFields(bindings, fields),
+      body: message,
+      severityNumber: OTEL_SEVERITY_NUMBER[level],
+      severityText: level,
     });
-  }, LOGGER_FLUSH_TIMEOUT_MS);
+  };
+
+  const createLevelMethod =
+    (level: Exclude<DotNetLogLevel, "None">) =>
+    (...arguments_: LoggerMethodArguments): void => {
+      const resolvedArguments = resolveLogArguments(arguments_);
+
+      emitLog(level, resolvedArguments.message, resolvedArguments.fields);
+    };
+
+  return {
+    critical: createLevelMethod("Critical"),
+    debug: createLevelMethod("Debug"),
+    error: createLevelMethod("Error"),
+    information: createLevelMethod("Information"),
+    isLevelEnabled: (level: DotNetLogLevel): boolean => {
+      return isLevelEnabled(loggerRuntimeConfig.resolvedLogLevel, level);
+    },
+    log: (level: DotNetLogLevel, message: string, fields: LogFields = {}): void => {
+      if (level === "None") {
+        return;
+      }
+
+      emitLog(level, message, fields);
+    },
+    trace: createLevelMethod("Trace"),
+    warning: createLevelMethod("Warning"),
+  };
+};
+
+export const logger = createScopedLogger({});
+export { loggerRuntimeConfig };
+
+export const createLogger = (bindings: LoggerBindings): WebAppLogger => {
+  return createScopedLogger(bindings);
+};
+
+const awaitWithTimeout = async (promise: Promise<void>, timeoutMs: number): Promise<void> => {
+  await Promise.race([
+    promise.catch(() => {
+      return undefined;
+    }),
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, timeoutMs);
+    }),
+  ]);
+};
+
+export const flushLogger = async (): Promise<void> => {
+  await awaitWithTimeout(otelLoggerState.provider.forceFlush(), LOGGER_FLUSH_TIMEOUT_MS);
 };
 
 export const shutdownLoggerTransport = async (): Promise<void> => {
-  await toSettledPromise((resolve) => {
-    transport.once("close", () => {
-      resolve();
-    });
-
-    transport.once("error", () => {
-      resolve();
-    });
-
-    transport.end();
-  }, LOGGER_FLUSH_TIMEOUT_MS);
+  await awaitWithTimeout(otelLoggerState.provider.shutdown(), LOGGER_FLUSH_TIMEOUT_MS);
 };
 
 if (loggerRuntimeConfig.invalidLogLevelWarning !== null) {
-  logger.warn(
+  logger.warning(
     {
       configuredLogLevel: loggerRuntimeConfig.invalidLogLevelWarning.configuredLogLevel,
       eventName: "webapp_invalid_log_level",
       resolvedLogLevel: loggerRuntimeConfig.invalidLogLevelWarning.resolvedLogLevel,
     },
-    "Invalid LOG_LEVEL configured. Falling back to info.",
+    "Invalid LOG_LEVEL configured. Falling back to Information.",
   );
 }

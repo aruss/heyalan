@@ -48,7 +48,7 @@ const handleUncaughtException = async (
   scheduleFatalExit();
 
   try {
-    logger.fatal(
+    logger.critical(
       {
         eventName: "webapp_uncaught_exception",
         origin,

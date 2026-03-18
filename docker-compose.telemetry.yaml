@@ -7,11 +7,10 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
-      - "grafana-data:/var/lib/grafana"
-      - type: bind
-        source: ./telemetry/grafana/provisioning
-        target: /etc/grafana/provisioning
-        read_only: true
+      -
+        type: bind
+        source: ./telemetry/grafana/provisioning/datasources/datasources.yaml
+        target: /etc/grafana/provisioning/datasources/datasources.yaml
     labels:
       - traefik.enable=true
       - traefik.http.services.grafana-sgk4kc08gg04wcs44004cw48.loadbalancer.server.port=3000
@@ -40,11 +39,10 @@ services:
     command:
       - "-config.file=/etc/loki/config.yaml"
     volumes:
-      - "loki-data:/loki"
-      - type: bind
+      -
+        type: bind
         source: ./telemetry/loki/config.yaml
         target: /etc/loki/config.yaml
-        read_only: true
     networks:
       - coolify
       - default
@@ -55,11 +53,10 @@ services:
     command:
       - "-config.file=/etc/tempo/config.yaml"
     volumes:
-      - "tempo-data:/var/tempo"
-      - type: bind
+      -
+        type: bind
         source: ./telemetry/tempo/config.yaml
         target: /etc/tempo/config.yaml
-        read_only: true
     networks:
       - coolify
       - default
@@ -76,10 +73,10 @@ services:
       - loki
       - tempo
     volumes:
-      - type: bind
+      -
+        type: bind
         source: ./telemetry/otel-collector/config.yaml
         target: /etc/otelcol-contrib/config.yaml
-        read_only: true
     networks:
       - coolify
       - default
@@ -88,8 +85,3 @@ services:
 networks:
   coolify:
     external: true
-
-volumes:
-  grafana-data:
-  loki-data:
-  tempo-data:

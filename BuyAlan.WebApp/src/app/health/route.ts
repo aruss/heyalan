@@ -27,7 +27,7 @@ const logProbeFailure = (result: WebApiHealthProbeResult): void => {
     return;
   }
 
-  healthLogger.warn(
+  healthLogger.warning(
     {
       eventName: "webapp_health_probe_failed",
       reason: result.reason,
@@ -39,7 +39,7 @@ const logProbeFailure = (result: WebApiHealthProbeResult): void => {
 
 export async function GET(request: Request): Promise<NextResponse> {
   if (shouldEmitHealthLogProbe(request.url)) {
-    healthLogger.info(
+    healthLogger.information(
       createHealthLogProbeFields(loggerRuntimeConfig, request.method),
       "WebApp OTEL log probe",
     );

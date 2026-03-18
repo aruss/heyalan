@@ -1,6 +1,5 @@
-import test from "node:test";
 import assert from "node:assert/strict";
-import pino from "pino";
+import test from "node:test";
 import {
   getTelemetryRuntimeConfig,
   resolveLogLevel,
@@ -38,45 +37,33 @@ const withEnvironment = async (
   }
 };
 
-test("resolveLogLevel maps .NET log levels to pino levels case-insensitively", () => {
-  assert.equal(resolveLogLevel("Trace").resolvedLogLevel, "trace");
-  assert.equal(resolveLogLevel("DEBUG").resolvedLogLevel, "debug");
-  assert.equal(resolveLogLevel("Information").resolvedLogLevel, "info");
-  assert.equal(resolveLogLevel("warning").resolvedLogLevel, "warn");
-  assert.equal(resolveLogLevel("Error").resolvedLogLevel, "error");
-  assert.equal(resolveLogLevel("Critical").resolvedLogLevel, "fatal");
-  assert.equal(resolveLogLevel("None").resolvedLogLevel, "silent");
+test("resolveLogLevel accepts only .NET log levels case-insensitively", () => {
+  assert.equal(resolveLogLevel("Trace").resolvedLogLevel, "Trace");
+  assert.equal(resolveLogLevel("DEBUG").resolvedLogLevel, "Debug");
+  assert.equal(resolveLogLevel("Information").resolvedLogLevel, "Information");
+  assert.equal(resolveLogLevel("warning").resolvedLogLevel, "Warning");
+  assert.equal(resolveLogLevel("Error").resolvedLogLevel, "Error");
+  assert.equal(resolveLogLevel("Critical").resolvedLogLevel, "Critical");
+  assert.equal(resolveLogLevel("None").resolvedLogLevel, "None");
 });
 
-test("resolveLogLevel preserves existing pino aliases and falls back safely", () => {
-  assert.equal(resolveLogLevel("warn").resolvedLogLevel, "warn");
-  assert.equal(resolveLogLevel("fatal").resolvedLogLevel, "fatal");
-  assert.equal(resolveLogLevel(undefined).resolvedLogLevel, "info");
-  assert.equal(resolveLogLevel("   ").resolvedLogLevel, "info");
+test("resolveLogLevel defaults and falls back safely for blank or invalid values", () => {
+  assert.equal(resolveLogLevel(undefined).resolvedLogLevel, "Information");
+  assert.equal(resolveLogLevel("   ").resolvedLogLevel, "Information");
 
-  const invalidLevelResult = resolveLogLevel("verbose");
+  const invalidLevelResult = resolveLogLevel("warn");
 
-  assert.equal(invalidLevelResult.resolvedLogLevel, "info");
+  assert.equal(invalidLevelResult.resolvedLogLevel, "Information");
   assert.equal(invalidLevelResult.isFallback, true);
 });
 
-test("resolved pino level controls whether debug startup logs are enabled", () => {
-  const debugLogger = pino({ level: resolveLogLevel("Debug").resolvedLogLevel });
-  const informationLogger = pino({
-    level: resolveLogLevel("Information").resolvedLogLevel,
-  });
-
-  assert.equal(debugLogger.isLevelEnabled("debug"), true);
-  assert.equal(informationLogger.isLevelEnabled("debug"), false);
-});
-
-test("getTelemetryRuntimeConfig aligns resource attributes and sanitizes OTLP endpoint", async () => {
+test("getTelemetryRuntimeConfig aligns resource attributes and normalizes OTLP endpoint", async () => {
   await withEnvironment(
     {
       APP_VERSION: "2.3.4",
       LOG_LEVEL: "Critical",
       NODE_ENV: "Development",
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://user:secret@example.com:4317/logs",
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://user:secret@example.com:4317/v1/logs",
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc",
       OTEL_SERVICE_NAME: "custom-webapp",
     },
@@ -86,13 +73,53 @@ test("getTelemetryRuntimeConfig aligns resource attributes and sanitizes OTLP en
       assert.equal(runtimeConfig.serviceName, "custom-webapp");
       assert.equal(runtimeConfig.serviceVersion, "2.3.4");
       assert.equal(runtimeConfig.deploymentEnvironment, "Development");
-      assert.equal(runtimeConfig.resolvedLogLevel, "fatal");
-      assert.equal(runtimeConfig.otlpEndpoint, "http://example.com:4317/logs");
+      assert.equal(runtimeConfig.resolvedLogLevel, "Critical");
+      assert.equal(runtimeConfig.otlpEndpoint, "http://example.com:4317/");
       assert.equal(runtimeConfig.otlpProtocol, "grpc");
+      assert.equal(runtimeConfig.otlpLogsExportEnabled, true);
+      assert.equal(runtimeConfig.otlpLogsExportWarning, null);
       assert.deepEqual(runtimeConfig.resourceAttributes, {
         "deployment.environment": "Development",
         "service.name": "custom-webapp",
         "service.version": "2.3.4",
+      });
+    },
+  );
+});
+
+test("logs-specific OTLP env vars override global OTLP env vars", async () => {
+  await withEnvironment(
+    {
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://global-collector:4317",
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "http://logs-collector:4317",
+      OTEL_EXPORTER_OTLP_LOGS_PROTOCOL: "grpc",
+      OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf",
+    },
+    () => {
+      const runtimeConfig = getTelemetryRuntimeConfig();
+
+      assert.equal(runtimeConfig.otlpEndpoint, "http://logs-collector:4317/");
+      assert.equal(runtimeConfig.otlpProtocol, "grpc");
+      assert.equal(runtimeConfig.otlpLogsExportEnabled, true);
+    },
+  );
+});
+
+test("non-grpc OTLP logs protocols disable log export with a warning", async () => {
+  await withEnvironment(
+    {
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "http://collector:4318/v1/logs",
+      OTEL_EXPORTER_OTLP_LOGS_PROTOCOL: "http/protobuf",
+    },
+    () => {
+      const runtimeConfig = getTelemetryRuntimeConfig();
+
+      assert.equal(runtimeConfig.otlpEndpoint, "http://collector:4318/");
+      assert.equal(runtimeConfig.otlpProtocol, "http/protobuf");
+      assert.equal(runtimeConfig.otlpLogsExportEnabled, false);
+      assert.deepEqual(runtimeConfig.otlpLogsExportWarning, {
+        configuredProtocol: "http/protobuf",
+        reason: "unsupported-protocol",
       });
     },
   );
@@ -131,7 +158,7 @@ test("createWebAppStartupLogFields exposes only the expected startup metadata", 
         deploymentEnvironment: "Development",
         eventName: "webapp_started",
         logLevelConfigured: "Debug",
-        logLevelResolved: "debug",
+        logLevelResolved: "Debug",
         nextRuntime: "nodejs",
         nodeEnv: "Development",
         otlpEndpoint: "http://collector:4317/",

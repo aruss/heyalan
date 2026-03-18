@@ -73,7 +73,7 @@ test("createHealthLogProbeFields emits safe OTEL verification metadata", async (
         deploymentEnvironment: "Development",
         eventName: "webapp_health_log_probe",
         logLevelConfigured: "Information",
-        logLevelResolved: "info",
+        logLevelResolved: "Information",
         method: "GET",
         otlpEndpoint: "http://collector:4317/",
         otlpProtocol: "grpc",

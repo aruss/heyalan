@@ -28,7 +28,7 @@ const warnInvalidFeatureFlagsSegment = (
   rawSegment: string,
   reason: string,
 ): void => {
-  featureFlagLogger.warn(
+  featureFlagLogger.warning(
     {
       eventName: "feature_flags_invalid_segment",
       featureFlagsEnvKey: FEATURE_FLAGS_ENV_KEY,
@@ -40,7 +40,7 @@ const warnInvalidFeatureFlagsSegment = (
 };
 
 const warnUnknownFeatureFlagKey = (rawKey: string): void => {
-  featureFlagLogger.warn(
+  featureFlagLogger.warning(
     {
       eventName: "feature_flags_unknown_key",
       featureFlagsEnvKey: FEATURE_FLAGS_ENV_KEY,
@@ -51,7 +51,7 @@ const warnUnknownFeatureFlagKey = (rawKey: string): void => {
 };
 
 const warnDuplicateFeatureFlagKey = (key: FeatureFlagKey): void => {
-  featureFlagLogger.warn(
+  featureFlagLogger.warning(
     {
       eventName: "feature_flags_duplicate_key",
       featureFlagsEnvKey: FEATURE_FLAGS_ENV_KEY,
