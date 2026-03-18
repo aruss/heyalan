@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import { createLogger } from "@/lib/logger";
+import { createLogger, loggerRuntimeConfig } from "@/lib/logger";
 import {
   probeWebApiHealth,
   type WebApiHealthProbeResult,
 } from "./webapi-health";
+import {
+  createHealthLogProbeFields,
+  shouldEmitHealthLogProbe,
+} from "./health-log-probe";
 
 const NO_STORE_CACHE_CONTROL = "no-store";
 const UNHEALTHY_STATUS_CODE = 503;
@@ -33,19 +37,14 @@ const logProbeFailure = (result: WebApiHealthProbeResult): void => {
   );
 };
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
+  if (shouldEmitHealthLogProbe(request.url)) {
+    healthLogger.info(
+      createHealthLogProbeFields(loggerRuntimeConfig, request.method),
+      "WebApp OTEL log probe",
+    );
+  }
 
-  /*
-  return NextResponse.json(
-    {
-      status: "healthy",
-    },
-    {
-      status: 200,
-      headers: toNoStoreHeaders(),
-    },
-  );
-  */
   const healthResult = await probeWebApiHealth(process.env.WEBAPI_ENDPOINT, fetch);
 
   if (healthResult.isHealthy) {

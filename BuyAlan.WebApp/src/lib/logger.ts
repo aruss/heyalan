@@ -10,6 +10,7 @@ import type { Options as OpenTelemetryTransportOptions } from "pino-opentelemetr
 import { getTelemetryRuntimeConfig } from "@/lib/telemetry-config";
 
 const LOGGER_FLUSH_TIMEOUT_MS = 1000;
+const LOGGER_TRANSPORT_READY_TIMEOUT_MS = 2_000;
 const REDACTED_LOG_VALUE = "[redacted]";
 const REDACT_PATHS = [
   "authorization",
@@ -82,17 +83,38 @@ const waitForTransportEvent = async (eventName: "error" | "ready"): Promise<void
   await once(transport, eventName);
 };
 
-const transportReadyPromise = Promise.race([
-  waitForTransportEvent("ready"),
-  waitForTransportEvent("error"),
+const transportReadyEventPromise: Promise<"error" | "ready"> = Promise.race([
+  waitForTransportEvent("ready").then(() => {
+    return "ready" as const;
+  }),
+  waitForTransportEvent("error").then(() => {
+    return "error" as const;
+  }),
 ]);
+
+const transportReadyTimeoutPromise = new Promise<"timeout">((resolve) => {
+  setTimeout(() => {
+    resolve("timeout");
+  }, LOGGER_TRANSPORT_READY_TIMEOUT_MS);
+});
+
+const transportReadyPromise: Promise<"error" | "ready" | "timeout"> = Promise.race([
+  transportReadyEventPromise,
+  transportReadyTimeoutPromise,
+]);
+
+export type LoggerTransportReadyState = Awaited<typeof transportReadyPromise>;
+
+export const waitForLoggerTransportReady = async (): Promise<LoggerTransportReadyState> => {
+  return await transportReadyPromise;
+};
+
+export const getLoggerTransportReadyTimeoutMs = (): number => {
+  return LOGGER_TRANSPORT_READY_TIMEOUT_MS;
+};
 
 export const createLogger = (bindings: LoggerBindings): Logger => {
   return logger.child(bindings);
-};
-
-export const waitForLoggerTransportReady = async (): Promise<void> => {
-  await transportReadyPromise;
 };
 
 export const serializeError = (error: unknown): SerializedError => {
