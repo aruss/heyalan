@@ -1,15 +1,14 @@
 import "server-only";
 
+import { once } from "node:events";
 import pino, {
   type Logger,
   type LoggerOptions,
   type TransportTargetOptions,
 } from "pino";
 import type { Options as OpenTelemetryTransportOptions } from "pino-opentelemetry-transport";
+import { getTelemetryRuntimeConfig } from "@/lib/telemetry-config";
 
-const DEFAULT_LOG_LEVEL = "info";
-const DEFAULT_SERVICE_NAME = "buyalan-webapp";
-const DEFAULT_SERVICE_VERSION = "0.1.0";
 const LOGGER_FLUSH_TIMEOUT_MS = 1000;
 const REDACTED_LOG_VALUE = "[redacted]";
 const REDACT_PATHS = [
@@ -35,40 +34,12 @@ export type SerializedError = {
   stack?: string;
 };
 
-const toServiceName = (): string => {
-  const serviceName = process.env.OTEL_SERVICE_NAME;
-
-  if (serviceName == null || serviceName.trim() === "") {
-    return DEFAULT_SERVICE_NAME;
-  }
-
-  return serviceName;
-};
-
-const toServiceVersion = (): string => {
-  const serviceVersion = process.env.APP_VERSION;
-
-  if (serviceVersion == null || serviceVersion.trim() === "") {
-    return DEFAULT_SERVICE_VERSION;
-  }
-
-  return serviceVersion;
-};
-
-const toDeploymentEnvironment = (): string | undefined => {
-  const deploymentEnvironment = process.env.NODE_ENV;
-
-  if (deploymentEnvironment == null || deploymentEnvironment.trim() === "") {
-    return undefined;
-  }
-
-  return deploymentEnvironment;
-};
+const telemetryRuntimeConfig = getTelemetryRuntimeConfig();
 
 const toLoggerOptions = (): LoggerOptions => {
   return {
     base: undefined,
-    level: process.env.LOG_LEVEL ?? DEFAULT_LOG_LEVEL,
+    level: telemetryRuntimeConfig.resolvedLogLevel,
     redact: {
       censor: REDACTED_LOG_VALUE,
       paths: [...REDACT_PATHS],
@@ -78,23 +49,10 @@ const toLoggerOptions = (): LoggerOptions => {
 };
 
 const toTransportOptions = (): OpenTelemetryTransportOptions => {
-  const serviceName = toServiceName();
-  const serviceVersion = toServiceVersion();
-  const deploymentEnvironment = toDeploymentEnvironment();
-  const resourceAttributes: Record<string, string> = {
-    "service.name": serviceName,
-  };
-
-  resourceAttributes["service.version"] = serviceVersion;
-
-  if (deploymentEnvironment !== undefined) {
-    resourceAttributes["deployment.environment"] = deploymentEnvironment;
-  }
-
   const transportOptions: OpenTelemetryTransportOptions = {
-    loggerName: serviceName,
-    resourceAttributes,
-    serviceVersion,
+    loggerName: telemetryRuntimeConfig.serviceName,
+    resourceAttributes: telemetryRuntimeConfig.resourceAttributes,
+    serviceVersion: telemetryRuntimeConfig.serviceVersion,
   };
 
   return transportOptions;
@@ -118,9 +76,23 @@ const transport = pino.transport({
 });
 
 export const logger = pino(toLoggerOptions(), transport);
+export const loggerRuntimeConfig = telemetryRuntimeConfig;
+
+const waitForTransportEvent = async (eventName: "error" | "ready"): Promise<void> => {
+  await once(transport, eventName);
+};
+
+const transportReadyPromise = Promise.race([
+  waitForTransportEvent("ready"),
+  waitForTransportEvent("error"),
+]);
 
 export const createLogger = (bindings: LoggerBindings): Logger => {
   return logger.child(bindings);
+};
+
+export const waitForLoggerTransportReady = async (): Promise<void> => {
+  await transportReadyPromise;
 };
 
 export const serializeError = (error: unknown): SerializedError => {
@@ -213,3 +185,14 @@ export const shutdownLoggerTransport = async (): Promise<void> => {
     transport.end();
   }, LOGGER_FLUSH_TIMEOUT_MS);
 };
+
+if (loggerRuntimeConfig.invalidLogLevelWarning !== null) {
+  logger.warn(
+    {
+      configuredLogLevel: loggerRuntimeConfig.invalidLogLevelWarning.configuredLogLevel,
+      eventName: "webapp_invalid_log_level",
+      resolvedLogLevel: loggerRuntimeConfig.invalidLogLevelWarning.resolvedLogLevel,
+    },
+    "Invalid LOG_LEVEL configured. Falling back to info.",
+  );
+}

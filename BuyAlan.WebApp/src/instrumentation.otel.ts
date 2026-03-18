@@ -1,31 +1,43 @@
-// instrumentation.otel.ts
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-grpc";
+import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import {
+  logger,
+  loggerRuntimeConfig,
+  waitForLoggerTransportReady,
+} from "@/lib/logger";
+import { registerServerErrorHooks } from "@/lib/server-error-hooks";
+import { createWebAppStartupLogFields } from "@/lib/webapp-startup-log";
 
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import { resourceFromAttributes } from '@opentelemetry/resources';
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
-import { logger } from '@/lib/logger';
-import { registerServerErrorHooks } from '@/lib/server-error-hooks';
+const WEBAPP_STARTED_MESSAGE = "WebApp is started with environment configuration";
 
 const sdk = new NodeSDK({
-    resource: resourceFromAttributes({
-        [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'buyalan-webapp',
-    }),
-    traceExporter: new OTLPTraceExporter(),
-    metricReader: new PeriodicExportingMetricReader({
-        exporter: new OTLPMetricExporter(),
-    }),
+  metricReader: new PeriodicExportingMetricReader({
+    exporter: new OTLPMetricExporter(),
+  }),
+  resource: resourceFromAttributes(loggerRuntimeConfig.resourceAttributes),
+  traceExporter: new OTLPTraceExporter(),
 });
+
+const emitStartupLog = async (): Promise<void> => {
+  await waitForLoggerTransportReady();
+
+  if (!logger.isLevelEnabled("debug")) {
+    return;
+  }
+
+  logger.debug(
+    createWebAppStartupLogFields(
+      loggerRuntimeConfig,
+      process.env.NEXT_RUNTIME,
+      process.env.NODE_ENV,
+    ),
+    WEBAPP_STARTED_MESSAGE,
+  );
+};
 
 registerServerErrorHooks();
 sdk.start();
-logger.debug(
-    {
-        eventName: "webapp_started",
-        nextRuntime: process.env.NEXT_RUNTIME,
-        serviceName: process.env.OTEL_SERVICE_NAME || 'buyalan-webapp',
-    },
-    "WebApp started",
-);
+void emitStartupLog();
