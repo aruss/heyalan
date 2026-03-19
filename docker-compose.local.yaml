@@ -135,6 +135,9 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: buyalan-webapi
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     ports:
       - "5000:5000"
     healthcheck:
@@ -166,6 +169,9 @@ services:
       NODE_ENV: production
       WEBAPI_ENDPOINT: http://buyalan-webapi:5000
       NODE_OPTIONS: --dns-result-order=ipv4first
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: buyalan-webapp
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     healthcheck:
       test: 'wget --no-verbose --tries=1 --spider http://localhost:3300/health || exit 1'
       interval: 5s

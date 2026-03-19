@@ -1,7 +1,3 @@
-using Microsoft.AspNetCore.CookiePolicy;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
-using BuyAlan;
 using BuyAlan.Identity;
 using BuyAlan.TelegramIntegration;
 using BuyAlan.WebApi.Agents;
@@ -13,6 +9,9 @@ using BuyAlan.WebApi.Onboarding;
 using BuyAlan.WebApi.SquareIntegration;
 using BuyAlan.WebApi.Subscriptions;
 using BuyAlan.WebApi.TwilioIntegration;
+using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -73,6 +72,14 @@ var app = builder.Build();
 CookieSecurePolicy cookieSecurePolicy = app.Environment.IsDevelopment()
     ? CookieSecurePolicy.SameAsRequest
     : CookieSecurePolicy.Always;
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    app.Logger.LogDebug(
+        "Web API started. Environment={EnvironmentName} ApplicationName={ApplicationName}",
+        app.Environment.EnvironmentName,
+        app.Environment.ApplicationName);
+});
 
 app.UseForwardedHeaders();
 

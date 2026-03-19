@@ -3,6 +3,9 @@ import { GET } from "../src/app/health/route";
 
 const originalFetch = globalThis.fetch;
 const originalWebApiEndpoint = process.env.WEBAPI_ENDPOINT;
+const createHealthRequest = (url = "http://localhost/health"): Request => {
+  return new Request(url, { method: "GET" });
+};
 
 test.afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -30,7 +33,33 @@ test("returns 200 when WEBAPI /health responds with 200", async () => {
 
   globalThis.fetch = fetchMock;
 
-  const response = await GET();
+  const response = await GET(createHealthRequest());
+  const payload = await response.json();
+
+  expect(response.status).toBe(200);
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
+  expect(payload).toEqual({ status: "healthy" });
+});
+
+test("ignores logProbe query parameters and returns healthy status", async () => {
+  process.env.WEBAPI_ENDPOINT = "http://webapi:5000";
+
+  const fetchMock: typeof fetch = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => {
+    const inputValue = input.toString();
+    expect(inputValue).toBe("http://webapi:5000/health");
+    expect(init?.method).toBe("GET");
+    expect(init?.cache).toBe("no-store");
+    return new Response(null, { status: 200 });
+  };
+
+  globalThis.fetch = fetchMock;
+
+  const response = await GET(
+    createHealthRequest("http://localhost/health?foo=bar&logProbe=1"),
+  );
   const payload = await response.json();
 
   expect(response.status).toBe(200);
@@ -47,7 +76,7 @@ test("returns unhealthy when WEBAPI /health returns non-200", async () => {
 
   globalThis.fetch = fetchMock;
 
-  const response = await GET();
+  const response = await GET(createHealthRequest());
   const payload = await response.json();
 
   expect(response.status).toBe(503);
@@ -69,7 +98,7 @@ test("returns unhealthy when WEBAPI /health probe times out", async () => {
 
   globalThis.fetch = fetchMock;
 
-  const response = await GET();
+  const response = await GET(createHealthRequest());
   const payload = await response.json();
 
   expect(response.status).toBe(503);
@@ -88,7 +117,7 @@ test("returns unhealthy when WEBAPI /health is unreachable", async () => {
 
   globalThis.fetch = fetchMock;
 
-  const response = await GET();
+  const response = await GET(createHealthRequest());
   const payload = await response.json();
 
   expect(response.status).toBe(503);
@@ -109,7 +138,7 @@ test("returns unhealthy when WEBAPI_ENDPOINT is missing", async () => {
 
   globalThis.fetch = fetchMock;
 
-  const response = await GET();
+  const response = await GET(createHealthRequest());
   const payload = await response.json();
 
   expect(fetchCallCount).toBe(0);

@@ -1,12 +1,16 @@
 services:
   grafana:
     image: "grafana/grafana:latest"
+    restart: unless-stopped
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
-      - "grafana-data:/var/lib/grafana"
+      -
+        type: bind
+        source: ./telemetry/grafana/provisioning/datasources/datasources.yaml
+        target: /etc/grafana/provisioning/datasources/datasources.yaml
     labels:
       - traefik.enable=true
       - traefik.http.services.grafana-sgk4kc08gg04wcs44004cw48.loadbalancer.server.port=3000
@@ -32,9 +36,13 @@ services:
 
   loki:
     image: "grafana/loki:latest"
-    command: "-config.file=/etc/loki/local-config.yaml"
+    command:
+      - "-config.file=/etc/loki/config.yaml"
     volumes:
-      - "loki-data:/loki"
+      -
+        type: bind
+        source: ./telemetry/loki/config.yaml
+        target: /etc/loki/config.yaml
     networks:
       - coolify
       - default
@@ -42,8 +50,13 @@ services:
 
   tempo:
     image: "grafana/tempo:latest"
+    command:
+      - "-config.file=/etc/tempo/config.yaml"
     volumes:
-      - "tempo-data:/var/tempo"
+      -
+        type: bind
+        source: ./telemetry/tempo/config.yaml
+        target: /etc/tempo/config.yaml
     networks:
       - coolify
       - default
@@ -51,12 +64,19 @@ services:
 
   otel-collector:
     image: "otel/opentelemetry-collector-contrib:latest"
+    command:
+      - "--config=/etc/otelcol-contrib/config.yaml"
     ports:
       - "4317:4317"
       - "4318:4318"
     depends_on:
       - loki
       - tempo
+    volumes:
+      -
+        type: bind
+        source: ./telemetry/otel-collector/config.yaml
+        target: /etc/otelcol-contrib/config.yaml
     networks:
       - coolify
       - default
@@ -65,8 +85,3 @@ services:
 networks:
   coolify:
     external: true
-
-volumes:
-  grafana-data:
-  loki-data:
-  tempo-data:
