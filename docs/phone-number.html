@@ -1,0 +1,118 @@
+import React, { useState } from 'react';
+
+export default function App() {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [agreedTransactional, setAgreedTransactional] = useState(false);
+  const [agreedPromotional, setAgreedPromotional] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log({
+      phoneNumber,
+      agreedTransactional,
+      agreedPromotional
+    });
+    // Form submission logic here
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0f141e] flex items-center justify-center p-4 font-sans">
+      
+      {/* Main Card Container */}
+      <div className="bg-[#1c222b] border border-gray-700/50 rounded-2xl p-6 sm:p-8 w-full max-w-[640px] shadow-2xl">
+        
+        {/* Header Section */}
+        <h1 className="text-white text-[24px] font-bold tracking-tight mb-2">
+          Get SMS Updates
+        </h1>
+        <p className="text-[#9ca3af] text-[15px] leading-relaxed mb-8">
+          Enter your mobile number to receive order updates and delivery notifications from Propane Partners.
+        </p>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          
+          {/* Input Group */}
+          <div className="mb-6">
+            <label 
+              htmlFor="phone" 
+              className="block text-[#8b92a0] text-[11px] font-bold tracking-wider uppercase mb-2"
+            >
+              Mobile Phone Number *
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="(555) 123-4567"
+              required
+              className="w-full bg-[#272d38] border border-gray-600/60 rounded-xl px-4 py-3.5 text-white placeholder:text-[#6b7280] focus:outline-none focus:border-[#426cf5] focus:ring-1 focus:ring-[#426cf5] transition-all"
+            />
+          </div>
+
+          {/* Checkboxes Group */}
+          <div className="space-y-5 mb-8">
+            
+            {/* Checkbox 1: Transactional */}
+            <label className="flex items-start gap-4 cursor-pointer group">
+              <div className="flex-shrink-0 pt-0.5">
+                <input
+                  type="checkbox"
+                  checked={agreedTransactional}
+                  onChange={(e) => setAgreedTransactional(e.target.checked)}
+                  className="appearance-none w-[20px] h-[20px] bg-white rounded-[4px] cursor-pointer relative
+                             checked:bg-[#426cf5] transition-colors duration-200
+                             after:content-[''] after:absolute after:hidden checked:after:block
+                             after:left-[7px] after:top-[3px] after:w-[6px] after:h-[11px]
+                             after:border-r-[2.5px] after:border-b-[2.5px] after:border-white after:rotate-45"
+                />
+              </div>
+              <span className="text-[14px] text-[#9ca3af] leading-[1.6]">
+                By checking, I agree to receive <strong className="text-white font-semibold">transactional/informational SMS</strong> messages from <strong className="text-white font-semibold">Propane Partners</strong> (Atlas Delivery Software, Inc.) regarding orders, delivery updates, account notifications, and customer care. Message frequency may vary. Message and data rates may apply. Reply <strong className="text-white font-semibold">HELP</strong> for help or <strong className="text-white font-semibold">STOP</strong> to opt out.
+              </span>
+            </label>
+
+            {/* Checkbox 2: Promotional */}
+            <label className="flex items-start gap-4 cursor-pointer group">
+              <div className="flex-shrink-0 pt-0.5">
+                <input
+                  type="checkbox"
+                  checked={agreedPromotional}
+                  onChange={(e) => setAgreedPromotional(e.target.checked)}
+                  className="appearance-none w-[20px] h-[20px] bg-white rounded-[4px] cursor-pointer relative
+                             checked:bg-[#426cf5] transition-colors duration-200
+                             after:content-[''] after:absolute after:hidden checked:after:block
+                             after:left-[7px] after:top-[3px] after:w-[6px] after:h-[11px]
+                             after:border-r-[2.5px] after:border-b-[2.5px] after:border-white after:rotate-45"
+                />
+              </div>
+              <span className="text-[14px] text-[#9ca3af] leading-[1.6]">
+                By checking, I agree to receive <strong className="text-white font-semibold">promotional/marketing SMS</strong> messages from <strong className="text-white font-semibold">Propane Partners</strong>, including special offers and discounts. Message frequency may vary. Message and data rates may apply. Reply <strong className="text-white font-semibold">HELP</strong> for help or <strong className="text-white font-semibold">STOP</strong> to opt out.
+              </span>
+            </label>
+
+          </div>
+
+          {/* Disclaimer text */}
+          <p className="text-[13px] text-[#717885] leading-relaxed mb-6">
+            By adding your number above, you accept our{' '}
+            <a href="#" className="text-[#3b82f6] hover:underline hover:text-[#60a5fa] transition-colors">Terms & Conditions</a>
+            {' '}&{' '}
+            <a href="#" className="text-[#3b82f6] hover:underline hover:text-[#60a5fa] transition-colors">Privacy Policy</a>
+            . Consent is not a condition of purchase. Message and data rates may apply. Message frequency varies.
+          </p>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full bg-[#426cf5] hover:bg-[#3256d4] text-white text-[16px] font-semibold py-[14px] px-6 rounded-xl transition-colors duration-200 active:scale-[0.99]"
+          >
+            Sign Up for Updates
+          </button>
+
+        </form>
+      </div>
+    </div>
+  );
+}
