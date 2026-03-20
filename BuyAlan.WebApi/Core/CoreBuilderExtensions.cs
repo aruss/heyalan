@@ -17,6 +17,7 @@ public static class CoreBuilderExtensions
     {
         AppOptions options = builder.Configuration.TryGetAppOptions();
         builder.Services.AddSingleton(options);
+        builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
         builder.Services.AddSingleton(TimeProvider.System);
 
