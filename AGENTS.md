@@ -52,6 +52,7 @@ All instructions in this document use RFC-style terms (MUST, MUST NOT, SHOULD, S
 - You MUST NOT start `docker-compose` files.
 - After changing the database schema, you MUST stop and hand off so the developer can create migrations and run `dotnet ef migrations add Init --context MainDataContext -o .\Migrations` from `BuyAlan.Initializer`. Resume only after explicit confirmation.
 - After chaning the WebAPI interface, which results in updated openapi spec, hand of to the developer so he can auto generate the webapp client `yarn openapi-ts`
+- In `BuyAlan.WebApp`, you MUST NOT write custom HTTP clients or manual fetch wrappers for WebAPI calls; you MUST use the generated client from `BuyAlan.WebApp/src/lib/api`, and if the generated client is outdated or missing the needed endpoint you MUST prompt the developer to run `yarn openapi-ts`.
 - You MUST NOT create git commits. You MAY use git to review history.
 - `swagger.json` files are auto-generated and derived from API annotations in the NestJS backend. You MUST NOT edit them manually.
 - You MUST NOT touch `.gen.ts` files as they are auto-generated.
