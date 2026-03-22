@@ -2,6 +2,7 @@ namespace BuyAlan.Tests;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +14,22 @@ using System.Text.Json;
 
 public class IdentityBuilderExtensionsTests
 {
+    [Theory]
+    [InlineData("", "/auth/external-callback?remoteError=external_provider_error")]
+    [InlineData("/tenant", "/tenant/auth/external-callback?remoteError=external_provider_error")]
+    public void BuildExternalProviderFailureCallbackUrl_ReturnsExpectedUrl(
+        string pathBase,
+        string expected)
+    {
+        PathString requestPathBase = String.IsNullOrWhiteSpace(pathBase)
+            ? PathString.Empty
+            : new PathString(pathBase);
+
+        string callbackUrl = IdentityBuilderExtensions.BuildExternalProviderFailureCallbackUrl(requestPathBase);
+
+        Assert.Equal(expected, callbackUrl);
+    }
+
     [Theory]
     [InlineData("https://buyalan.test", "/auth/providers/google/callback", "https://buyalan.test/api/auth/providers/google/callback")]
     [InlineData("https://buyalan.test/", "/auth/providers/google/callback", "https://buyalan.test/api/auth/providers/google/callback")]
@@ -137,6 +154,58 @@ public class IdentityBuilderExtensionsTests
 
         Assert.Equal("/auth/providers/square/callback", squareOptions.CallbackPath.Value);
         Assert.Contains("MERCHANT_PROFILE_READ", squareOptions.Scope);
+    }
+
+    [Theory]
+    [InlineData("square", "", "/auth/external-callback?remoteError=external_provider_error")]
+    [InlineData("square", "/tenant", "/tenant/auth/external-callback?remoteError=external_provider_error")]
+    [InlineData("google", "", "/auth/external-callback?remoteError=external_provider_error")]
+    public async Task AddIdentityServices_WhenRemoteFailureRaised_RedirectsToExternalCallbackAndHandlesResponse(
+        string schemeName,
+        string pathBase,
+        string expectedLocation)
+    {
+        IServiceProvider services = BuildServices(new Dictionary<string, string?>
+        {
+            ["PUBLIC_BASE_URL"] = "https://buyalan.test",
+            ["AUTH_GOOGLE_CLIENT_ID"] = "google-client-id",
+            ["AUTH_GOOGLE_CLIENT_SECRET"] = "google-client-secret",
+            ["AUTH_SQUARE_CLIENT_ID"] = "sandbox-client-id",
+            ["AUTH_SQUARE_CLIENT_SECRET"] = "square-client-secret"
+        });
+
+        DefaultHttpContext httpContext = new();
+        httpContext.Request.PathBase = String.IsNullOrWhiteSpace(pathBase)
+            ? PathString.Empty
+            : new PathString(pathBase);
+
+        IAuthenticationSchemeProvider schemeProvider = services.GetRequiredService<IAuthenticationSchemeProvider>();
+        AuthenticationScheme scheme = await schemeProvider.GetSchemeAsync(schemeName)
+            ?? throw new InvalidOperationException($"Authentication scheme '{schemeName}' was not registered.");
+
+        if (String.Equals(schemeName, "google", StringComparison.OrdinalIgnoreCase))
+        {
+            IOptionsMonitor<GoogleOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<GoogleOptions>>();
+            GoogleOptions googleOptions = optionsMonitor.Get("google");
+            RemoteFailureContext remoteFailureContext = new(httpContext, scheme, googleOptions, new Exception("expired callback"));
+
+            await googleOptions.Events.OnRemoteFailure(remoteFailureContext);
+
+            Assert.True(remoteFailureContext.Result?.Handled ?? false);
+        }
+        else
+        {
+            IOptionsMonitor<OAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<OAuthOptions>>();
+            OAuthOptions squareOptions = optionsMonitor.Get("square");
+            RemoteFailureContext remoteFailureContext = new(httpContext, scheme, squareOptions, new Exception("expired callback"));
+
+            await squareOptions.Events.OnRemoteFailure(remoteFailureContext);
+
+            Assert.True(remoteFailureContext.Result?.Handled ?? false);
+        }
+
+        Assert.Equal(StatusCodes.Status302Found, httpContext.Response.StatusCode);
+        Assert.Equal(expectedLocation, httpContext.Response.Headers.Location.ToString());
     }
 
     private static IServiceProvider BuildServices(IDictionary<string, string?> configurationValues)

@@ -101,15 +101,7 @@ public static class IdentityBuilderExtensions
                 };
                 options.Events.OnRemoteFailure = context =>
                 {
-                    string callbackPath = BuildAuthPath(
-                        context.Request.PathBase,
-                        "/auth/external-callback");
-
-                    string callbackUrl = QueryHelpers.AddQueryString(
-                        callbackPath,
-                        "remoteError",
-                        "external_provider_error");
-
+                    string callbackUrl = BuildExternalProviderFailureCallbackUrl(context.Request.PathBase);
                     context.Response.Redirect(callbackUrl);
                     context.HandleResponse();
                     return Task.CompletedTask;
@@ -207,6 +199,14 @@ public static class IdentityBuilderExtensions
                         context.Identity?.AddClaim(new Claim("email_verified", "true"));
                     }
                 };
+
+                options.Events.OnRemoteFailure = context =>
+                {
+                    string callbackUrl = BuildExternalProviderFailureCallbackUrl(context.Request.PathBase);
+                    context.Response.Redirect(callbackUrl);
+                    context.HandleResponse();
+                    return Task.CompletedTask;
+                };
             });
         }
 
@@ -264,6 +264,15 @@ public static class IdentityBuilderExtensions
         return pathBase.HasValue
             ? $"{pathBase}{authPath}"
             : authPath;
+    }
+
+    internal static string BuildExternalProviderFailureCallbackUrl(PathString pathBase)
+    {
+        string callbackPath = BuildAuthPath(pathBase, "/auth/external-callback");
+        return QueryHelpers.AddQueryString(
+            callbackPath,
+            "remoteError",
+            "external_provider_error");
     }
 
     internal static string BuildAbsoluteAuthCallbackUrl(Uri publicBaseUrl, string callbackPath)
