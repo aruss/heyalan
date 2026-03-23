@@ -53,7 +53,7 @@ export default function CookiesPage(): ReactElement {
                         <strong>Atlas Delivery Software, Inc. (BuyAlan)</strong><br />
                         584 Castro St. #2045 San Francisco, CA 94114<br />
                         Website: buyalan.com<br />
-                        Email: support@buyalan.com
+                        Email: info@buyalan.com
                     </p>
                 </div>
             </div>

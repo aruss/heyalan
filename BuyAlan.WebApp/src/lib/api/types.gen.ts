@@ -106,6 +106,16 @@ export type CreateNewsletterSubscriptionResult = {
     accepted: boolean;
 };
 
+export type CreateSmsConsentInput = {
+    phoneNumber: null | string;
+    transactionalConsent: null | boolean;
+    marketingConsent: null | boolean;
+};
+
+export type CreateSmsConsentResult = {
+    accepted: boolean;
+};
+
 export type CreateSubscriptionOnboardingAgentResult = {
     agentId: string;
     state: GetSubscriptionOnboardingStateResult;
@@ -2097,3 +2107,28 @@ export type PostNewsletterConfirmResponses = {
 };
 
 export type PostNewsletterConfirmResponse = PostNewsletterConfirmResponses[keyof PostNewsletterConfirmResponses];
+
+export type PostSmsSubscribeData = {
+    body: CreateSmsConsentInput;
+    path?: never;
+    query?: never;
+    url: '/sms/subscribe';
+};
+
+export type PostSmsSubscribeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type PostSmsSubscribeError = PostSmsSubscribeErrors[keyof PostSmsSubscribeErrors];
+
+export type PostSmsSubscribeResponses = {
+    /**
+     * OK
+     */
+    200: CreateSmsConsentResult;
+};
+
+export type PostSmsSubscribeResponse = PostSmsSubscribeResponses[keyof PostSmsSubscribeResponses];

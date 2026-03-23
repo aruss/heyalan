@@ -3,6 +3,7 @@ using System;
 using BuyAlan.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BuyAlan.Initializer.Migrations
 {
     [DbContext(typeof(MainDataContext))]
-    partial class MainDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260322140257_SmsConsent")]
+    partial class SmsConsent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -413,7 +416,7 @@ namespace BuyAlan.Initializer.Migrations
                     b.ToTable("srbd_credit_transactions");
                 });
 
-            modelBuilder.Entity("BuyAlan.Data.Entities.SmsConsent", b =>
+            modelBuilder.Entity("BuyAlan.Data.Entities.SmsConstent", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

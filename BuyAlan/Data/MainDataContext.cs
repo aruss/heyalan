@@ -50,6 +50,8 @@ public class MainDataContext :
 
     public DbSet<AgentSalesZipCode> AgentSalesZipCodes { get; set; } = null!;
 
+    public DbSet<SmsConsent> SmsConsents { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -446,6 +448,17 @@ public class MainDataContext :
                 .HasConstraintName("fk_agent_sales_zip_agent")
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<SmsConsent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PhoneNumber).IsRequired();
+            entity.Property(e => e.TransactionalConsent).IsRequired();
+            entity.Property(e => e.MarketingConsent).IsRequired();
+            entity.Property(e => e.ConsentSource).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
         });
 
         builder.Entity<Conversation>(entity =>

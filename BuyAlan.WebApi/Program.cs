@@ -6,6 +6,7 @@ using BuyAlan.WebApi.Identity;
 using BuyAlan.WebApi.Infrastructure;
 using BuyAlan.WebApi.Newsletter;
 using BuyAlan.WebApi.Onboarding;
+using BuyAlan.WebApi.SmsConsent;
 using BuyAlan.WebApi.SquareIntegration;
 using BuyAlan.WebApi.Subscriptions;
 using BuyAlan.WebApi.TwilioIntegration;
@@ -177,6 +178,7 @@ app.MapSquareConnectionEndpoints();
 app.MapSubscriptionMemberEndpoints();
 app.MapOnboardingEndpoints();
 app.MapNewsletterEndpoints();
+app.MapSmsConsentEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

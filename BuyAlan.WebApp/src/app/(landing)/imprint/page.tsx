@@ -36,7 +36,7 @@ export default function Imprint(): ReactElement {
                 Contact Information
             </h3>
             <p className="mb-6 text-lg font-light text-zinc-600 leading-relaxed">
-                <strong>Email:</strong> support@buyalan.com<br />
+                <strong>Email:</strong> info@buyalan.com<br />
                 <strong>Phone:</strong> [Insert Phone Number, if applicable]
             </p>
 
