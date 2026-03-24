@@ -324,35 +324,6 @@ public static class StringExtensions
 
         return url + query;
     }
-
-    [DebuggerStepThrough]
-    public static string AddQueryString(this string url, object args)
-    {
-        var dict = args
-            .ToDictionary()
-            .Where(c => c.Value != null);
-
-        if (dict != null && dict.Count() > 0)
-        {
-            string queryString = dict
-                .ToDictionary(pair => pair.Key, pair => pair.Value.ToString())
-                .ToNameValueCollection()
-                .ToQueryString();
-
-            return url.AddQueryString(queryString);
-        }
-
-        return url;
-    }
-
-    [DebuggerStepThrough]
-    public static string AddQueryString(
-        this string url, string name, string value)
-    {
-        return url.AddQueryString(name + "=" +
-            UrlEncoder.Default.Encode(value));
-    }
-
     [DebuggerStepThrough]
     public static string AddHashFragment(this string url, string query)
     {
@@ -364,27 +335,7 @@ public static class StringExtensions
         return url + query;
     }
 
-    [DebuggerStepThrough]
-    public static NameValueCollection
-        ReadQueryStringAsNameValueCollection(this string url)
-    {
-        if (url != null)
-        {
-            var idx = url.IndexOf('?');
-            if (idx >= 0)
-            {
-                url = url.Substring(idx + 1);
-            }
-            var query = QueryHelpers.ParseNullableQuery(url);
-            if (query != null)
-            {
-                return query.AsNameValueCollection();
-            }
-        }
-
-        return new NameValueCollection();
-    }
-
+    
     [DebuggerStepThrough]
     public static bool IsSecureUrl(this string url)
     {
@@ -413,60 +364,5 @@ public static class StringExtensions
         }
 
         return null;
-    }
-
-    [DebuggerStepThrough]
-    public static string ToMd5(this string input)
-    {
-        using (var md5Hash = MD5.Create())
-        {
-            // Convert the input string to a byte array and compute the hash.
-            byte[] data = md5Hash.ComputeHash(
-                Encoding.UTF8.GetBytes(input));
-
-            // Create a new Stringbuilder to collect the bytes
-            // and create a string.
-            var sBuilder = new StringBuilder();
-
-            // Loop through each byte of the hashed data
-            // and format each one as a hexadecimal string.
-            for (int i = 0; i < data.Length; i++)
-            {
-                sBuilder.Append(data[i].ToString("x2"));
-            }
-
-            // Return the hexadecimal string.
-            return sBuilder.ToString();
-        }
-    }
-
-    [DebuggerStepThrough]
-    public static string GetFullPath(this string path, string rootPath)
-    {
-        if (!Path.IsPathRooted(path))
-        {
-            return Path.GetFullPath(
-                Path.Combine(rootPath.RemoveTrailingSlash(),
-                path.RemoveLeadingSlash())
-            );
-        }
-
-        return Path.GetFullPath(path);
-    }
-
-    [DebuggerStepThrough]
-    public static string StripUglyBase64(this string s)
-    {
-        if (String.IsNullOrWhiteSpace(s))
-        {
-            return s;
-        }
-
-        foreach (var ugly in UglyBase64)
-        {
-            s = s.Replace(ugly, String.Empty);
-        }
-
-        return s;
     }
 }

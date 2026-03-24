@@ -23,10 +23,10 @@ public class SendGridTransactionalEmailServiceTests
             FromEmail = "notifications@buyalan.app",
             NewsletterListId = "newsletter-list-id",
             GenericTemplateId = "d-generic",
-            IdentityConfirmationLinkTemplateId = "d-confirm",
-            IdentityPasswordResetLinkTemplateId = "d-reset-link",
-            IdentityPasswordResetCodeTemplateId = "d-reset-code",
-            NewsletterConfirmationTemplateId = "d-newsletter"
+            //IdentityConfirmationLinkTemplateId = "d-confirm",
+            //IdentityPasswordResetLinkTemplateId = "d-reset-link",
+            //IdentityPasswordResetCodeTemplateId = "d-reset-code",
+            //NewsletterConfirmationTemplateId = "d-newsletter"
         };
 
         SendGridTransactionalEmailService client = new(httpClientFactory, options);
@@ -75,10 +75,10 @@ public class SendGridTransactionalEmailServiceTests
             FromEmail = "notifications@buyalan.app",
             NewsletterListId = "newsletter-list-id",
             GenericTemplateId = "d-generic",
-            IdentityConfirmationLinkTemplateId = "d-confirm",
-            IdentityPasswordResetLinkTemplateId = "d-reset-link",
-            IdentityPasswordResetCodeTemplateId = "d-reset-code",
-            NewsletterConfirmationTemplateId = "d-newsletter"
+            //IdentityConfirmationLinkTemplateId = "d-confirm",
+            //IdentityPasswordResetLinkTemplateId = "d-reset-link",
+            //IdentityPasswordResetCodeTemplateId = "d-reset-code",
+            //NewsletterConfirmationTemplateId = "d-newsletter"
         };
 
         SendGridTransactionalEmailService client = new(httpClientFactory, options);

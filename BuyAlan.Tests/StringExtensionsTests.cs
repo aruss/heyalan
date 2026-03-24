@@ -77,4 +77,7 @@ public class StringExtensionsTests
 
         Assert.Equal(expected, normalized);
     }
+
+    
+
 }
