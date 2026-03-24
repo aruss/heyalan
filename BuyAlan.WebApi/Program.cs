@@ -24,7 +24,7 @@ builder.AddDefaultServices();
 builder.AddAiServices();
 builder.AddDatabaseServices();
 builder.AddIdentityServices();
-builder.AddMinioServices();
+// builder.AddMinioServices();
 builder.AddWolverineServices();
 builder.AddCoreServices();
 
