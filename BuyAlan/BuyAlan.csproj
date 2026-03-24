@@ -15,32 +15,32 @@
     <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
 
     <!-- Database -->
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.3" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.5" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     
     <!-- Observability -->
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.3.0" />
-    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.4.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
 
     <!-- MQ -->
-    <PackageReference Include="WolverineFx" Version="5.17.0" />
-    <PackageReference Include="WolverineFx.EntityFrameworkCore" Version="5.17.0" />
-    <PackageReference Include="WolverineFx.Postgresql" Version="5.17.0" />
-    <PackageReference Include="WolverineFx.RabbitMQ" Version="5.17.0" />
+    <PackageReference Include="WolverineFx" Version="5.23.0" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" Version="5.23.0" />
+    <PackageReference Include="WolverineFx.Postgresql" Version="5.23.0" />
+    <PackageReference Include="WolverineFx.RabbitMQ" Version="5.23.0" />
     
     <!-- Integrations -->
     <PackageReference Include="Square" Version="43.0.0" />
-    <PackageReference Include="Telegram.Bot" Version="22.9.0" />
+    <PackageReference Include="Telegram.Bot" Version="22.9.5.3" />
     
     <!-- Identity -->
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.5" />
   </ItemGroup>
   
 </Project>
