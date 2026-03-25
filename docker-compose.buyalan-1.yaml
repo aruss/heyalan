@@ -35,7 +35,7 @@ services:
       - 'NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES=${NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES}'
       - 'SENDGRID_TEMPLATE_GENERIC=${SENDGRID_TEMPLATE_GENERIC}'
     healthcheck:
-      test: 'wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1'
+      test: 'wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/health || exit 1'
       interval: 5s
       timeout: 5s
       retries: 5
@@ -51,8 +51,9 @@ services:
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
       - KEEP_ALIVE_TIMEOUT=70000
+      - 'WEBAPI_ENDPOINT=http://webapi:5000'
     healthcheck:
-      test: 'wget --no-verbose --tries=1 --spider http://localhost:3300/health || exit 1'
+      test: 'wget --no-verbose --tries=1 --spider http://127.0.0.1:3300/health || exit 1'
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,6 +74,7 @@ services:
       - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.entrypoints=https
       - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.tls.certresolver=letsencrypt
       - traefik.docker.network=coolify
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.service=webapp-uo8c4k8c0gcgg80osoo00o0s
 networks:
   coolify:
     external: true
