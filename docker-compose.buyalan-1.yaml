@@ -31,13 +31,9 @@ services:
       - 'SQUARE_WEBHOOK_SIGNATURE_KEY=${SQUARE_WEBHOOK_SIGNATURE_KEY}'
       - 'SENDGRID_API_KEY=${SENDGRID_API_KEY}'
       - 'SENDGRID_EMAIL_FROM=${SENDGRID_EMAIL_FROM}'
-      - 'SENDGRID_TEMPLATE_GENERIC=${SENDGRID_TEMPLATE_GENERIC}'
-      - 'SENDGRID_TEMPLATE_IDENTITY_CONFIRMATION_LINK=${SENDGRID_TEMPLATE_IDENTITY_CONFIRMATION_LINK}'
-      - 'SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_LINK=${SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_LINK}'
-      - 'SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_CODE=${SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_CODE}'
-      - 'SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION=${SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION}'
       - 'SENDGRID_NEWSLETTER_LIST_ID=${SENDGRID_NEWSLETTER_LIST_ID}'
       - 'NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES=${NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES}'
+      - 'SENDGRID_TEMPLATE_GENERIC=${SENDGRID_TEMPLATE_GENERIC}'
     healthcheck:
       test: 'wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1'
       interval: 5s
@@ -69,13 +65,13 @@ services:
       - default
     labels:
       - traefik.enable=true
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.port=3300
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.scheme=http
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.passhostheader=true
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.responseforwarding.flushinterval=100ms
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.rule=Host(`buyalan.com`)
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.entrypoints=https
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.tls.certresolver=letsencrypt
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.server.port=3300
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.server.scheme=http
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.passhostheader=true
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.responseforwarding.flushinterval=100ms
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.rule=Host(`buyalan.com`)
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.entrypoints=https
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.tls.certresolver=letsencrypt
       - traefik.docker.network=coolify
 networks:
   coolify:

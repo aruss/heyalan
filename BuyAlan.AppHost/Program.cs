@@ -129,7 +129,7 @@ var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
     .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 */
 
-var runFronend = true;
+var runFronend = false;
 IResourceBuilder<ExecutableResource> webapp = null!;
 
 if (runFronend) {
