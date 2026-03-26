@@ -3,9 +3,11 @@ namespace Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -17,6 +19,8 @@ public record AppInfo(string AppName, string AppVersion);
 // To learn more about using this project, see https://aka.ms/dotnet/aspire/service-defaults
 public static class TBuilderExtensions
 {
+    private const string LoggingConsoleEnabledKey = "LOGGING_STDOUT";
+
     public static TBuilder AddDefaultServices<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.ConfigureOpenTelemetry();
@@ -36,16 +40,27 @@ public static class TBuilderExtensions
         // builder.Services.Configure<ServiceDiscoveryOptions>(options =>
         // {
         //     options.AllowedSchemes = ["https"];
-        // });
-
-       
+        // });       
 
         return builder;
     }
 
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
-        builder.Logging.ClearProviders(); 
+        builder.Logging.ClearProviders();
+
+        bool consoleLoggingEnabled = ResolveConsoleLoggingEnabled(builder);
+
+        if (consoleLoggingEnabled)
+        {
+            builder.Logging.AddSimpleConsole(options =>
+            {
+                options.SingleLine = true;
+                options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffzzz ";
+                options.IncludeScopes = true;
+                options.ColorBehavior = LoggerColorBehavior.Disabled;
+            });
+        }
 
         builder.Logging.AddOpenTelemetry(logging =>
         {
@@ -72,6 +87,18 @@ public static class TBuilderExtensions
         builder.AddOpenTelemetryExporters();
 
         return builder;
+    }
+
+    private static bool ResolveConsoleLoggingEnabled<TBuilder>(TBuilder builder) where TBuilder : IHostApplicationBuilder
+    {
+        bool? configuredValue = builder.Configuration.GetValue<bool?>(LoggingConsoleEnabledKey);
+
+        if (configuredValue.HasValue)
+        {
+            return configuredValue.Value;
+        }
+
+        return builder.Environment.IsDevelopment();
     }
 
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder

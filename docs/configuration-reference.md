@@ -18,6 +18,7 @@ This model provides:
 The exact active set varies by service, but common cross-service keys include:
 
 - `PUBLIC_BASE_URL`
+- `LOGGING_STDOUT`
 - channel/integration keys (Telegram, Square, auth providers)
 - connection strings injected by host orchestration
 
@@ -38,6 +39,17 @@ Configuration can come from:
 - environment variables
 
 Environment variables override file values.
+
+## Logging
+
+`BuyAlan.WebApi` supports optional human-readable stdout logging through `LOGGING_STDOUT`.
+
+- `LOGGING_STDOUT=true` enables the built-in simple console logger.
+- `LOGGING_STDOUT=false` disables the readable stdout console logger.
+- When unset in development, readable stdout logging defaults to enabled.
+- When unset outside development, readable stdout logging defaults to disabled.
+
+This toggle only controls readable stdout logging. OpenTelemetry/OTLP logging remains controlled by existing OTEL configuration such as `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
 ## Operational Guidance
 
