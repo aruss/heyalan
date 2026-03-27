@@ -11,10 +11,6 @@ public record AppOptions
 
     public string? AuthGoogleClientSecret { get; init; }
 
-    public string? AuthSquareClientId { get; init; }
-
-    public string? AuthSquareClientSecret { get; init; }
-
     public string? SquareClientId { get; init; }
 
     public string? SquareClientSecret { get; init; }
@@ -41,8 +37,6 @@ public static class AppOptionsConfigurationExtensions
             PublicBaseUrl = endpoint,
             AuthGoogleClientId = configuration["AUTH_GOOGLE_CLIENT_ID"].TrimToNull(),
             AuthGoogleClientSecret = configuration["AUTH_GOOGLE_CLIENT_SECRET"].TrimToNull(),
-            AuthSquareClientId = configuration["AUTH_SQUARE_CLIENT_ID"].TrimToNull(),
-            AuthSquareClientSecret = configuration["AUTH_SQUARE_CLIENT_SECRET"].TrimToNull(),
             SquareClientId = configuration["SQUARE_CLIENT_ID"].TrimToNull(),
             SquareClientSecret = configuration["SQUARE_CLIENT_SECRET"].TrimToNull(),
             SquareWebhookSignatureKey = configuration["SQUARE_WEBHOOK_SIGNATURE_KEY"].TrimToNull()
@@ -52,11 +46,6 @@ public static class AppOptionsConfigurationExtensions
             options.AuthGoogleClientId,
             options.AuthGoogleClientSecret,
             "AUTH_GOOGLE_CLIENT_ID and AUTH_GOOGLE_CLIENT_SECRET must both be set or both be missing");
-
-        ValidatePair(
-            options.AuthSquareClientId,
-            options.AuthSquareClientSecret,
-            "AUTH_SQUARE_CLIENT_ID and AUTH_SQUARE_CLIENT_SECRET must both be set or both be missing");
 
         ValidatePair(
             options.SquareClientId,

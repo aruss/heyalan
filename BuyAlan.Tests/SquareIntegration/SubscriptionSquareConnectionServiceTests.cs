@@ -60,6 +60,26 @@ public class SubscriptionSquareConnectionServiceTests
     }
 
     [Fact]
+    public async Task StartConnectAsync_WhenReturnUrlExternal_ReturnsReturnUrlRequired()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
+
+        SquareService service = CreateService(
+            dbContext,
+            new RecordingOAuthStateProtector(),
+            new RoutingHandler(_ => JsonResponse("{}")));
+
+        StartSquareConnectResult result = await service.StartConnectAsync(
+            new StartSquareConnectInput(subscriptionId, userId, "https://evil.test/onboarding"));
+
+        StartSquareConnectResult.Failure failure = Assert.IsType<StartSquareConnectResult.Failure>(result);
+        Assert.Equal("return_url_required", failure.ErrorCode);
+    }
+
+    [Fact]
     public async Task CompleteConnectAsync_WhenSuccessful_StoresConnectionAndReturnsSuccessRedirect()
     {
         MainDataContext dbContext = CreateContext();
@@ -113,6 +133,47 @@ public class SubscriptionSquareConnectionServiceTests
     }
 
     [Fact]
+    public async Task CompleteConnectAsync_WhenSuccessful_PreservesInternalReturnUrlAndExistingQuery()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        await SeedOwnerMembershipAsync(dbContext, subscriptionId, userId);
+
+        RecordingOAuthStateProtector stateProtector = new()
+        {
+            PayloadToUnprotect = new SquareConnectStatePayload(
+                subscriptionId,
+                userId,
+                "/onboarding?step=square_connect",
+                DateTime.UtcNow)
+        };
+
+        RoutingHandler handler = new(_ =>
+        {
+            string payload = """
+            {
+              "access_token":"access-token",
+              "refresh_token":"refresh-token",
+              "expires_at":"2099-01-01T00:00:00Z",
+              "merchant_id":"merchant-1",
+              "scope":"ITEMS_READ CUSTOMERS_READ CUSTOMERS_WRITE ORDERS_READ ORDERS_WRITE PAYMENTS_WRITE"
+            }
+            """;
+
+            return JsonResponse(payload);
+        });
+
+        SquareService service = CreateService(dbContext, stateProtector, handler);
+
+        CompleteSquareConnectResult result = await service.CompleteConnectAsync(
+            new CompleteSquareConnectInput("valid-state", "auth-code", null));
+
+        CompleteSquareConnectResult.Success success = Assert.IsType<CompleteSquareConnectResult.Success>(result);
+        Assert.Equal("/onboarding?step=square_connect&squareConnect=success", success.RedirectUrl);
+    }
+
+    [Fact]
     public async Task CompleteConnectAsync_WhenStateInvalid_ReturnsStateError()
     {
         MainDataContext dbContext = CreateContext();
@@ -123,6 +184,37 @@ public class SubscriptionSquareConnectionServiceTests
 
         CompleteSquareConnectResult.Failure failure = Assert.IsType<CompleteSquareConnectResult.Failure>(result);
         Assert.Equal("square_oauth_state_invalid", failure.ErrorCode);
+    }
+
+    [Fact]
+    public async Task CompleteConnectAsync_WhenUserIsNotOwner_ReturnsOwnerRequiredOnInternalReturnUrl()
+    {
+        MainDataContext dbContext = CreateContext();
+        Guid subscriptionId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+
+        RecordingOAuthStateProtector stateProtector = new()
+        {
+            PayloadToUnprotect = new SquareConnectStatePayload(
+                subscriptionId,
+                userId,
+                "/onboarding?step=square_connect",
+                DateTime.UtcNow)
+        };
+
+        SquareService service = CreateService(
+            dbContext,
+            stateProtector,
+            new RoutingHandler(_ => JsonResponse("{}")));
+
+        CompleteSquareConnectResult result = await service.CompleteConnectAsync(
+            new CompleteSquareConnectInput("valid-state", "auth-code", null));
+
+        CompleteSquareConnectResult.Failure failure = Assert.IsType<CompleteSquareConnectResult.Failure>(result);
+        Assert.Equal("subscription_owner_required", failure.ErrorCode);
+        Assert.Equal(
+            "/onboarding?step=square_connect&squareConnectError=subscription_owner_required",
+            failure.RedirectUrl);
     }
 
     [Fact]

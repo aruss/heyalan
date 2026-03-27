@@ -66,6 +66,7 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq", userName: rabbitUser, password: r
 var initializer = builder.AddProject<Projects.BuyAlan_Initializer>("initializer")
     .WithReference(buyalanDb) // Injects the connection string
     .WithEnvironment("DOTNET_ENVIRONMENT", "Development")
+    .WithEnvironment("Logging__LogLevel__Default", builder.Configuration["LOG_LEVEL"])
     .WithEnvironment("PUBLIC_BASE_URL", publicBaseUrl)
     .WithEnvironment("TELEGRAM_SECRET_TOKEN", telegramSecretToken)
     .WithEnvironment("RABBITMQ_MANAGEMENT_URL", rabbitmq.GetEndpoint("management"))
@@ -85,26 +86,20 @@ var initializer = builder.AddProject<Projects.BuyAlan_Initializer>("initializer"
 var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
     .WithExternalHttpEndpoints()
     .WithEnvironment("DOTNET_ENVIRONMENT", "Development")
+    .WithEnvironment("Logging__LogLevel__Default", builder.Configuration["LOG_LEVEL"])
     .WithEnvironment("SWAGGER_ENABLED", "true")
     .WithEnvironment("PUBLIC_BASE_URL", publicBaseUrl)
     .WithEnvironment("TELEGRAM_SECRET_TOKEN", telegramSecretToken)
     .WithEnvironment("AUTH_GOOGLE_CLIENT_ID", builder.Configuration["AUTH_GOOGLE_CLIENT_ID"])
     .WithEnvironment("AUTH_GOOGLE_CLIENT_SECRET", builder.Configuration["AUTH_GOOGLE_CLIENT_SECRET"])
-    .WithEnvironment("AUTH_SQUARE_CLIENT_ID", builder.Configuration["AUTH_SQUARE_CLIENT_ID"])
-    .WithEnvironment("AUTH_SQUARE_CLIENT_SECRET", builder.Configuration["AUTH_SQUARE_CLIENT_SECRET"])
     .WithEnvironment("SQUARE_CLIENT_ID", builder.Configuration["SQUARE_CLIENT_ID"])
     .WithEnvironment("SQUARE_CLIENT_SECRET", builder.Configuration["SQUARE_CLIENT_SECRET"])
     .WithEnvironment("SQUARE_WEBHOOK_SIGNATURE_KEY", builder.Configuration["SQUARE_WEBHOOK_SIGNATURE_KEY"]) 
     .WithEnvironment("SENDGRID_API_KEY", builder.Configuration["SENDGRID_API_KEY"])
     .WithEnvironment("SENDGRID_EMAIL_FROM", builder.Configuration["SENDGRID_EMAIL_FROM"])
     .WithEnvironment("SENDGRID_TEMPLATE_GENERIC", builder.Configuration["SENDGRID_TEMPLATE_GENERIC"])
-    .WithEnvironment("SENDGRID_TEMPLATE_IDENTITY_CONFIRMATION_LINK", builder.Configuration["SENDGRID_TEMPLATE_IDENTITY_CONFIRMATION_LINK"])
-    .WithEnvironment("SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_LINK", builder.Configuration["SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_LINK"])
-    .WithEnvironment("SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_CODE", builder.Configuration["SENDGRID_TEMPLATE_IDENTITY_PASSWORD_RESET_CODE"])
-    .WithEnvironment("SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION", builder.Configuration["SENDGRID_TEMPLATE_NEWSLETTER_CONFIRMATION"])
     .WithEnvironment("SENDGRID_NEWSLETTER_LIST_ID", builder.Configuration["SENDGRID_NEWSLETTER_LIST_ID"])
-    .WithEnvironment("NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES", builder.Configuration["NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES"])
-    .WithEnvironment("Logging__LogLevel__Default", builder.Configuration["LOG_LEVEL"])
+    .WithEnvironment("NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES", builder.Configuration["NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES"])    
     .WithReference(rabbitmq)
     .WithEnvironment("ConnectionStrings__rabbitmq", ReferenceExpression.Create($"{rabbitmq}/buyalan"))
     .WithReference(buyalanDb)
@@ -129,7 +124,7 @@ var webapi = builder.AddProject<Projects.BuyAlan_WebApi>("webapi")
     .WithEnvironment("NODE_OPTIONS", "--inspect=0.0.0.0:9229");
 */
 
-var runFronend = false;
+var runFronend = true;
 IResourceBuilder<ExecutableResource> webapp = null!;
 
 if (runFronend) {

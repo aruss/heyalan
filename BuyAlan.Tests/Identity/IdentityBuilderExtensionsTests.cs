@@ -58,6 +58,34 @@ public class IdentityBuilderExtensionsTests
         Assert.Contains("Callback path must start with '/'", exception.Message);
     }
 
+    [Theory]
+    [InlineData("https://buyalan.test", "/api/subscriptions/square/callback", "https://buyalan.test/api/subscriptions/square/callback")]
+    [InlineData("https://buyalan.test/", "/api/subscriptions/square/callback", "https://buyalan.test/api/subscriptions/square/callback")]
+    [InlineData("https://buyalan.test/tenant", "/api/subscriptions/square/callback", "https://buyalan.test/tenant/api/subscriptions/square/callback")]
+    [InlineData("https://buyalan.test/tenant/", "/api/subscriptions/square/callback", "https://buyalan.test/tenant/api/subscriptions/square/callback")]
+    public void BuildAbsolutePublicPathUrl_ReturnsExpectedUrl(
+        string publicBaseUrl,
+        string path,
+        string expected)
+    {
+        Uri baseUri = new(publicBaseUrl);
+
+        string callbackUrl = IdentityBuilderExtensions.BuildAbsolutePublicPathUrl(baseUri, path);
+
+        Assert.Equal(expected, callbackUrl);
+    }
+
+    [Fact]
+    public void BuildAbsolutePublicPathUrl_WhenPathInvalid_ThrowsArgumentException()
+    {
+        Uri baseUri = new("https://buyalan.test");
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() =>
+            IdentityBuilderExtensions.BuildAbsolutePublicPathUrl(baseUri, "api/subscriptions/square/callback"));
+
+        Assert.Contains("Path must start with '/'", exception.Message);
+    }
+
     [Fact]
     public void ReplaceQueryParameter_ReplacesExistingValue()
     {
@@ -137,8 +165,8 @@ public class IdentityBuilderExtensionsTests
         IServiceProvider services = BuildServices(new Dictionary<string, string?>
         {
             ["PUBLIC_BASE_URL"] = "https://buyalan.test",
-            ["AUTH_SQUARE_CLIENT_ID"] = "sandbox-client-id",
-            ["AUTH_SQUARE_CLIENT_SECRET"] = "square-client-secret"
+            ["SQUARE_CLIENT_ID"] = "sandbox-client-id",
+            ["SQUARE_CLIENT_SECRET"] = "square-client-secret"
         });
 
         IAuthenticationSchemeProvider schemeProvider = services.GetRequiredService<IAuthenticationSchemeProvider>();
@@ -149,11 +177,70 @@ public class IdentityBuilderExtensionsTests
 
         Assert.Equal("Square", squareScheme.DisplayName);
 
-        IOptionsMonitor<OAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<OAuthOptions>>();
-        OAuthOptions squareOptions = optionsMonitor.Get("square");
+        IOptionsMonitor<SquareOAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<SquareOAuthOptions>>();
+        SquareOAuthOptions squareOptions = optionsMonitor.Get("square");
 
         Assert.Equal("/auth/providers/square/callback", squareOptions.CallbackPath.Value);
         Assert.Contains("MERCHANT_PROFILE_READ", squareOptions.Scope);
+    }
+
+    [Fact]
+    public async Task AddIdentityServices_WhenSquareCredentialsPresent_ConfiguresBrokerRedirectUriForCodeExchange()
+    {
+        IServiceProvider services = BuildServices(new Dictionary<string, string?>
+        {
+            ["PUBLIC_BASE_URL"] = "https://buyalan.test",
+            ["SQUARE_CLIENT_ID"] = "sandbox-client-id",
+            ["SQUARE_CLIENT_SECRET"] = "square-client-secret"
+        });
+
+        IOptionsMonitor<SquareOAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<SquareOAuthOptions>>();
+        SquareOAuthOptions squareOptions = optionsMonitor.Get("square");
+        AuthenticationProperties properties = new();
+
+        OAuthCodeExchangeContext exchangeContext = SquareOAuthHandler.CreateBrokerCodeExchangeContext(
+            properties,
+            "authorization-code",
+            SquareOAuthHandler.GetRequiredBrokerRedirectUri(squareOptions));
+
+        Assert.Equal("https://buyalan.test/api/subscriptions/square/callback", squareOptions.BrokerRedirectUri);
+        Assert.Equal("https://buyalan.test/api/subscriptions/square/callback", exchangeContext.RedirectUri);
+        Assert.Equal("authorization-code", exchangeContext.Code);
+        Assert.Same(properties, exchangeContext.Properties);
+    }
+
+    [Fact]
+    public void AddIdentityServices_WhenSquareRedirectConfigured_UsesBrokerCallbackRedirectUri()
+    {
+        IServiceProvider services = BuildServices(new Dictionary<string, string?>
+        {
+            ["PUBLIC_BASE_URL"] = "https://buyalan.test",
+            ["SQUARE_CLIENT_ID"] = "sandbox-client-id",
+            ["SQUARE_CLIENT_SECRET"] = "square-client-secret"
+        });
+
+        IOptionsMonitor<SquareOAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<SquareOAuthOptions>>();
+        SquareOAuthOptions squareOptions = optionsMonitor.Get("square");
+
+        Assert.Equal("https://buyalan.test/api/subscriptions/square/callback", squareOptions.BrokerRedirectUri);
+        Assert.False(squareOptions.IncludeSessionFalse);
+    }
+
+    [Fact]
+    public void AddIdentityServices_WhenSquareRedirectConfiguredForProduction_PreservesSessionFalse()
+    {
+        IServiceProvider services = BuildServices(new Dictionary<string, string?>
+        {
+            ["PUBLIC_BASE_URL"] = "https://buyalan.test",
+            ["SQUARE_CLIENT_ID"] = "production-client-id",
+            ["SQUARE_CLIENT_SECRET"] = "square-client-secret"
+        });
+
+        IOptionsMonitor<SquareOAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<SquareOAuthOptions>>();
+        SquareOAuthOptions squareOptions = optionsMonitor.Get("square");
+
+        Assert.Equal("https://buyalan.test/api/subscriptions/square/callback", squareOptions.BrokerRedirectUri);
+        Assert.True(squareOptions.IncludeSessionFalse);
     }
 
     [Theory]
@@ -170,8 +257,8 @@ public class IdentityBuilderExtensionsTests
             ["PUBLIC_BASE_URL"] = "https://buyalan.test",
             ["AUTH_GOOGLE_CLIENT_ID"] = "google-client-id",
             ["AUTH_GOOGLE_CLIENT_SECRET"] = "google-client-secret",
-            ["AUTH_SQUARE_CLIENT_ID"] = "sandbox-client-id",
-            ["AUTH_SQUARE_CLIENT_SECRET"] = "square-client-secret"
+            ["SQUARE_CLIENT_ID"] = "sandbox-client-id",
+            ["SQUARE_CLIENT_SECRET"] = "square-client-secret"
         });
 
         DefaultHttpContext httpContext = new();
@@ -195,8 +282,8 @@ public class IdentityBuilderExtensionsTests
         }
         else
         {
-            IOptionsMonitor<OAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<OAuthOptions>>();
-            OAuthOptions squareOptions = optionsMonitor.Get("square");
+            IOptionsMonitor<SquareOAuthOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<SquareOAuthOptions>>();
+            SquareOAuthOptions squareOptions = optionsMonitor.Get("square");
             RemoteFailureContext remoteFailureContext = new(httpContext, scheme, squareOptions, new Exception("expired callback"));
 
             await squareOptions.Events.OnRemoteFailure(remoteFailureContext);

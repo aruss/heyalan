@@ -12,6 +12,8 @@ using BuyAlan.Extensions;
 
 public static class SquareConnectionEndpoints
 {
+    private const string InternalSquareAuthCallbackPath = "/auth/providers/square/callback";
+
     public static IEndpointRouteBuilder MapSquareConnectionEndpoints(this IEndpointRouteBuilder routeBuilder)
     {
         RouteGroupBuilder subscriptionsGroup = routeBuilder
@@ -97,12 +99,20 @@ public static class SquareConnectionEndpoints
     }
 
     private static async Task<RedirectHttpResult> CompleteSquareConnectCallbackAsync(
+        HttpContext httpContext,
         [FromQuery] string? code,
         [FromQuery] string? state,
         [FromQuery(Name = "error")] string? oauthError,
+        IOAuthStateProtector stateProtector,
         ISquareService service,
         CancellationToken cancellationToken)
     {
+        if (ShouldForwardToInternalSquareAuthCallback(state, stateProtector))
+        {
+            string redirectUrl = BuildInternalSquareAuthCallbackUrl(httpContext);
+            return TypedResults.Redirect(redirectUrl);
+        }
+
         CompleteSquareConnectResult result = await service.CompleteConnectAsync(
             new CompleteSquareConnectInput(state, code, oauthError),
             cancellationToken);
@@ -400,10 +410,37 @@ public static class SquareConnectionEndpoints
 
         return "not_started";
     }
+
+    private static bool ShouldForwardToInternalSquareAuthCallback(
+        string? state,
+        IOAuthStateProtector stateProtector)
+    {
+        if (String.IsNullOrWhiteSpace(state))
+        {
+            return false;
+        }
+
+        return !stateProtector.TryUnprotect(state, out SquareConnectStatePayload? _);
+    }
+
+    private static string BuildInternalSquareAuthCallbackUrl(HttpContext httpContext)
+    {
+        PathString pathBase = httpContext.Request.PathBase;
+        string callbackPath = pathBase.HasValue
+            ? $"{pathBase}{InternalSquareAuthCallbackPath}"
+            : InternalSquareAuthCallbackPath;
+
+        string queryString = httpContext.Request.QueryString.Value ?? String.Empty;
+        return $"{callbackPath}{queryString}";
+    }
+
     private sealed record CatalogProductCountsResult(
         int CachedProductCount,
         int SellableProductCount,
         int DeletedProductCount);
 }
+
+
+
 
 

@@ -1,37 +1,34 @@
 # Square App Setup
 
-BuyAlan uses two separate Square app credential pairs because Square apps support a single redirect URL per app.
+BuyAlan uses one Square app and one shared credential pair for both external sign-in and subscription connection.
 
-## Why Two Square Apps
+## Why One Square App
 
 BuyAlan has two distinct OAuth flows:
 
 1. External sign-in flow (`/auth/*`)
 2. Subscription connection flow (onboarding/admin)
 
-To keep redirect URLs correct and isolated, each flow uses its own app credentials.
+Both flows now broker through the same public callback URL and route internally based on the OAuth `state` value. This removes the need for a second Square app and avoids proxy-sensitive callback reconstruction in production.
 
-## Credential Sets
-
-### External auth provider flow
-
-- `AUTH_SQUARE_CLIENT_ID`
-- `AUTH_SQUARE_CLIENT_SECRET`
-- Redirect URL:
-  - `<PUBLIC_BASE_URL>/api/auth/providers/square/callback`
-
-### Subscription connection flow
+## Credential Set
 
 - `SQUARE_CLIENT_ID`
 - `SQUARE_CLIENT_SECRET`
 - Redirect URL:
-  - `<PUBLIC_BASE_URL>/subscriptions/square/callback`
+  - `<PUBLIC_BASE_URL>/api/subscriptions/square/callback`
+
+## Broker Behavior
+
+- Square redirects to `<PUBLIC_BASE_URL>/api/subscriptions/square/callback`.
+- BuyAlan completes the subscription connect flow when `state` is a protected Square connect payload.
+- BuyAlan forwards other Square auth callbacks internally to `/auth/providers/square/callback`.
 
 ## Setup Checklist
 
-1. Create or configure two Square apps in the Square Developer Console.
-2. Assign the correct redirect URL to each app.
-3. Populate the matching environment variables.
+1. Create or configure one Square app in the Square Developer Console.
+2. Assign `<PUBLIC_BASE_URL>/api/subscriptions/square/callback` as the Square redirect URL.
+3. Populate `SQUARE_CLIENT_ID` and `SQUARE_CLIENT_SECRET`.
 4. Confirm `PUBLIC_BASE_URL` is the externally reachable base URL used for callbacks.
 
 Square Developer Console:

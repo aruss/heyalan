@@ -13,6 +13,7 @@ using Microsoft.Extensions.Primitives;
 using BuyAlan.Configuration;
 using BuyAlan.Data;
 using BuyAlan.Data.Entities;
+using BuyAlan.SquareIntegration;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
@@ -109,24 +110,26 @@ public static class IdentityBuilderExtensions
             });
         }
 
-        if (!String.IsNullOrWhiteSpace(appOptions.AuthSquareClientId) &&
-            !String.IsNullOrWhiteSpace(appOptions.AuthSquareClientSecret))
+        if (!String.IsNullOrWhiteSpace(appOptions.SquareClientId) &&
+            !String.IsNullOrWhiteSpace(appOptions.SquareClientSecret))
         {
-            string squareCallbackUrl = BuildAbsoluteAuthCallbackUrl(
+            string squareCallbackUrl = BuildAbsolutePublicPathUrl(
                 appOptions.PublicBaseUrl,
-                SquareProviderCallbackPath);
+                SquareIntegrationRules.ConnectCallbackPath);
 
-            authBuilder.AddOAuth("square", "Square", options =>
+            authBuilder.AddOAuth<SquareOAuthOptions, SquareOAuthHandler>("square", "Square", options =>
             {
-                bool isSandbox = appOptions.AuthSquareClientId.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase);
+                bool isSandbox = appOptions.SquareClientId.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase);
 
                 string squareBaseUrl = isSandbox
                     ? "https://connect.squareupsandbox.com"
                     : "https://connect.squareup.com";
 
-                options.ClientId = appOptions.AuthSquareClientId;
-                options.ClientSecret = appOptions.AuthSquareClientSecret;
+                options.ClientId = appOptions.SquareClientId;
+                options.ClientSecret = appOptions.SquareClientSecret;
                 options.CallbackPath = SquareProviderCallbackPath;
+                options.BrokerRedirectUri = squareCallbackUrl;
+                options.IncludeSessionFalse = !isSandbox;
                 options.SignInScheme = IdentityConstants.ExternalScheme;
 
                 options.AuthorizationEndpoint = $"{squareBaseUrl}/oauth2/authorize";
@@ -139,23 +142,6 @@ public static class IdentityBuilderExtensions
                 options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
                 options.ClaimActions.MapJsonKey(ClaimTypes.Email, "owner_email");
                 options.ClaimActions.MapJsonKey("name", "business_name");
-
-                options.Events.OnRedirectToAuthorizationEndpoint = context =>
-                {
-                    string rewrittenRedirectUri = ReplaceQueryParameter(
-                        context.RedirectUri,
-                        "redirect_uri",
-                        squareCallbackUrl);
-
-                    // Enforce explicit login for Production per Square OAuth guidelines
-                    string authorizationUrl = isSandbox
-                        ? rewrittenRedirectUri
-                        : Microsoft.AspNetCore.WebUtilities.QueryHelpers
-                            .AddQueryString(rewrittenRedirectUri, "session", "false");
-
-                    context.Response.Redirect(authorizationUrl);
-                    return Task.CompletedTask;
-                };
 
                 options.Events.OnCreatingTicket = async context =>
                 {
@@ -292,6 +278,32 @@ public static class IdentityBuilderExtensions
         PathString fullPath = basePath
             .Add(ExternalApiPathPrefix)
             .Add(callbackPath);
+
+        UriBuilder uriBuilder = new(publicBaseUrl)
+        {
+            Path = fullPath.Value,
+            Query = String.Empty,
+            Fragment = String.Empty
+        };
+
+        return uriBuilder.Uri.ToString();
+    }
+
+    internal static string BuildAbsolutePublicPathUrl(Uri publicBaseUrl, string path)
+    {
+        if (!path.StartsWith('/'))
+        {
+            throw new ArgumentException("Path must start with '/'.", nameof(path));
+        }
+
+        string normalizedBasePath = publicBaseUrl.AbsolutePath.TrimEnd('/');
+
+        PathString basePath = String.Equals(normalizedBasePath, "/", StringComparison.Ordinal) ||
+            String.IsNullOrWhiteSpace(normalizedBasePath)
+                ? PathString.Empty
+                : new PathString(normalizedBasePath);
+
+        PathString fullPath = basePath.Add(path);
 
         UriBuilder uriBuilder = new(publicBaseUrl)
         {
