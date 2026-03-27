@@ -1,0 +1,55 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  otlp/tempo:
+    endpoint: "tempo:4317"
+    tls:
+      insecure: true
+
+  otlphttp/loki:
+    endpoint: "http://loki:3100/otlp"
+    tls:
+      insecure: true
+
+  # Moved to 9464 to avoid conflict with internal telemetry on 8888
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  debug: {}
+
+processors:
+  batch:
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo]
+    
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/loki, debug]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

@@ -1,0 +1,59 @@
+server:
+  http_listen_port: 3200
+
+# Memberlist is the 'Ring' that coordinates all internal components
+memberlist:
+  abort_if_cluster_join_fails: false
+  bind_addr: ["0.0.0.0"]
+  join_members: ["127.0.0.1"] # Self-join for single-container mode
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+        grpc:
+
+ingester:
+  max_block_duration: 5m
+  max_block_bytes: 1000000
+  trace_idle_period: 10s
+  lifecycler:
+    ring:
+      kvstore:
+        store: memberlist
+      replication_factor: 1
+
+# This is critical for 2.10.0 to enable the search features
+overrides:
+  metrics_generator_processors: [service-graphs, span-metrics]
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /tmp/tempo/generator/wal
+  ring:
+    kvstore:
+      store: memberlist
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo/blocks
+    wal:
+      path: /tmp/tempo/wal
+
+compactor:
+  compaction:
+    compaction_window: 1h
+    max_block_bytes: 100000000
+    block_retention: 1h
+    compacted_block_retention: 10m
+
+querier:
+  search:
+    # Set to false for single-binary / single-container setup
+    use_external_endpoints: false
