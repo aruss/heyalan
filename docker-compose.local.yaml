@@ -90,6 +90,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-parent@buyalan.ai}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Passwort123!}
+      Logging__LogLevel__Default: ${LOG_LEVEL-Warning}
     depends_on:
       buyalan-postgres:
         condition: service_healthy
@@ -128,7 +129,6 @@ services:
     container_name: buyalan-webapi
     environment:
       ConnectionStrings__buyalandb: Host=buyalan-postgres;Port=5432;Database=buyalandb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
-      Logging__LogLevel__Default: Debug
       LITELLM_ENDPOINT: http://buyalan-litellm:4000
       LITELLM_API_KEY: ${LITELLM_MASTER_KEY}
       MINIO_ENDPOINT: http://buyalan-minio:9000
@@ -138,6 +138,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_SERVICE_NAME: buyalan-webapi
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      LOG_LEVEL: ${LOG_LEVEL-Warning}
     ports:
       - "5000:5000"
     healthcheck:
@@ -172,6 +173,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_SERVICE_NAME: buyalan-webapp
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      LOG_LEVEL: ${LOG_LEVEL-Warning}
     healthcheck:
       test: 'wget --no-verbose --tries=1 --spider http://localhost:3300/health || exit 1'
       interval: 5s

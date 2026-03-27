@@ -5,12 +5,16 @@ services:
     environment:
       - 'ConnectionStrings__buyalan=${DATABASE_URL}'
       - 'ConnectionStrings__rabbitmq=${RABBITMQ_URL}'
+      - Logging__LogLevel__Default=${LOG_LEVEL-Warning}
       - 'PUBLIC_BASE_URL=${PUBLIC_BASE_URL}'
       - 'TELEGRAM_SECRET_TOKEN=${TELEGRAM_SECRET_TOKEN}'
       - 'RABBITMQ_MANAGEMENT_URL=${RABBITMQ_MANAGEMENT_URL}'
       - 'RABBITMQ_USER=${RABBITMQ_USER}'
       - 'RABBITMQ_PASS=${RABBITMQ_PASS}'
       - 'RABBITMQ_VHOST=${RABBITMQ_VHOST}'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}'
+      - OTEL_SERVICE_NAME=initializer
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc      
     networks:
       - coolify
       - default
@@ -19,6 +23,7 @@ services:
     environment:
       - 'ConnectionStrings__buyalan=${DATABASE_URL}'
       - 'ConnectionStrings__rabbitmq=${RABBITMQ_URL}'
+      - Logging__LogLevel__Default=${LOG_LEVEL-Warning}
       - 'SWAGGER_ENABLED=${SWAGGER_ENABLED}'
       - 'PUBLIC_BASE_URL=${PUBLIC_BASE_URL}'
       - 'TELEGRAM_SECRET_TOKEN=${TELEGRAM_SECRET_TOKEN}'
@@ -34,8 +39,11 @@ services:
       - 'SENDGRID_NEWSLETTER_LIST_ID=${SENDGRID_NEWSLETTER_LIST_ID}'
       - 'NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES=${NEWSLETTER_CONFIRM_TOKEN_TTL_MINUTES}'
       - 'SENDGRID_TEMPLATE_GENERIC=${SENDGRID_TEMPLATE_GENERIC}'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}'
+      - OTEL_SERVICE_NAME=webapi
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     healthcheck:
-      test: 'wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1'
+      test: 'wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/health || exit 1'
       interval: 5s
       timeout: 5s
       retries: 5
@@ -49,10 +57,15 @@ services:
   webapp:
     image: 'europe-west10-docker.pkg.dev/econduct/dev-docker/buyalan-webapp:${IMAGE_TAG:-latest}'
     environment:
+      - LOG_LEVEL=${LOG_LEVEL-Warning}
       - NODE_OPTIONS=--dns-result-order=ipv4first
       - KEEP_ALIVE_TIMEOUT=70000
+      - 'WEBAPI_ENDPOINT=http://webapi:5000'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}'
+      - OTEL_SERVICE_NAME=webapp
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc      
     healthcheck:
-      test: 'wget --no-verbose --tries=1 --spider http://localhost:3300/health || exit 1'
+      test: 'wget --no-verbose --tries=1 --spider http://127.0.0.1:3300/health || exit 1'
       interval: 10s
       timeout: 5s
       retries: 5
@@ -65,14 +78,15 @@ services:
       - default
     labels:
       - traefik.enable=true
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.port=3300
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.server.scheme=http
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.passhostheader=true
-      - traefik.http.services.webapp-kokcgwwwgko88wk4w4ccw440.loadbalancer.responseforwarding.flushinterval=100ms
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.rule=Host(`buyalan.dev.econduct.de`)
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.entrypoints=https
-      - traefik.http.routers.webapp-kokcgwwwgko88wk4w4ccw440.tls.certresolver=letsencrypt
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.server.port=3300
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.server.scheme=http
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.passhostheader=true
+      - traefik.http.services.webapp-uo8c4k8c0gcgg80osoo00o0s.loadbalancer.responseforwarding.flushinterval=100ms
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.rule=Host(`buyalan.com`)
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.entrypoints=https
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.tls.certresolver=letsencrypt
       - traefik.docker.network=coolify
+      - traefik.http.routers.webapp-uo8c4k8c0gcgg80osoo00o0s.service=webapp-uo8c4k8c0gcgg80osoo00o0s
 networks:
   coolify:
     external: true
