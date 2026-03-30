@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using BuyAlan.Identity;
+using BuyAlan.WebApi.Identity;
 using System.Text.Json;
 
 public class IdentityBuilderExtensionsTests
@@ -244,6 +245,22 @@ public class IdentityBuilderExtensionsTests
     }
 
     [Theory]
+    [InlineData(null, "default")]
+    [InlineData("", "default")]
+    [InlineData("/admin", "admin")]
+    [InlineData("/onboarding?step=1", "onboarding")]
+    [InlineData("/invite/token-123", "invite")]
+    [InlineData("/orders/123", "other-local")]
+    public void DescribeReturnTarget_ReturnsSanitizedRouteCategory(
+        string? returnUrl,
+        string expected)
+    {
+        string category = IdentityEndpoints.DescribeReturnTarget(returnUrl ?? String.Empty);
+
+        Assert.Equal(expected, category);
+    }
+
+    [Theory]
     [InlineData("square", "", "/auth/external-callback?remoteError=external_provider_error")]
     [InlineData("square", "/tenant", "/tenant/auth/external-callback?remoteError=external_provider_error")]
     [InlineData("google", "", "/auth/external-callback?remoteError=external_provider_error")]
@@ -293,6 +310,32 @@ public class IdentityBuilderExtensionsTests
 
         Assert.Equal(StatusCodes.Status302Found, httpContext.Response.StatusCode);
         Assert.Equal(expectedLocation, httpContext.Response.Headers.Location.ToString());
+    }
+
+    [Fact]
+    public async Task AddIdentityServices_WhenRemoteFailureRaisedWithoutRequestServices_StillHandlesResponse()
+    {
+        IServiceProvider services = BuildServices(new Dictionary<string, string?>
+        {
+            ["PUBLIC_BASE_URL"] = "https://buyalan.test",
+            ["AUTH_GOOGLE_CLIENT_ID"] = "google-client-id",
+            ["AUTH_GOOGLE_CLIENT_SECRET"] = "google-client-secret"
+        });
+
+        DefaultHttpContext httpContext = new();
+        IAuthenticationSchemeProvider schemeProvider = services.GetRequiredService<IAuthenticationSchemeProvider>();
+        AuthenticationScheme scheme = await schemeProvider.GetSchemeAsync("google")
+            ?? throw new InvalidOperationException("Authentication scheme 'google' was not registered.");
+
+        IOptionsMonitor<GoogleOptions> optionsMonitor = services.GetRequiredService<IOptionsMonitor<GoogleOptions>>();
+        GoogleOptions googleOptions = optionsMonitor.Get("google");
+        RemoteFailureContext remoteFailureContext = new(httpContext, scheme, googleOptions, new Exception("expired callback"));
+
+        await googleOptions.Events.OnRemoteFailure(remoteFailureContext);
+
+        Assert.True(remoteFailureContext.Result?.Handled ?? false);
+        Assert.Equal(StatusCodes.Status302Found, httpContext.Response.StatusCode);
+        Assert.Equal("/auth/external-callback?remoteError=external_provider_error", httpContext.Response.Headers.Location.ToString());
     }
 
     private static IServiceProvider BuildServices(IDictionary<string, string?> configurationValues)

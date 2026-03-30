@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Primitives;
 using BuyAlan.Configuration;
 using BuyAlan.Data;
@@ -23,6 +24,7 @@ public static class IdentityBuilderExtensions
     private const string ExternalApiPathPrefix = "/api";
     private const string GoogleProviderCallbackPath = "/auth/providers/google/callback";
     private const string SquareProviderCallbackPath = "/auth/providers/square/callback";
+    private static readonly EventId ExternalAuthRemoteFailureEventId = new(4101, "ExternalAuthRemoteFailure");
 
     public static TBuilder AddIdentityServices<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -81,27 +83,12 @@ public static class IdentityBuilderExtensions
                         context.Identity?.AddClaim(new Claim("email_verified", isEmailVerified ? "true" : "false"));
                     }
 
-                    if (builder.Environment.IsDevelopment())
-                    {
-                        // TEMP-DIAG-REMOVE: Temporary diagnostics for Google email verification investigation.
-                        string rawGoogleProfile = context.User.GetRawText();
-                        string path = context.HttpContext.Request.Path;
-                        string traceId = context.HttpContext.TraceIdentifier;
-                        ILogger logger = context.HttpContext.RequestServices
-                            .GetRequiredService<ILoggerFactory>()
-                            .CreateLogger("GoogleAuthDiagnostics");
-
-                        logger.LogInformation(
-                            "Google raw profile received. TraceId: {TraceId}; Path: {Path}; Profile: {Profile}",
-                            traceId,
-                            path,
-                            rawGoogleProfile);
-                    }
-
                     return Task.CompletedTask;
                 };
                 options.Events.OnRemoteFailure = context =>
                 {
+                    ILogger logger = ResolveAuthLogger(context.HttpContext);
+                    LogExternalAuthRemoteFailure(logger, "google", context.HttpContext, context.Failure);
                     string callbackUrl = BuildExternalProviderFailureCallbackUrl(context.Request.PathBase);
                     context.Response.Redirect(callbackUrl);
                     context.HandleResponse();
@@ -186,8 +173,21 @@ public static class IdentityBuilderExtensions
                     }
                 };
 
+                options.Events.OnRedirectToAuthorizationEndpoint = context =>
+                {
+                    string authorizationUrl = ReplaceQueryParameter(
+                        context.RedirectUri,
+                        "redirect_uri",
+                        squareCallbackUrl);
+
+                    context.Response.Redirect(authorizationUrl);
+                    return Task.CompletedTask;
+                };
+
                 options.Events.OnRemoteFailure = context =>
                 {
+                    ILogger logger = ResolveAuthLogger(context.HttpContext);
+                    LogExternalAuthRemoteFailure(logger, "square", context.HttpContext, context.Failure);
                     string callbackUrl = BuildExternalProviderFailureCallbackUrl(context.Request.PathBase);
                     context.Response.Redirect(callbackUrl);
                     context.HandleResponse();
@@ -407,5 +407,45 @@ public static class IdentityBuilderExtensions
         }
 
         return false;
+    }
+
+    private static ILogger ResolveAuthLogger(HttpContext httpContext)
+    {
+        IServiceProvider? serviceProvider = httpContext.RequestServices;
+        if (serviceProvider is null)
+        {
+            return NullLogger.Instance;
+        }
+
+        ILoggerFactory? loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+        if (loggerFactory is null)
+        {
+            return NullLogger.Instance;
+        }
+
+        return loggerFactory.CreateLogger("ExternalAuthDiagnostics");
+    }
+
+    private static void LogExternalAuthRemoteFailure(
+        ILogger logger,
+        string provider,
+        HttpContext httpContext,
+        Exception? failure)
+    {
+        logger.LogWarning(
+            ExternalAuthRemoteFailureEventId,
+            failure,
+            "External auth remote failure. Provider={Provider} TraceId={TraceId} Path={Path} PathBase={PathBase} HasErrorQuery={HasErrorQuery} HasErrorDescriptionQuery={HasErrorDescriptionQuery} HasStateQuery={HasStateQuery} HasCodeQuery={HasCodeQuery} ForwardedProto={ForwardedProto} ForwardedHost={ForwardedHost} ForwardedPrefix={ForwardedPrefix}",
+            provider,
+            httpContext.TraceIdentifier,
+            httpContext.Request.Path.Value ?? String.Empty,
+            httpContext.Request.PathBase.Value ?? String.Empty,
+            httpContext.Request.Query.ContainsKey("error"),
+            httpContext.Request.Query.ContainsKey("error_description"),
+            httpContext.Request.Query.ContainsKey("state"),
+            httpContext.Request.Query.ContainsKey("code"),
+            httpContext.Request.Headers["X-Forwarded-Proto"].ToString(),
+            httpContext.Request.Headers["X-Forwarded-Host"].ToString(),
+            httpContext.Request.Headers["X-Forwarded-Prefix"].ToString());
     }
 }

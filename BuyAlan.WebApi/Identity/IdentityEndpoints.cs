@@ -23,6 +23,7 @@ public static class IdentityEndpoints
     private const string DefaultReturnUrl = "/admin";
     private const string OnboardingReturnUrl = "/onboarding";
     private const string InvitationRoutePrefix = "/invite";
+    private static readonly EventId ExternalLoginFailureEventId = new(4201, "ExternalLoginFailure");
 
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -106,7 +107,6 @@ public static class IdentityEndpoints
         string safeReturnUrl = NormalizeReturnUrl(returnUrl);
         string callbackPath = BuildAuthPath(context.Request.PathBase, "/auth/external-callback");
         string callbackUrl = QueryHelpers.AddQueryString(callbackPath, "returnUrl", safeReturnUrl);
-
         AuthenticationProperties properties = 
             signInManager.ConfigureExternalAuthenticationProperties(providerScheme, callbackUrl);
 
@@ -119,23 +119,37 @@ public static class IdentityEndpoints
         HttpContext httpContext,
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
-        MainDataContext dbContext)
+        MainDataContext dbContext,
+        ILoggerFactory loggerFactory)
     {
         string safeReturnUrl = NormalizeReturnUrl(returnUrl);
         bool isInvitationFlow = IsInvitationReturnUrl(safeReturnUrl);
+        ILogger logger = loggerFactory.CreateLogger("ExternalLoginDiagnostics");
 
         try
         {
             if (!String.IsNullOrWhiteSpace(remoteError))
             {
-                return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "external_provider_error"));
+                return RedirectWithExternalLoginFailure(
+                    logger,
+                    httpContext,
+                    null,
+                    safeReturnUrl,
+                    "external_provider_error",
+                    "Remote provider returned an error before completing the external login handshake.");
             }
 
             ExternalLoginInfo? externalLoginInfo = await signInManager.GetExternalLoginInfoAsync();
 
             if (externalLoginInfo is null)
             {
-                return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "external_login_info_missing"));
+                return RedirectWithExternalLoginFailure(
+                    logger,
+                    httpContext,
+                    null,
+                    safeReturnUrl,
+                    "external_login_info_missing",
+                    "External login info was not available in the callback. This usually means the external cookie or callback path did not round-trip correctly.");
             }
 
             ApplicationUser? existingUser = await userManager.FindByLoginAsync(
@@ -146,20 +160,34 @@ public static class IdentityEndpoints
             {
                 if (!await signInManager.CanSignInAsync(existingUser))
                 {
-                    return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "user_not_allowed"));
+                    return RedirectWithExternalLoginFailure(
+                        logger,
+                        httpContext,
+                        externalLoginInfo.LoginProvider,
+                        safeReturnUrl,
+                        "user_not_allowed",
+                        "Existing user matched external login but is not allowed to sign in.");
                 }
 
                 if (await userManager.IsLockedOutAsync(existingUser))
                 {
-                    return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "user_locked_out"));
+                    return RedirectWithExternalLoginFailure(
+                        logger,
+                        httpContext,
+                        externalLoginInfo.LoginProvider,
+                        safeReturnUrl,
+                        "user_locked_out",
+                        "Existing user matched external login but is locked out.");
                 }
 
                 bool existingUserOnboarded = await IsActiveSubscriptionOnboardedAsync(
                     existingUser.Id,
                     dbContext,
                     httpContext.RequestAborted);
+
                 await SignInWithOnboardingClaimAsync(signInManager, existingUser, existingUserOnboarded);
                 string existingUserRedirect = ResolvePostLoginRedirectTarget(safeReturnUrl, existingUserOnboarded);
+
                 return TypedResults.Redirect(existingUserRedirect);
             }
 
@@ -167,36 +195,24 @@ public static class IdentityEndpoints
 
             if (String.IsNullOrWhiteSpace(emailClaim))
             {
-                return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "email_claim_missing"));
-            }
-
-            IHostEnvironment hostEnvironment = httpContext.RequestServices.GetRequiredService<IHostEnvironment>();
-            if (hostEnvironment.IsDevelopment())
-            {
-                // TEMP-DIAG-REMOVE: Temporary diagnostics for Google email verification investigation.
-                string traceId = httpContext.TraceIdentifier;
-                string path = httpContext.Request.Path;
-
-                IEnumerable<string> claimPairs = externalLoginInfo.Principal.Claims
-                    .Select(claim => $"{claim.Type}={claim.Value}");
-
-                string allClaims = String.Join("; ", claimPairs);
-
-                ILogger logger = httpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("ExternalLoginDiagnostics");
-
-                logger.LogInformation(
-                    "External login claims before verification check. TraceId: {TraceId}; Path: {Path}; Provider: {Provider}; Claims: {Claims}",
-                    traceId,
-                    path,
+                return RedirectWithExternalLoginFailure(
+                    logger,
+                    httpContext,
                     externalLoginInfo.LoginProvider,
-                    allClaims);
+                    safeReturnUrl,
+                    "email_claim_missing",
+                    "External login callback did not include an email claim.");
             }
 
             if (!IsExternalEmailVerified(externalLoginInfo.Principal))
             {
-                return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "external_email_not_verified"));
+                return RedirectWithExternalLoginFailure(
+                    logger,
+                    httpContext,
+                    externalLoginInfo.LoginProvider,
+                    safeReturnUrl,
+                    "external_email_not_verified",
+                    "External provider email was not marked as verified.");
             }
 
             string normalizedEmail = emailClaim.TrimOrEmpty();
@@ -228,8 +244,13 @@ public static class IdentityEndpoints
 
                 if (!createUserResult.Succeeded)
                 {
-                    return TypedResults.Redirect(
-                        BuildLoginRedirectUrl(safeReturnUrl, "user_create_failed"));
+                    return RedirectWithExternalLoginFailure(
+                        logger,
+                        httpContext,
+                        externalLoginInfo.LoginProvider,
+                        safeReturnUrl,
+                        "user_create_failed",
+                        "Creating a local user for the external login failed.");
                 }
 
                 isNewUser = true;
@@ -241,8 +262,13 @@ public static class IdentityEndpoints
 
                 if (!isLocalEmailConfirmed)
                 {
-                    return TypedResults.Redirect(
-                        BuildLoginRedirectUrl(safeReturnUrl, "local_email_not_confirmed"));
+                    return RedirectWithExternalLoginFailure(
+                        logger,
+                        httpContext,
+                        externalLoginInfo.LoginProvider,
+                        safeReturnUrl,
+                        "local_email_not_confirmed",
+                        "Local account matched the external email but the local email is not confirmed.");
                 }
 
                 isOnboarded = await IsActiveSubscriptionOnboardedAsync(
@@ -255,7 +281,13 @@ public static class IdentityEndpoints
 
             if (!addLoginResult.Succeeded)
             {
-                return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "external_login_link_failed"));
+                return RedirectWithExternalLoginFailure(
+                    logger,
+                    httpContext,
+                    externalLoginInfo.LoginProvider,
+                    safeReturnUrl,
+                    "external_login_link_failed",
+                    "Linking the external login to the local account failed.");
             }
 
             if (isNewUser && !isInvitationFlow)
@@ -272,9 +304,16 @@ public static class IdentityEndpoints
                         await provisioningTransaction.CommitAsync(httpContext.RequestAborted);
                     }
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
-                    return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, "subscription_provision_failed"));
+                    return RedirectWithExternalLoginFailure(
+                        logger,
+                        httpContext,
+                        externalLoginInfo.LoginProvider,
+                        safeReturnUrl,
+                        "subscription_provision_failed",
+                        "Local user creation succeeded, but initial subscription provisioning failed.",
+                        exception);
                 }
             }
 
@@ -283,6 +322,7 @@ public static class IdentityEndpoints
                 applicationUser,
                 dbContext,
                 httpContext.RequestAborted);
+
             string callbackRedirect = ResolvePostLoginRedirectTarget(safeReturnUrl, isOnboarded);
             return TypedResults.Redirect(callbackRedirect);
         }
@@ -430,6 +470,37 @@ public static class IdentityEndpoints
         };
 
         return QueryHelpers.AddQueryString("/login", queryValues);
+    }
+
+    internal static string DescribeReturnTarget(string returnUrl)
+    {
+        if (String.IsNullOrWhiteSpace(returnUrl))
+        {
+            return "default";
+        }
+
+        string normalizedReturnUrl = returnUrl.TrimOrEmpty();
+        int queryIndex = normalizedReturnUrl.IndexOfAny(['?', '#']);
+        string path = queryIndex >= 0
+            ? normalizedReturnUrl.Substring(0, queryIndex)
+            : normalizedReturnUrl;
+
+        if (String.Equals(path, DefaultReturnUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            return "admin";
+        }
+
+        if (String.Equals(path, OnboardingReturnUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            return "onboarding";
+        }
+
+        if (IsInvitationReturnUrl(path))
+        {
+            return "invite";
+        }
+
+        return "other-local";
     }
 
     private static string ResolveDisplayName(ClaimsPrincipal principal, string fallbackEmail)
@@ -638,6 +709,32 @@ public static class IdentityEndpoints
         Claim onboardingClaim = new("onboarded", isOnboarded ? "true" : "false");
         await signInManager.SignInWithClaimsAsync(user, false, [onboardingClaim]);
     }
+
+    private static RedirectHttpResult RedirectWithExternalLoginFailure(
+        ILogger logger,
+        HttpContext httpContext,
+        string? provider,
+        string safeReturnUrl,
+        string errorCode,
+        string reason,
+        Exception? exception = null)
+    {
+        logger.LogWarning(
+            ExternalLoginFailureEventId,
+            exception,
+            "External login failed. Provider={Provider} ErrorCode={ErrorCode} Reason={Reason} TraceId={TraceId} Path={Path} PathBase={PathBase} ReturnTarget={ReturnTarget} IsInvitationFlow={IsInvitationFlow} ForwardedProto={ForwardedProto} ForwardedHost={ForwardedHost} ForwardedPrefix={ForwardedPrefix}",
+            provider ?? String.Empty,
+            errorCode,
+            reason,
+            httpContext.TraceIdentifier,
+            httpContext.Request.Path.Value ?? String.Empty,
+            httpContext.Request.PathBase.Value ?? String.Empty,
+            DescribeReturnTarget(safeReturnUrl),
+            IsInvitationReturnUrl(safeReturnUrl),
+            httpContext.Request.Headers["X-Forwarded-Proto"].ToString(),
+            httpContext.Request.Headers["X-Forwarded-Host"].ToString(),
+            httpContext.Request.Headers["X-Forwarded-Prefix"].ToString());
+
+        return TypedResults.Redirect(BuildLoginRedirectUrl(safeReturnUrl, errorCode));
+    }
 }
-
-

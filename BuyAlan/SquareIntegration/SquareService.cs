@@ -1,4 +1,4 @@
-﻿namespace BuyAlan.SquareIntegration;
+namespace BuyAlan.SquareIntegration;
 
 using BuyAlan;
 using System.Collections.Concurrent;
@@ -13,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Square;
 using Square.OAuth;
-using Square.TeamMembers;
 
 public sealed class SquareService : ISquareService
 {
@@ -940,5 +939,3 @@ public sealed class SquareService : ISquareService
         string ReasonCode,
         RefreshTokenApiPayload? Payload = null);
 }
-
-
